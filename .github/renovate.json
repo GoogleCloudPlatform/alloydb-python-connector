@@ -1,0 +1,17 @@
+{
+    "extends": [
+      "config:base",
+      ":semanticCommitTypeAll(chore)",
+      "helpers:pinGitHubActionDigests"
+    ],
+    "commitMessagePrefix": "deps: ",
+    "ignorePresets": [":semanticPrefixFixDepsChoreOthers"],
+    "ignorePaths": [".kokoro/requirements.txt"],
+    "prConcurrentLimit": 0,
+    "rebaseStalePrs": true,
+    "dependencyDashboard": true,
+    "semanticCommits": false,
+    "pip_requirements": {
+      "fileMatch": ["requirements-test.txt"]
+    }
+  }
