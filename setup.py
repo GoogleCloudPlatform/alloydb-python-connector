@@ -28,7 +28,7 @@ namespaces = ["google"]
 if "google.cloud" in packages:
     namespaces.append("google.cloud")
 
-name = "alloydb-connector"
+name = "google-cloud-alloydb-connector"
 description = (
     "A Python library for connecting securely to your AlloyDB instances."
 )
