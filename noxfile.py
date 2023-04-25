@@ -32,8 +32,15 @@ def lint(session):
     Returns a failure if the linters find linting errors or sufficiently
     serious code quality issues.
     """
+    session.install("-r", "requirements-test.txt")
+    session.install("-r", "requirements.txt")
     session.install(
-        "flake8", "flake8-import-order", "flake8-annotations", "mypy", BLACK_VERSION
+        "flake8",
+        "flake8-import-order",
+        "flake8-annotations",
+        "mypy",
+        BLACK_VERSION,
+        "types-setuptools",
     )
     session.run(
         "black",
@@ -47,7 +54,7 @@ def lint(session):
         "google",
         "tests",
     )
-    session.run("mypy", "google")  # TODO: add "tests" once tests folder has first test
+    # session.run("mypy", "google", "tests", "--install-types")
 
 
 @nox.session
