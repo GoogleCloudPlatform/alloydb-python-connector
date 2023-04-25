@@ -1,0 +1,2 @@
+aiohttp==3.8.4
+cryptography==40.0.2
