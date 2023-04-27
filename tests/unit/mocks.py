@@ -13,7 +13,10 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
-from typing import Callable
+import json
+from typing import Any, Callable
+
+from aiohttp import web
 
 
 class FakeCredentials:
@@ -45,3 +48,22 @@ class FakeCredentials:
         is not expired.
         """
         return self.token is not None and not self.expired
+
+
+async def connectionInfo(request: Any) -> web.Response:
+    response = {
+        "ipAddress": "127.0.0.1",
+        "instanceUid": "123456789",
+    }
+    return web.Response(content_type="application/json", body=json.dumps(response))
+
+
+async def generateClientCertificate(request: Any) -> web.Response:
+    response = {
+        "pemCertificate": "This is the client cert",
+        "pemCertificateChain": [
+            "This is the intermediate cert",
+            "This is the root cert",
+        ],
+    }
+    return web.Response(content_type="application/json", body=json.dumps(response))

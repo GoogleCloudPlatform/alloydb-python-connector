@@ -12,31 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from typing import Any
 
 from aiohttp import web
-from mocks import FakeCredentials
+from mocks import connectionInfo, FakeCredentials, generateClientCertificate
 import pytest
-
-
-async def connectionInfo(request: Any) -> web.Response:
-    response = {
-        "ipAddress": "127.0.0.1",
-        "instanceUid": "123456789",
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
-
-
-async def generateClientCertificate(request: Any) -> web.Response:
-    response = {
-        "pemCertificate": "This is the client cert",
-        "pemCertificateChain": [
-            "This is the intermediate cert",
-            "This is the root cert",
-        ],
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
 
 
 @pytest.fixture
