@@ -39,7 +39,7 @@ async def generateClientCertificate(request: Any) -> web.Response:
     response = {
         "pemCertificate": "This is the client cert",
         "pemCertificateChain": [
-            "This is the interediate cert",
+            "This is the intermediate cert",
             "This is the root cert",
         ],
     }
@@ -89,5 +89,5 @@ async def test__get_client_certificate(
         client, "", credentials, project, region, cluster, key
     )
     assert certs["client_cert"] == "This is the client cert"
-    assert certs["intermediate_cert"] == "This is the interediate cert"
+    assert certs["intermediate_cert"] == "This is the intermediate cert"
     assert certs["root_cert"] == "This is the root cert"

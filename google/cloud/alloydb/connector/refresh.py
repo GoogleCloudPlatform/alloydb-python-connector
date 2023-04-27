@@ -84,7 +84,7 @@ async def _get_metadata(
         name (str): The name of the AlloyDB instance.
 
     Returns:
-        Dict[str, Any]: Dictionary containing the IP address
+        Dict[str, str]: Dictionary containing the IP address
             and instance UID of the AlloyDB instance.
     """
     logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
@@ -141,7 +141,8 @@ async def _get_client_certificate(
             to generate client certificate.
 
     Returns:
-        Dictionary containing the certificate chain for the AlloyDB instance.
+        Dict[str, str]: Dictionary containing the certificates
+            for the AlloyDB instance.
     """
     logger.debug(f"['{project}/{region}/{cluster}']: Requesting client certificate")
 
