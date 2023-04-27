@@ -31,10 +31,8 @@ class Instance:
     Args:
         instance_uri (str): The instance URI of the AlloyDB instance.
             ex. projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>
-
         client (aiohttp.ClientSession): Async client used to make requests to
             AlloyDB Admin APIs.
-
         key (rsa.RSAPrivateKey): Client private key used in refresh operation
             to generate client certificate.
     """
