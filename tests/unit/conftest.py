@@ -18,5 +18,4 @@ import pytest
 
 @pytest.fixture
 def credentials() -> FakeCredentials:
-    credentials = FakeCredentials()
-    return credentials
+    return FakeCredentials()

@@ -48,6 +48,9 @@ async def generateClientCertificate(request: Any) -> web.Response:
 
 @pytest.mark.asyncio
 async def test__get_metadata(aiohttp_client: Any, credentials: FakeCredentials) -> None:
+    """
+    Test _get_metadata returns successfully.
+    """
     app = web.Application()
     api_version = "v1beta"
     project = "test-project"
@@ -68,6 +71,9 @@ async def test__get_metadata(aiohttp_client: Any, credentials: FakeCredentials) 
 async def test__get_client_certificate(
     aiohttp_client: Any, credentials: FakeCredentials
 ) -> None:
+    """
+    Test _get_client_certificate returns successfully.
+    """
     app = web.Application()
     api_version = "v1beta"
     project = "test-project"
