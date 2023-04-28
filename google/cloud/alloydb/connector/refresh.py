@@ -203,17 +203,19 @@ class RefreshResult:
             self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
             self.context.load_verify_locations(cafile=ca_filename)
 
-    def seconds_until_refresh(self) -> int:
+    def seconds_until_refresh(self, now: datetime = datetime.now()) -> int:
         """
         Calculates the duration to wait before starting the next refresh.
         Usually the duration will be half of the time until certificate
         expiration.
 
+        Args:
+            now (datetime.datetime): Current time. Defaults to datetime.now()
         Returns:
             int: Time in seconds to wait before performing next refresh.
         """
 
-        duration = int((self.expiration - datetime.now()).total_seconds())
+        duration = int((self.expiration - now).total_seconds())
 
         # if certificate duration is less than 1 hour
         if duration < 3600:
