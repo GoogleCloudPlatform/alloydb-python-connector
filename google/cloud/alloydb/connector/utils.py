@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple
+from typing import List, Tuple
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def _write_to_file(
-    dir_path: str, cert_chain: list[str], client_cert: str, key: rsa.RSAPrivateKey
+    dir_path: str, cert_chain: List[str], client_cert: str, key: rsa.RSAPrivateKey
 ) -> Tuple[str, str, str]:
     """
     Helper function to write the server_ca, client certificate and
