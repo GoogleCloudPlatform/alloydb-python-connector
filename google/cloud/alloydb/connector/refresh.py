@@ -16,7 +16,7 @@ from datetime import datetime
 import logging
 import ssl
 from tempfile import TemporaryDirectory
-from typing import Tuple
+from typing import List, Tuple
 
 import aiohttp
 from cryptography import x509
@@ -117,7 +117,7 @@ async def _get_client_certificate(
     region: str,
     cluster: str,
     key: rsa.RSAPrivateKey,
-) -> Tuple[str, list[str]]:
+) -> Tuple[str, List[str]]:
     """
     Fetch a client certificate for the given AlloyDB cluster.
 
@@ -173,7 +173,7 @@ async def _get_client_certificate(
 
 class RefreshResult:
     def __init__(
-        self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, list[str]]
+        self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, List[str]]
     ) -> None:
         self.instance_ip = instance_ip
         self._key = key
