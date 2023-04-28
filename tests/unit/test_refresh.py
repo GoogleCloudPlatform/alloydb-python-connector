@@ -14,7 +14,6 @@
 
 from typing import Any
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from mocks import FakeCredentials
 import pytest
@@ -30,7 +29,7 @@ async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
     """
     Test _get_metadata returns successfully.
     """
-    metadata = await _get_metadata(
+    ip_address = await _get_metadata(
         client,
         "",
         credentials,
@@ -39,8 +38,7 @@ async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
         "test-cluster",
         "test-instance",
     )
-    assert metadata["ip_address"] == "127.0.0.1"
-    assert metadata["uid"] == "123456789"
+    assert ip_address == "127.0.0.1"
 
 
 @pytest.mark.asyncio
@@ -50,12 +48,11 @@ async def test__get_client_certificate(
     """
     Test _get_client_certificate returns successfully.
     """
-    key = rsa.generate_private_key(
-        backend=default_backend(), public_exponent=65537, key_size=2048
-    )
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     certs = await _get_client_certificate(
         client, "", credentials, "test-project", "test-region", "test-cluster", key
     )
-    assert certs["client_cert"] == "This is the client cert"
-    assert certs["intermediate_cert"] == "This is the intermediate cert"
-    assert certs["root_cert"] == "This is the root cert"
+    client_cert, cert_chain = certs
+    assert client_cert == "This is the client cert"
+    assert cert_chain[0] == "This is the intermediate cert"
+    assert cert_chain[1] == "This is the root cert"
