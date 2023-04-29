@@ -14,9 +14,13 @@
 
 from datetime import datetime, timedelta
 import json
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 from aiohttp import web
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 
 
 class FakeCredentials:
@@ -67,3 +71,89 @@ async def generateClientCertificate(request: Any) -> web.Response:
         ],
     }
     return web.Response(content_type="application/json", body=json.dumps(response))
+
+
+def generate_cert(
+    common_name: str, expires_in: int = 10
+) -> Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
+    """
+    Generate a private key and cert object to be used in testing.
+
+    Args:
+        common_name (str): The Common Name for the certificate.
+        expires_in (int): Time in minutes until expiry of certificate.
+
+    Returns:
+        Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
+    """
+    # generate private key
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    # calculate expiry time
+    now = datetime.now()
+    expiration = now + timedelta(minutes=expires_in)
+    # configure cert subject
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, "Mountain View"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Google Inc"),
+            x509.NameAttribute(NameOID.COMMON_NAME, common_name),
+        ]
+    )
+    # build cert
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(expiration)
+    )
+    return cert, key
+
+
+class FakeInstance:
+    """Fake AlloyDB instance to use for testing"""
+
+    def __init__(
+        self,
+        project: str = "test-project",
+        region: str = "test-region",
+        cluster: str = "test-cluster",
+        name: str = "test-instance",
+        ip_address: str = "127.0.0.1",
+    ) -> None:
+        self.project = project
+        self.region = region
+        self.cluster = cluster
+        self.name = name
+        self.ip_address = ip_address
+        # build root cert
+        self.root_cert, self.root_key = generate_cert("root.alloydb")
+        # create self signed root cert
+        self.root_cert = self.root_cert.sign(self.root_key, hashes.SHA256())
+        # build intermediate cert
+        self.intermediate_cert, self.intermediate_key = generate_cert("client.alloydb")
+        # create intermediate cert signed by root cert
+        self.intermediate_cert = self.intermediate_cert.sign(
+            self.root_key, hashes.SHA256()
+        )
+        # build server cert
+        self.server_cert, self.server_key = generate_cert("server.alloydb")
+        # create server cert signed by root cert
+        self.server_cert = self.server_cert.sign(self.root_key, hashes.SHA256())
+
+    def get_pem_certs(self) -> Tuple[str, str, str]:
+        """Helper method to get all certs in pem string format."""
+        pem_root = self.root_cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode("UTF-8")
+        pem_intermediate = self.intermediate_cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode("UTF-8")
+        pem_server = self.server_cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode("UTF-8")
+        return (pem_root, pem_intermediate, pem_server)

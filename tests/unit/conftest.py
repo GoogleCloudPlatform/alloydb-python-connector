@@ -15,7 +15,12 @@
 from typing import Any
 
 from aiohttp import web
-from mocks import connectionInfo, FakeCredentials, generateClientCertificate
+from mocks import (
+    connectionInfo,
+    FakeCredentials,
+    FakeInstance,
+    generateClientCertificate,
+)
 import pytest
 
 
@@ -32,3 +37,8 @@ async def client(aiohttp_client: Any) -> Any:
     client_cert_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster:generateClientCertificate"
     app.router.add_post(client_cert_uri, generateClientCertificate)
     return await aiohttp_client(app)
+
+
+@pytest.fixture
+def fake_instance() -> FakeInstance:
+    return FakeInstance()

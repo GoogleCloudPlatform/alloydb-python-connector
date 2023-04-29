@@ -36,8 +36,10 @@ _api_version: str = "v1beta"
 _refresh_buffer: int = 4 * 60  # 4 minutes
 
 
-def _create_certificate_request(private_key: rsa.RSAPrivateKey) -> str:
-    csr_obj = (
+def _create_certificate_request(
+    private_key: rsa.RSAPrivateKey,
+) -> x509.CertificateSigningRequest:
+    csr = (
         x509.CertificateSigningRequestBuilder()
         .subject_name(
             x509.Name(
@@ -53,7 +55,6 @@ def _create_certificate_request(private_key: rsa.RSAPrivateKey) -> str:
         )
         .sign(private_key, hashes.SHA256())
     )
-    csr = csr_obj.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
     return csr
 
 
@@ -159,6 +160,7 @@ async def _get_client_certificate(
 
     # create the certificate signing request
     csr = _create_certificate_request(key)
+    csr = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
 
     data = {
         "pemCsr": csr,
@@ -171,7 +173,45 @@ async def _get_client_certificate(
     return (resp_dict["pemCertificate"], resp_dict["pemCertificateChain"])
 
 
+def _seconds_until_refresh(expiration: datetime, now: datetime = datetime.now()) -> int:
+    """
+    Calculates the duration to wait before starting the next refresh.
+    Usually the duration will be half of the time until certificate
+    expiration.
+
+    Args:
+        expiration (datetime.datetime): Time of certificate expiration.
+        now (datetime.datetime): Current time. Defaults to datetime.now()
+    Returns:
+        int: Time in seconds to wait before performing next refresh.
+    """
+
+    duration = int((expiration - now).total_seconds())
+
+    # if certificate duration is less than 1 hour
+    if duration < 3600:
+        # something is wrong with certificate, refresh now
+        if duration < _refresh_buffer:
+            return 0
+        # otherwise wait until 4 minutes before expiration for next refresh
+        return duration - _refresh_buffer
+    return duration // 2
+
+
 class RefreshResult:
+    """
+    Manages the result of a refresh operation.
+
+    Holds the certificates and IP address of an AlloyDB instance.
+    Builds the TLS context required to connect to AlloyDB database.
+
+    Args:
+        instance_ip (str): The IP address of the AlloyDB instance.
+        key (rsa.RSAPrivateKey): Private key for the client connection.
+        certs (Tuple[str, List(str)]): Client cert and CA certs for establishing
+            the chain of trust used in building the TLS context.
+    """
+
     def __init__(
         self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, List[str]]
     ) -> None:
@@ -202,26 +242,3 @@ class RefreshResult:
             )
             self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
             self.context.load_verify_locations(cafile=ca_filename)
-
-    def seconds_until_refresh(self, now: datetime = datetime.now()) -> int:
-        """
-        Calculates the duration to wait before starting the next refresh.
-        Usually the duration will be half of the time until certificate
-        expiration.
-
-        Args:
-            now (datetime.datetime): Current time. Defaults to datetime.now()
-        Returns:
-            int: Time in seconds to wait before performing next refresh.
-        """
-
-        duration = int((self.expiration - now).total_seconds())
-
-        # if certificate duration is less than 1 hour
-        if duration < 3600:
-            # something is wrong with certificate, refresh now
-            if duration < _refresh_buffer:
-                return 0
-            # otherwise wait until 4 minutes before expiration for next refresh
-            return duration - _refresh_buffer
-        return duration // 2
