@@ -12,27 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import logging
-from typing import Any, Dict
+import ssl
+from tempfile import TemporaryDirectory
+from typing import List, Tuple
 
 import aiohttp
 from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
-from google.cloud.alloydb.connector.exceptions import RefreshError
+from google.cloud.alloydb.connector.utils import _write_to_file
 
 logger = logging.getLogger(name=__name__)
 
 _api_version: str = "v1beta"
+# _refresh_buffer is the amount of time before a refresh's result expires
+# that a new refresh operation begins.
+_refresh_buffer: int = 4 * 60  # 4 minutes
 
 
-def _create_certificate_request(private_key: rsa.RSAPrivateKey) -> str:
-    csr_obj = (
+def _create_certificate_request(
+    private_key: rsa.RSAPrivateKey,
+) -> x509.CertificateSigningRequest:
+    csr = (
         x509.CertificateSigningRequestBuilder()
         .subject_name(
             x509.Name(
@@ -46,9 +53,8 @@ def _create_certificate_request(private_key: rsa.RSAPrivateKey) -> str:
                 ]
             )
         )
-        .sign(private_key, hashes.SHA256(), default_backend())
+        .sign(private_key, hashes.SHA256())
     )
-    csr = csr_obj.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
     return csr
 
 
@@ -60,7 +66,7 @@ async def _get_metadata(
     region: str,
     cluster: str,
     name: str,
-) -> Dict[str, Any]:
+) -> str:
     """
     Fetch the metadata for a given AlloyDB instance.
 
@@ -84,8 +90,7 @@ async def _get_metadata(
         name (str): The name of the AlloyDB instance.
 
     Returns:
-        Dict[str, str]: Dictionary containing the IP address
-            and instance UID of the AlloyDB instance.
+        str: IP Address of the AlloyDB instance.
     """
     logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
 
@@ -102,10 +107,7 @@ async def _get_metadata(
     resp = await client.get(url, headers=headers, raise_for_status=True)
     resp_dict = await resp.json()
 
-    return {
-        "ip_address": resp_dict["ipAddress"],
-        "uid": resp_dict["instanceUid"],
-    }
+    return resp_dict["ipAddress"]
 
 
 async def _get_client_certificate(
@@ -116,7 +118,7 @@ async def _get_client_certificate(
     region: str,
     cluster: str,
     key: rsa.RSAPrivateKey,
-) -> Dict[str, Any]:
+) -> Tuple[str, List[str]]:
     """
     Fetch a client certificate for the given AlloyDB cluster.
 
@@ -141,8 +143,8 @@ async def _get_client_certificate(
             to generate client certificate.
 
     Returns:
-        Dict[str, str]: Dictionary containing the certificates
-            for the AlloyDB instance.
+        Tuple[str, list[str]]: Tuple containing the client certificate
+            and certificate chain for the AlloyDB instance.
     """
     logger.debug(f"['{project}/{region}/{cluster}']: Requesting client certificate")
 
@@ -158,6 +160,7 @@ async def _get_client_certificate(
 
     # create the certificate signing request
     csr = _create_certificate_request(key)
+    csr = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
 
     data = {
         "pemCsr": csr,
@@ -167,12 +170,75 @@ async def _get_client_certificate(
     resp = await client.post(url, headers=headers, json=data, raise_for_status=True)
     resp_dict = await resp.json()
 
-    # There should always be two certs in the chain. If this fails, the API has
-    # broken its contract with the client.
-    if len(resp_dict["pemCertificateChain"]) != 2:
-        raise RefreshError("missing instance and root certificates")
-    return {
-        "client_cert": resp_dict["pemCertificate"],
-        "intermediate_cert": resp_dict["pemCertificateChain"][0],
-        "root_cert": resp_dict["pemCertificateChain"][1],
-    }
+    return (resp_dict["pemCertificate"], resp_dict["pemCertificateChain"])
+
+
+def _seconds_until_refresh(expiration: datetime, now: datetime = datetime.now()) -> int:
+    """
+    Calculates the duration to wait before starting the next refresh.
+    Usually the duration will be half of the time until certificate
+    expiration.
+
+    Args:
+        expiration (datetime.datetime): Time of certificate expiration.
+        now (datetime.datetime): Current time. Defaults to datetime.now()
+    Returns:
+        int: Time in seconds to wait before performing next refresh.
+    """
+
+    duration = int((expiration - now).total_seconds())
+
+    # if certificate duration is less than 1 hour
+    if duration < 3600:
+        # something is wrong with certificate, refresh now
+        if duration < _refresh_buffer:
+            return 0
+        # otherwise wait until 4 minutes before expiration for next refresh
+        return duration - _refresh_buffer
+    return duration // 2
+
+
+class RefreshResult:
+    """
+    Manages the result of a refresh operation.
+
+    Holds the certificates and IP address of an AlloyDB instance.
+    Builds the TLS context required to connect to AlloyDB database.
+
+    Args:
+        instance_ip (str): The IP address of the AlloyDB instance.
+        key (rsa.RSAPrivateKey): Private key for the client connection.
+        certs (Tuple[str, List(str)]): Client cert and CA certs for establishing
+            the chain of trust used in building the TLS context.
+    """
+
+    def __init__(
+        self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, List[str]]
+    ) -> None:
+        self.instance_ip = instance_ip
+        self._key = key
+        self._certs = certs
+
+        # create TLS context
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        # update ssl.PROTOCOL_TLS_CLIENT default
+        self.context.check_hostname = False
+        # force TLSv1.3
+        self.context.minimum_version = ssl.TLSVersion.TLSv1_3
+        # add request_ssl attribute to ssl.SSLContext, required for pg8000 driver
+        self.context.request_ssl = False  # type: ignore
+
+        client_cert, cert_chain = self._certs
+        # get expiration from client certificate
+        cert_obj = x509.load_pem_x509_certificate(client_cert.encode("UTF-8"))
+        self.expiration = cert_obj.not_valid_after
+
+        # tmpdir and its contents are automatically deleted after the CA cert
+        # and cert chain are loaded into the SSLcontext. The values
+        # need to be written to files in order to be loaded by the SSLContext
+        with TemporaryDirectory() as tmpdir:
+            ca_filename, cert_chain_filename, key_filename = _write_to_file(
+                tmpdir, cert_chain, client_cert, self._key
+            )
+            self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
+            self.context.load_verify_locations(cafile=ca_filename)

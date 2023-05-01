@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import aiohttp
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import pytest
 
@@ -26,9 +25,7 @@ async def test_Instance_init() -> None:
     Test to check whether the __init__ method of Instance
     can tell if the instance URI that's passed in is formatted correctly.
     """
-    key = rsa.generate_private_key(
-        backend=default_backend(), public_exponent=65537, key_size=2048
-    )
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     async with aiohttp.ClientSession() as client:
         instance = Instance(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -49,9 +46,7 @@ async def test_Instance_init_invalid_instant_uri() -> None:
     Test to check whether the __init__ method of Instance
     will throw error for invalid instance URI.
     """
-    key = rsa.generate_private_key(
-        backend=default_backend(), public_exponent=65537, key_size=2048
-    )
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
             Instance("invalid/instance/uri/", client, key)
