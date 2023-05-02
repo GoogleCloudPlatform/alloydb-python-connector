@@ -14,6 +14,9 @@
 
 from datetime import datetime, timedelta
 import json
+import socket
+import ssl
+from tempfile import TemporaryDirectory
 from typing import Any, Callable, Tuple
 
 from aiohttp import web
@@ -21,6 +24,9 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+
+from google.cloud.alloydb.connector.refresh import RefreshResult
+from google.cloud.alloydb.connector.utils import _write_to_file
 
 
 class FakeCredentials:
@@ -124,12 +130,21 @@ class FakeInstance:
         cluster: str = "test-cluster",
         name: str = "test-instance",
         ip_address: str = "127.0.0.1",
+        server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
+        cert_expiry: datetime = datetime.now() + timedelta(hours=1),
     ) -> None:
         self.project = project
         self.region = region
         self.cluster = cluster
         self.name = name
         self.ip_address = ip_address
+        self.server_name = server_name
+        self.cert_expiry = cert_expiry
+
+    def generate_certs(self) -> None:
+        """
+        Build certs required for chain of trust with testing server.
+        """
         # build root cert
         self.root_cert, self.root_key = generate_cert("root.alloydb")
         # create self signed root cert
@@ -141,7 +156,7 @@ class FakeInstance:
             self.root_key, hashes.SHA256()
         )
         # build server cert
-        self.server_cert, self.server_key = generate_cert("server.alloydb")
+        self.server_cert, self.server_key = generate_cert(self.server_name)
         # create server cert signed by root cert
         self.server_cert = self.server_cert.sign(self.root_key, hashes.SHA256())
 
@@ -157,3 +172,60 @@ class FakeInstance:
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
         return (pem_root, pem_intermediate, pem_server)
+
+    def configure_tls(self) -> None:
+        """
+        Configure fake server with TLS as specified by the FakeInstance.
+        """
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # create TLS context
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        # tmpdir and its contents are automatically deleted after the CA cert
+        # and cert chain are loaded into the SSLcontext. The values
+        # need to be written to files in order to be loaded by the SSLContext
+        with TemporaryDirectory() as tmpdir:
+            pem_root, _, pem_server = self.get_pem_certs()
+            ca_filename, _, key_filename = _write_to_file(
+                tmpdir, [pem_server, pem_root], "", self.server_key
+            )
+            context.load_cert_chain(ca_filename, key_filename)
+        server = context.wrap_socket(server, server_side=True)
+        self.server = server
+
+    def start_server_proxy(self) -> None:
+        """
+        Starts a fake server proxy and listens on the provided port
+        on all interfaces, configured with TLS as specified by the
+        FakeInstance.
+        """
+        self.server.bind((self.ip_address, 5433))
+        self.server.listen(0)
+        self.server.accept()
+
+
+class BadRefresh(Exception):
+    """Error to throw for tests."""
+
+    pass
+
+
+class FakeRefreshResult(RefreshResult):
+    """Fake class for testing RefreshResult"""
+
+    def __init__(self, expiration: datetime, instance_ip: str = "127.0.0.1") -> None:
+        self.expiration = expiration
+        self.instance_ip = instance_ip
+
+
+async def refresh_success(*args: Any, **kwargs: Any) -> FakeRefreshResult:
+    return FakeRefreshResult(datetime.now() + timedelta(minutes=10))
+
+
+async def refresh_expired(*args: Any, **kwargs: Any) -> FakeRefreshResult:
+    return FakeRefreshResult(datetime.now() - timedelta(minutes=10))
+
+
+async def refresh_error(*args: Any, **kwargs: Any) -> None:
+    raise BadRefresh("something went wrong...")

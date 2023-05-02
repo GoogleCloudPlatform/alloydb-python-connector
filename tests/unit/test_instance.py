@@ -14,13 +14,14 @@
 
 import aiohttp
 from cryptography.hazmat.primitives.asymmetric import rsa
+from mocks import FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector.instance import Instance
 
 
 @pytest.mark.asyncio
-async def test_Instance_init() -> None:
+async def test_Instance_init(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Instance
     can tell if the instance URI that's passed in is formatted correctly.
@@ -30,6 +31,8 @@ async def test_Instance_init() -> None:
         instance = Instance(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
             client,
+            credentials,
+            "",
             key,
         )
         assert (
@@ -41,7 +44,7 @@ async def test_Instance_init() -> None:
 
 
 @pytest.mark.asyncio
-async def test_Instance_init_invalid_instant_uri() -> None:
+async def test_Instance_init_invalid_instant_uri(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Instance
     will throw error for invalid instance URI.
@@ -49,4 +52,4 @@ async def test_Instance_init_invalid_instant_uri() -> None:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
-            Instance("invalid/instance/uri/", client, key)
+            Instance("invalid/instance/uri/", client, credentials, "", key)

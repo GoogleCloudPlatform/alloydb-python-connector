@@ -93,6 +93,10 @@ def test_seconds_until_refresh_under_4_mins() -> None:
 
 
 def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
+    """
+    Test to check whether the __init__ method of RefreshResult
+    can correctly initialize TLS context.
+    """
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     root_cert, intermediate_cert, _ = fake_instance.get_pem_certs()
     csr = _create_certificate_request(key)

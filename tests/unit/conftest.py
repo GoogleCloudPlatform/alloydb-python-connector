@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from threading import Thread
+from typing import Any, Generator
 
 from aiohttp import web
 from mocks import (
@@ -40,5 +41,14 @@ async def client(aiohttp_client: Any) -> Any:
 
 
 @pytest.fixture
-def fake_instance() -> FakeInstance:
-    return FakeInstance()
+def fake_instance() -> Generator:
+    instance = FakeInstance()
+    # generate certs for fake AlloyDB instance
+    instance.generate_certs()
+    # start test server
+    instance.configure_tls()
+    thread = Thread(target=instance.start_server_proxy, daemon=True)
+    thread.start()
+    yield instance
+    # close server
+    instance.server.close()
