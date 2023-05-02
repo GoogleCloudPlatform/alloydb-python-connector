@@ -24,7 +24,7 @@ from google.auth.transport.requests import Request
 from google.cloud.alloydb.connector.utils import _create_certificate_request
 from google.cloud.alloydb.connector.version import __version__ as version
 
-USER_AGENT = f"alloydb-python-connector/{version}"
+USER_AGENT: str = f"alloydb-python-connector/{version}"
 API_VERSION: str = "v1beta"
 
 logger = logging.getLogger(name=__name__)
@@ -52,7 +52,8 @@ class AlloyDBClient:
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
             client (aiohttp.ClientSession): Async client used to make requests to
-            AlloyDB Admin APIs. Optional, defaults to None and creates new client.
+                AlloyDB Admin APIs. 
+                Optional, defaults to None and creates new client.
         """
         headers = {
             "x-goog-api-client": USER_AGENT,
