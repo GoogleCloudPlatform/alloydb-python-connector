@@ -52,7 +52,7 @@ class AlloyDBClient:
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
             client (aiohttp.ClientSession): Async client used to make requests to
-                AlloyDB Admin APIs. 
+                AlloyDB Admin APIs.
                 Optional, defaults to None and creates new client.
         """
         headers = {
