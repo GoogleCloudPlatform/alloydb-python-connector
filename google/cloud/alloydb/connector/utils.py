@@ -14,8 +14,10 @@
 
 from typing import List, Tuple
 
-from cryptography.hazmat.primitives import serialization
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 
 
 def _write_to_file(
@@ -46,3 +48,25 @@ def _write_to_file(
         priv_out.write(key_bytes)
 
     return (ca_filename, cert_chain_filename, key_filename)
+
+
+def _create_certificate_request(
+    private_key: rsa.RSAPrivateKey,
+) -> x509.CertificateSigningRequest:
+    csr = (
+        x509.CertificateSigningRequestBuilder()
+        .subject_name(
+            x509.Name(
+                [
+                    x509.NameAttribute(NameOID.COMMON_NAME, "alloydb-connector"),
+                    x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "CA"),
+                    x509.NameAttribute(NameOID.LOCALITY_NAME, "Sunnyvale"),
+                    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Google LLC"),
+                    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Cloud"),
+                ]
+            )
+        )
+        .sign(private_key, hashes.SHA256())
+    )
+    return csr
