@@ -97,7 +97,7 @@ class Instance:
         Perform a refresh operation on an AlloyDB instance.
 
         Retrieves metadata and generates new client certificate
-        required to connecct securely to the AlloyDB instance.
+        required to connect securely to the AlloyDB instance.
 
         Returns:
             RefreshResult: Result of the refresh operation.
@@ -157,9 +157,7 @@ class Instance:
             asyncio.Task[RefreshResult]: A task representing the scheduled
                 refresh operation.
         """
-        # schedule refresh operation task and return it
-        scheduled_task = asyncio.create_task(self._refresh_operation(delay))
-        return scheduled_task
+        return asyncio.create_task(self._refresh_operation(delay))
 
     async def _refresh_operation(self, delay: int) -> RefreshResult:
         """
