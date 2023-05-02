@@ -16,7 +16,11 @@ from datetime import datetime, timedelta
 
 import aiohttp
 from cryptography.hazmat.primitives.asymmetric import rsa
+<<<<<<< HEAD
 from mocks import FakeAlloyDBClient
+=======
+from mocks import FakeCredentials
+>>>>>>> 1af1b6d (chore: update tests)
 import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
@@ -25,7 +29,7 @@ from google.cloud.alloydb.connector.refresh import _is_valid
 
 
 @pytest.mark.asyncio
-async def test_Instance_init() -> None:
+async def test_Instance_init(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Instance
     can tell if the instance URI that's passed in is formatted correctly.
@@ -35,6 +39,8 @@ async def test_Instance_init() -> None:
         instance = Instance(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
             client,
+            credentials,
+            "",
             key,
         )
         assert (
@@ -46,7 +52,7 @@ async def test_Instance_init() -> None:
 
 
 @pytest.mark.asyncio
-async def test_Instance_init_invalid_instant_uri() -> None:
+async def test_Instance_init_invalid_instant_uri(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Instance
     will throw error for invalid instance URI.
@@ -54,6 +60,7 @@ async def test_Instance_init_invalid_instant_uri() -> None:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
+<<<<<<< HEAD
             Instance("invalid/instance/uri/", client, key)
 
 
@@ -174,3 +181,6 @@ async def test_schedule_refresh_expired_cert() -> None:
         await instance._current
     # close instance
     await instance.close()
+=======
+            Instance("invalid/instance/uri/", client, credentials, "", key)
+>>>>>>> 1af1b6d (chore: update tests)
