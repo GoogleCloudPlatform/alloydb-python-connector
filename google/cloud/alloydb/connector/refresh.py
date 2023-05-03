@@ -102,7 +102,7 @@ class RefreshResult:
             self.context.load_verify_locations(cafile=ca_filename)
 
 
-async def _is_valid(task: asyncio.Task[RefreshResult]) -> bool:
+async def _is_valid(task: asyncio.Task) -> bool:
     try:
         result = await task
         # valid if current time is before cert expiration
