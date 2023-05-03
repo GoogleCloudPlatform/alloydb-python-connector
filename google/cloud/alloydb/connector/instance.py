@@ -15,14 +15,11 @@
 import asyncio
 import logging
 
-import aiohttp
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from google.auth.credentials import Credentials
+from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh import (
-    _get_client_certificate,
-    _get_metadata,
     _is_valid,
     _seconds_until_refresh,
     RefreshResult,
@@ -42,25 +39,13 @@ class Instance:
     Args:
         instance_uri (str): The instance URI of the AlloyDB instance.
             ex. projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>
-        client (aiohttp.ClientSession): Async client used to make requests to
-            AlloyDB Admin APIs.
-        credentials (google.auth.credentials.Credentials):
-            A credentials object created from the google-auth Python library.
-            Must have the AlloyDB Admin scopes. For more info check out
-            https://google-auth.readthedocs.io/en/latest/.
-        alloydb_api_endpoint (str): Base URL to use when calling
-            the AlloyDB API endpoint.
+        client (AlloyDBClient): Client used to make requests to AlloyDB Admin APIs.
         key (rsa.RSAPrivateKey): Client private key used in refresh operation
             to generate client certificate.
     """
 
     def __init__(
-        self,
-        instance_uri: str,
-        client: aiohttp.ClientSession,
-        credentials: Credentials,
-        alloydb_api_endpoint: str,
-        key: rsa.RSAPrivateKey,
+        self, instance_uri: str, client: AlloyDBClient, key: rsa.RSAPrivateKey
     ) -> None:
         # validate and parse instance_uri
         instance_uri_split = instance_uri.split("/")
@@ -79,8 +64,6 @@ class Instance:
             )
 
         self._client = client
-        self._credentials = credentials
-        self._alloydb_api_endpoint = alloydb_api_endpoint
         self._key = key
         self._refresh_rate_limiter = AsyncRateLimiter(
             max_capacity=2,
@@ -110,10 +93,7 @@ class Instance:
 
             # fetch metadata
             metadata_task = asyncio.create_task(
-                _get_metadata(
-                    self._client,
-                    self._alloydb_api_endpoint,
-                    self._credentials,
+                self._client._get_metadata(
                     self._project,
                     self._region,
                     self._cluster,
@@ -122,10 +102,7 @@ class Instance:
             )
             # generate client and CA certs
             certs_task = asyncio.create_task(
-                _get_client_certificate(
-                    self._client,
-                    self._alloydb_api_endpoint,
-                    self._credentials,
+                self._client._get_client_certificate(
                     self._project,
                     self._region,
                     self._cluster,
