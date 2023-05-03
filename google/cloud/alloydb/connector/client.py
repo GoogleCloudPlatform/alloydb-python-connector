@@ -164,4 +164,4 @@ class AlloyDBClient:
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""
-        await self._client.close
+        await self._client.close()
