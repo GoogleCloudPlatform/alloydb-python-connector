@@ -73,8 +73,8 @@ class Instance:
         self._refresh_in_progress = asyncio.locks.Event()
         # For the initial refresh operation, set current = next so that
         # connection requests block until the first refresh is complete.
-        self._current = self._schedule_refresh(0)
-        self._next = self._current
+        self._current: asyncio.Task = self._schedule_refresh(0)
+        self._next: asyncio.Task = self._current
 
     async def _perform_refresh(self) -> RefreshResult:
         """
