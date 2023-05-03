@@ -25,7 +25,7 @@ from google.cloud.alloydb.connector.refresh import _is_valid
 
 
 @pytest.mark.asyncio
-async def test_Instance_init(credentials: FakeCredentials) -> None:
+async def test_Instance_init() -> None:
     """
     Test to check whether the __init__ method of Instance
     can tell if the instance URI that's passed in is formatted correctly.
@@ -35,8 +35,6 @@ async def test_Instance_init(credentials: FakeCredentials) -> None:
         instance = Instance(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
             client,
-            credentials,
-            "",
             key,
         )
         assert (
@@ -48,7 +46,7 @@ async def test_Instance_init(credentials: FakeCredentials) -> None:
 
 
 @pytest.mark.asyncio
-async def test_Instance_init_invalid_instant_uri(credentials: FakeCredentials) -> None:
+async def test_Instance_init_invalid_instant_uri() -> None:
     """
     Test to check whether the __init__ method of Instance
     will throw error for invalid instance URI.
