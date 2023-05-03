@@ -21,6 +21,7 @@ from mocks import FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
+from google.cloud.alloydb.connector.version import __version__ as version
 
 
 async def connectionInfo(request: Any) -> web.Response:
@@ -83,3 +84,19 @@ async def test__get_client_certificate(
     assert client_cert == "This is the client cert"
     assert cert_chain[0] == "This is the intermediate cert"
     assert cert_chain[1] == "This is the root cert"
+
+
+@pytest.mark.asyncio
+async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
+    """
+    Test to check whether the __init__ method of AlloyDBClient
+    can correctly initialize a client.
+    """
+    client = AlloyDBClient("www.test-endpoint.com", "my-quota-project", credentials)
+    # verify base endpoint is set
+    assert client._alloydb_api_endpoint == "www.test-endpoint.com"
+    # verify proper headers are set
+    assert client._client.headers["User-Agent"] == f"alloydb-python-connector/{version}"
+    assert client._client.headers["x-goog-user-project"] == "my-quota-project"
+    # close client
+    await client.close()

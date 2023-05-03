@@ -161,3 +161,7 @@ class AlloyDBClient:
         resp_dict = await resp.json()
 
         return (resp_dict["pemCertificate"], resp_dict["pemCertificateChain"])
+
+    async def close(self) -> None:
+        """Close AlloyDBClient gracefully."""
+        await self._client.close()

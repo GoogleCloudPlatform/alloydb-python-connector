@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 from datetime import datetime
 import logging
 import ssl
@@ -99,3 +100,15 @@ class RefreshResult:
             )
             self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
             self.context.load_verify_locations(cafile=ca_filename)
+
+
+async def _is_valid(task: asyncio.Task) -> bool:
+    try:
+        result = await task
+        # valid if current time is before cert expiration
+        if datetime.now() < result.expiration:
+            return True
+    except Exception:
+        # suppress any errors from task
+        logger.debug("Current refresh result is invalid.")
+    return False
