@@ -17,10 +17,8 @@ from typing import Any, Generator
 
 from aiohttp import web
 from mocks import (
-    connectionInfo,
     FakeCredentials,
     FakeInstance,
-    generateClientCertificate,
 )
 import pytest
 
@@ -28,16 +26,6 @@ import pytest
 @pytest.fixture
 def credentials() -> FakeCredentials:
     return FakeCredentials()
-
-
-@pytest.fixture
-async def client(aiohttp_client: Any) -> Any:
-    app = web.Application()
-    metadata_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance/connectionInfo"
-    app.router.add_get(metadata_uri, connectionInfo)
-    client_cert_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster:generateClientCertificate"
-    app.router.add_post(client_cert_uri, generateClientCertificate)
-    return await aiohttp_client(app)
 
 
 @pytest.fixture

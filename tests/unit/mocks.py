@@ -13,13 +13,11 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
-import json
 import socket
 import ssl
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Tuple
 
-from aiohttp import web
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -58,25 +56,6 @@ class FakeCredentials:
         is not expired.
         """
         return self.token is not None and not self.expired
-
-
-async def connectionInfo(request: Any) -> web.Response:
-    response = {
-        "ipAddress": "127.0.0.1",
-        "instanceUid": "123456789",
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
-
-
-async def generateClientCertificate(request: Any) -> web.Response:
-    response = {
-        "pemCertificate": "This is the client cert",
-        "pemCertificateChain": [
-            "This is the intermediate cert",
-            "This is the root cert",
-        ],
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
 
 
 def generate_cert(

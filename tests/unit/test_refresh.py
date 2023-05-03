@@ -14,55 +14,17 @@
 
 from datetime import datetime, timedelta
 import ssl
-from typing import Any
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from mocks import FakeCredentials, FakeInstance
-import pytest
+from mocks import FakeInstance
 
 from google.cloud.alloydb.connector.refresh import (
-    _create_certificate_request,
-    _get_client_certificate,
-    _get_metadata,
     _seconds_until_refresh,
     RefreshResult,
 )
-
-
-@pytest.mark.asyncio
-async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
-    """
-    Test _get_metadata returns successfully.
-    """
-    ip_address = await _get_metadata(
-        client,
-        "",
-        credentials,
-        "test-project",
-        "test-region",
-        "test-cluster",
-        "test-instance",
-    )
-    assert ip_address == "127.0.0.1"
-
-
-@pytest.mark.asyncio
-async def test__get_client_certificate(
-    client: Any, credentials: FakeCredentials
-) -> None:
-    """
-    Test _get_client_certificate returns successfully.
-    """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    certs = await _get_client_certificate(
-        client, "", credentials, "test-project", "test-region", "test-cluster", key
-    )
-    client_cert, cert_chain = certs
-    assert client_cert == "This is the client cert"
-    assert cert_chain[0] == "This is the intermediate cert"
-    assert cert_chain[1] == "This is the root cert"
+from google.cloud.alloydb.connector.utils import _create_certificate_request
 
 
 def test_seconds_until_refresh_over_1_hour() -> None:
