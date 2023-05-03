@@ -124,7 +124,7 @@ class Instance:
 
         return RefreshResult(ip_addr, self._key, certs)
 
-    def _schedule_refresh(self, delay: int) -> asyncio.Task[RefreshResult]:
+    def _schedule_refresh(self, delay: int) -> asyncio.Task:
         """
         Schedule a refresh operation.
 
@@ -148,7 +148,7 @@ class Instance:
         Returns:
             RefreshResult: Refresh result for an AlloyDB instance.
         """
-        refresh_task: asyncio.Task[RefreshResult]
+        refresh_task: asyncio.Task
         try:
             if delay > 0:
                 logger.debug(f"['{self._instance_uri}']: Entering sleep")
