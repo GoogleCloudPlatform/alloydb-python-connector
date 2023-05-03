@@ -12,20 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generator
 
-from mocks import (
-    FakeCredentials,
-    FakeInstance,
-)
-import pytest
-
-
-@pytest.fixture
-def credentials() -> FakeCredentials:
-    return FakeCredentials()
-
-
-@pytest.fixture
-def fake_instance() -> Generator:
-    return FakeInstance()
+class RefreshError(Exception):
+    pass

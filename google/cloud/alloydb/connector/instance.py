@@ -18,6 +18,7 @@ import logging
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
+from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh import (
     _is_valid,
@@ -154,6 +155,11 @@ class Instance:
                 await asyncio.sleep(delay)
             refresh_task = asyncio.create_task(self._perform_refresh())
             refresh_result = await refresh_task
+            # check that refresh is valid
+            if not await _is_valid(refresh_task):
+                raise RefreshError(
+                    f"['{self._instance_uri}']: Invalid refresh operation. Certficate appears to be expired."
+                )
         # bad refresh attempt
         except Exception:
             logger.info(
@@ -175,3 +181,15 @@ class Instance:
         self._next = self._schedule_refresh(delay)
 
         return refresh_result
+
+    async def close(self) -> None:
+        """
+        Cancel refresh tasks.
+        """
+        logger.debug(f"['{self._instance_uri}']: Waiting for _current to be cancelled")
+        self._current.cancel()
+        logger.debug(f"['{self._instance_uri}']: Waiting for _next to be cancelled")
+        self._next.cancel()
+        # gracefully wait for tasks to cancel
+        tasks = asyncio.gather(self._current, self._next, return_exceptions=True)
+        await asyncio.wait_for(tasks, timeout=2.0)

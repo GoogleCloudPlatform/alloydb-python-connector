@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
+
 import aiohttp
 from cryptography.hazmat.primitives.asymmetric import rsa
+from mocks import FakeAlloyDBClient
 import pytest
 
+from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.refresh import _is_valid
 
 
 @pytest.mark.asyncio
@@ -50,3 +55,122 @@ async def test_Instance_init_invalid_instant_uri() -> None:
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
             Instance("invalid/instance/uri/", client, key)
+
+
+@pytest.mark.asyncio
+async def test_Instance_close() -> None:
+    """
+    Test that Instance's close method
+    cancels tasks gracefully.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    # make sure tasks aren't cancelled
+    assert instance._current.cancelled() is False
+    assert instance._next.cancelled() is False
+    # run close() to cancel tasks
+    await instance.close()
+    # verify tasks are cancelled
+    assert (instance._current.done() or instance._current.cancelled()) is True
+    assert instance._next.cancelled() is True
+
+
+@pytest.mark.asyncio
+async def test_perform_refresh() -> None:
+    """Test that _perform refresh returns valid RefreshResult"""
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    refresh = await instance._perform_refresh()
+    assert refresh.instance_ip == "127.0.0.1"
+    assert refresh.expiration == client.instance.cert_expiry.replace(microsecond=0)
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.asyncio
+async def test_schedule_refresh_replaces_result() -> None:
+    """
+    Test to check whether _schedule_refresh replaces a valid refresh result
+    with another refresh result.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    # check current refresh is valid
+    assert await _is_valid(instance._current) is True
+    current_refresh = instance._current
+    # schedule new refresh
+    await instance._schedule_refresh(0)
+    new_refresh = instance._current
+    # verify current has been replaced with new refresh
+    assert current_refresh != new_refresh
+    # check new refresh is valid
+    assert await _is_valid(new_refresh) is True
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.asyncio
+async def test_schedule_refresh_wont_replace_valid_result_with_invalid() -> None:
+    """
+    Test to check whether _schedule_refresh won't replace a valid
+    refresh result with an invalid one.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    # check current refresh is valid
+    assert await _is_valid(instance._current) is True
+    current_refresh = instance._current
+    # set certificate to be expired
+    client.instance.cert_before = datetime.now() - timedelta(minutes=20)
+    client.instance.cert_expiry = datetime.now() - timedelta(minutes=10)
+    # schedule new refresh
+    new_refresh = instance._schedule_refresh(0)
+    # check new refresh is invalid
+    assert await _is_valid(new_refresh) is False
+    # check current was not replaced
+    assert current_refresh == instance._current
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.asyncio
+async def test_schedule_refresh_expired_cert() -> None:
+    """
+    Test to check whether _schedule_refresh will throw RefreshError on
+    expired certificate.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    # set certificate to be expired
+    client.instance.cert_before = datetime.now() - timedelta(minutes=20)
+    client.instance.cert_expiry = datetime.now() - timedelta(minutes=10)
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    # check RefreshError is thrown
+    with pytest.raises(RefreshError):
+        await instance._current
+    # close instance
+    await instance.close()
