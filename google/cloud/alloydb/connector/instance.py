@@ -14,6 +14,8 @@
 
 import asyncio
 import logging
+import ssl
+from typing import Tuple
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -181,6 +183,29 @@ class Instance:
         self._next = self._schedule_refresh(delay)
 
         return refresh_result
+
+    def force_refresh(self) -> None:
+        """
+        Schedules a new refresh operation immediately to be used
+        for future connection attempts.
+        """
+        # if next refresh is not already in progress, cancel it and schedule new one immediately
+        if not self._refresh_in_progress.is_set():
+            self._next.cancel()
+            self._next = self._schedule_refresh(0)
+        # block all sequential connection attempts on the next refresh result
+        self._current = self._next
+
+    async def connection_info(self) -> Tuple[str, ssl.SSLContext]:
+        """
+        Return connection info for current refresh result.
+
+        Returns:
+            Tuple[str, ssl.SSLContext]: AlloyDB instance IP address
+                and configured TLS connection.
+        """
+        refresh: RefreshResult = await self._current
+        return refresh.instance_ip, refresh.context
 
     async def close(self) -> None:
         """

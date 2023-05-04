@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 from datetime import datetime, timedelta
 
 import aiohttp
@@ -21,7 +22,7 @@ import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.instance import Instance
-from google.cloud.alloydb.connector.refresh import _is_valid
+from google.cloud.alloydb.connector.refresh import _is_valid, RefreshResult
 
 
 @pytest.mark.asyncio
@@ -172,5 +173,34 @@ async def test_schedule_refresh_expired_cert() -> None:
     # check RefreshError is thrown
     with pytest.raises(RefreshError):
         await instance._current
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.asyncio
+async def test_force_refresh_cancels_pending_refresh() -> None:
+    """
+    Test that force_refresh cancels pending task if refresh_in_progress event is not set.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        key,
+    )
+    # make sure initial refresh is finished
+    await instance._current
+    # since the pending refresh isn't for another ~56 min, the refresh_in_progress event
+    # shouldn't be set
+    pending_refresh = instance._next
+    assert instance._refresh_in_progress.is_set() is False
+    instance.force_refresh()
+    # pending_refresh has to be awaited for it to raised as cancelled
+    with pytest.raises(asyncio.CancelledError):
+        assert await pending_refresh
+    # verify pending_refresh has now been cancelled
+    assert pending_refresh.cancelled() is True
+    assert isinstance(await instance._current, RefreshResult)
     # close instance
     await instance.close()
