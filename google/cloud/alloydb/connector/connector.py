@@ -84,7 +84,7 @@ class Connector:
         Returns:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
-        # if event loop is not in current thread, proceed with connection
+        # call async connect and wait on result
         connect_task = asyncio.run_coroutine_threadsafe(
             self.connect_async(instance_uri, driver, **kwargs), self._loop
         )

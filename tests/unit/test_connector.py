@@ -24,7 +24,7 @@ from google.cloud.alloydb.connector.connector import Connector
 def test_Connector_init(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Connector
-    properly sets default attributes..
+    properly sets default attributes.
     """
     connector = Connector(credentials)
     assert connector._quota_project is None
