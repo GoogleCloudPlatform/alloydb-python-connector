@@ -50,3 +50,81 @@ jobs:
 
       - name: Run tests
         run: nox -s unit-${{ matrix.python-version }}
+
+  integration:
+    # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
+    if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
+    name: integration tests
+    runs-on: [self-hosted, linux, x64]
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.11"]
+      fail-fast: false
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Remove PR label
+        if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                name: 'tests: run',
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number
+              });
+            } catch (e) {
+              console.log('Failed to remove label. Another job may have already removed it!');
+            }
+
+      - name: Checkout code
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b # v4.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install nox
+        run: pip install nox
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf # v1.1.0
+        with:
+          workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
+          access_token_lifetime: 600s
+
+      - id: 'secrets'
+        name: Get secrets
+        uses: google-github-actions/get-secretmanager-secrets@7fced8b6579c75d7c465165b38ec29175d9a469c # v1.0.0
+        with:
+          secrets: |-
+            ALLOYDB_INSTANCE_URI:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_INSTANCE_URI
+            ALLOYDB_CLUSTER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_CLUSTER_PASS
+
+      - name: Run tests
+        env:
+          ALLOYDB_DB: 'postgres'
+          ALLOYDB_USER: 'postgres'
+          ALLOYDB_PASS: '${{ steps.secrets.outputs.ALLOYDB_CLUSTER_PASS }}'
+          ALLOYDB_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_URI }}'
+        run: nox -s system-${{ matrix.python-version }}
+      
+      - name: FlakyBot (Linux)
+        # only run flakybot on periodic (schedule) and continuous (push) events
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && always() }}
+        run: |
+          curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot -o flakybot -s -L
+          chmod +x ./flakybot
+          ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}

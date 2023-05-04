@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from functools import partial
 from threading import Thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Type
@@ -145,15 +146,14 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
-            return await self._loop.run_in_executor(
-                None, connector, ip_address, context, **kwargs
-            )
+            connect_partial = partial(connector, ip_address, context, **kwargs)
+            return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
             instance.force_refresh()
             raise
 
-    def __enter__(self) -> Any:
+    def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
         return self
 

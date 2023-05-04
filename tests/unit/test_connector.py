@@ -15,10 +15,11 @@
 import asyncio
 from threading import Thread
 
+from mock import patch
 from mocks import FakeAlloyDBClient, FakeCredentials
 import pytest
 
-from google.cloud.alloydb.connector.connector import Connector
+from google.cloud.alloydb.connector import Connector
 
 
 def test_Connector_init(credentials: FakeCredentials) -> None:
@@ -67,12 +68,18 @@ def test_connect(credentials: FakeCredentials) -> None:
     client = FakeAlloyDBClient()
     with Connector(credentials) as connector:
         connector._client = client
-        connection = connector.connect(
-            "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-            "pg8000",
-        )
+        # patch db connection creation
+        with patch("pg8000.dbapi.connect") as mock_connect:
+            mock_connect.return_value = True
+            connection = connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
         # check connection is returned
-        assert connection is NotImplementedError
+        assert connection is True
 
 
 def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
