@@ -197,12 +197,6 @@ with pool.connect() as db_conn:
         print(row)
 ```
 
-### Using the Python Connector with Python Web Frameworks
-
-The Python Connector can be used alongside popular Python web frameworks such
-as Flask, FastAPI, etc, to integrate Cloud SQL databases within your
-web applications.
-
 ## Support policy
 
 ### Major version lifecycle
