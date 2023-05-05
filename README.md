@@ -12,17 +12,15 @@ Using an AlloyDB Connector provides the following benefits:
 
 * **IAM Authorization:** uses IAM permissions to control who/what can connect to
   your AlloyDB instances
+
 * **Improved Security:** uses robust, updated TLS 1.3 encryption and
   identity verification between the client connector and the server-side proxy,
   independent of the database protocol.
+
 * **Convenience:** removes the requirement to use and distribute SSL
   certificates, as well as manage firewalls or source/destination IP addresses.
-* (optionally) **IAM DB Authentication:** provides support for
-  [Cloud SQL’s automatic IAM DB AuthN][iam-db-authn] feature.
 
-[iam-db-authn]: https://cloud.google.com/sql/docs/postgres/authentication
-
-The Cloud SQL Python Connector is a package to be used alongside a database driver.
+The AlloyDB Python Connector is a package to be used alongside a database driver.
 Currently supported drivers are:
 
 * [`pg8000`](https://github.com/tlocke/pg8000)
