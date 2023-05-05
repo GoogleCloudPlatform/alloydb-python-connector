@@ -155,7 +155,7 @@ calls to `connector.close()`.
 Connector as a context manager:
 
 ```python
-from google.cloud.sql.connector import Connector
+from google.cloud.alloydb.connector import Connector
 import sqlalchemy
 
 # build connection
