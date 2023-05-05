@@ -28,8 +28,8 @@ def connect(
 
     Args:
         ip_address (str): IP address of AlloyDB instance to connect to.
-        ctx (ssl.SSLContext): TLS connection configured using AlloyDB
-            instance ssl certificates.
+        ctx (ssl.SSLContext): Context used to create a TLS connection
+            with AlloyDB instance ssl certificates.
 
     Returns:
         pg8000.dbapi.Connection: A pg8000 Connection object for

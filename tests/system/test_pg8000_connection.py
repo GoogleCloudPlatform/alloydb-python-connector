@@ -36,7 +36,6 @@ def init_connection_engine(connector: Connector) -> sqlalchemy.engine.Engine:
     pool = sqlalchemy.create_engine(
         "postgresql+pg8000://",
         creator=getconn,
-        execution_options={"isolation_level": "AUTOCOMMIT"},
     )
     pool.dialect.description_encoding = None
     return pool
@@ -48,5 +47,6 @@ def test_pg8000_time() -> None:
         pool = init_connection_engine(connector)
         with pool.connect() as conn:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+            conn.commit()
             curr_time = time[0]
             assert type(curr_time) == datetime
