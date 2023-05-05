@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 
 import pg8000
@@ -50,5 +51,4 @@ def test_pg8000_time() -> None:
         with pool.connect() as conn:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
             curr_time = time[0]
-            print(curr_time)
-            print(type(curr_time))
+            assert type(curr_time) == datetime
