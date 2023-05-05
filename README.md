@@ -76,7 +76,7 @@ or consult the [google.auth][google-auth] package.
 
 ### How to use this Connector
 
-To connect to Cloud SQL using the connector, inititalize a `Connector`
+To connect to AlloyDB using the connector, inititalize a `Connector`
 object and call it's `connect` method with the proper input parameters.
 
 The `Connector` itself creates database connection objects by calling its `connect` method
@@ -159,7 +159,7 @@ from google.cloud.sql.connector import Connector
 import sqlalchemy
 
 # build connection
-def getconn() -> pymysql.connections.Connection:
+def getconn():
     with Connector() as connector:
         conn = connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
@@ -181,7 +181,7 @@ insert_stmt = sqlalchemy.text(
     "INSERT INTO my_table (id, title) VALUES (:id, :title)",
 )
 
-# interact with Cloud SQL database using connection pool
+# interact with AlloyDB database using connection pool
 with pool.connect() as db_conn:
     # insert into database
     db_conn.execute(insert_stmt, parameters={"id": "book1", "title": "Book One"})
