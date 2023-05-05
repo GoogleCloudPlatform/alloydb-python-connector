@@ -37,7 +37,12 @@ with open("google/cloud/alloydb/connector/version.py") as fp:
 version = version["__version__"]
 
 release_status = "Development Status :: 4 - Beta"
-core_dependencies = []
+core_dependencies = [
+    "aiohttp",
+    "cryptography>=38.0.3",
+    "requests",
+    "google-auth",
+]
 
 setup(
     name=name,
