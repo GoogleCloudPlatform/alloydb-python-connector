@@ -18,6 +18,8 @@ on:
   push:
     branches:
       - main
+  pull_request_target:
+    types: [labeled]
   schedule:
   - cron:  '0 2 * * *'
 
@@ -26,14 +28,38 @@ permissions: read-all
 
 jobs:
   unit:
+    # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)  
+    if: "${{ (github.event.action != 'labeled' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) || github.event.label.name == 'tests: run' }}"
     name: unit tests
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11"]
       fail-fast: false
     steps:
+      - name: Remove PR label
+        if: "${{ github.event.action == 'labeled' && github.event.label.name == 'tests: run' }}"
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                name: 'tests: run',
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number
+              });
+            } catch (e) {
+              console.log('Failed to remove label. Another job may have already removed it!');
+            }
+
       - name: Checkout code
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
@@ -48,8 +74,37 @@ jobs:
       - name: Install nox
         run: pip install nox
 
+      - id: 'auth'
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@e8df18b60c5dd38ba618c121b779307266153fbf # v1.1.0
+        with:
+          workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
+          access_token_lifetime: 600s
+
       - name: Run tests
         run: nox -s unit-${{ matrix.python-version }}
+
+      - name: FlakyBot (Linux)
+        # only run flakybot on periodic (schedule) and continuous (push) events
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Linux' && always() }}
+        run: |
+          curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot -o flakybot -s -L
+          chmod +x ./flakybot
+          ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      - name: FlakyBot (Windows)
+        # only run flakybot on periodic (schedule) and continuous (push) events
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'Windows' && always() }}
+        run: |
+          curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot.exe -o flakybot.exe -s -L
+          ./flakybot.exe --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      - name: FlakyBot (macOS)
+        # only run flakybot on periodic (schedule) and continuous (push) events
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && runner.os == 'macOS' && always() }}
+        run: |
+          curl https://github.com/googleapis/repo-automation-bots/releases/download/flakybot-1.1.0/flakybot-darwin-amd64 -o flakybot -s -L
+          chmod +x ./flakybot
+          ./flakybot --repo ${{github.repository}} --commit_hash ${{github.sha}} --build_url https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
 
   integration:
     # run job on proper workflow event triggers (skip job for pull_request event from forks and only run pull_request_target for "tests: run" label)
