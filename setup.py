@@ -29,7 +29,7 @@ if "google.cloud" in packages:
     namespaces.append("google.cloud")
 
 name = "google-cloud-alloydb-connector"
-description = "A Python library for connecting securely to your AlloyDB instances."
+description = "A Python client library for connecting securely to your Google Cloud AlloyDB instances."
 
 version = {}
 with open("google/cloud/alloydb/connector/version.py") as fp:
