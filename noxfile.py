@@ -54,7 +54,7 @@ def lint(session):
         "google",
         "tests",
     )
-    # session.run("mypy", "google", "tests", "--install-types")
+    session.run("mypy", "google", "--install-types", "--non-interactive")
 
 
 @nox.session

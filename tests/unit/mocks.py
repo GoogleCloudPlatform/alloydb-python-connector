@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -25,8 +25,8 @@ from google.cloud.alloydb.connector.utils import _create_certificate_request
 
 class FakeCredentials:
     def __init__(self) -> None:
-        self.token = None
-        self.expiry = None
+        self.token: Optional[str] = None
+        self.expiry: Optional[datetime] = None
 
     def refresh(self, request: Callable) -> None:
         """Refreshes the access token."""
@@ -41,8 +41,7 @@ class FakeCredentials:
         Credentials with expiry set to None are considered to never
         expire.
         """
-        if not self.expiry:
-            return False
+        return False if not self.expiry else True
 
     @property
     def valid(self) -> bool:
