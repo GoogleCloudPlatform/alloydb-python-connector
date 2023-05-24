@@ -64,7 +64,7 @@ class Connector:
         else:
             self._credentials, _ = default(scopes=scopes)
         self._key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        self._client = None
+        self._client: Optional[AlloyDBClient] = None
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
         """
