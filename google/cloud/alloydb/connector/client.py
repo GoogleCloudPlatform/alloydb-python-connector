@@ -34,7 +34,7 @@ class AlloyDBClient:
     def __init__(
         self,
         alloydb_api_endpoint: str,
-        quota_project: str,
+        quota_project: Optional[str],
         credentials: Credentials,
         client: Optional[aiohttp.ClientSession] = None,
     ) -> None:
@@ -148,10 +148,10 @@ class AlloyDBClient:
 
         # create the certificate signing request
         csr = _create_certificate_request(key)
-        csr = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
+        csr_str = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
 
         data = {
-            "pemCsr": csr,
+            "pemCsr": csr_str,
             "certDuration": "3600s",
         }
 
