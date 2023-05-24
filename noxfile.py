@@ -41,6 +41,7 @@ def lint(session):
         "mypy",
         BLACK_VERSION,
         "types-setuptools",
+        "twine",
     )
     session.run(
         "black",
@@ -55,6 +56,8 @@ def lint(session):
         "tests",
     )
     session.run("mypy", "google", "--install-types", "--non-interactive")
+    session.run("python", "setup.py", "sdist")
+    session.run("twine", "check", "dist/*")
 
 
 @nox.session
