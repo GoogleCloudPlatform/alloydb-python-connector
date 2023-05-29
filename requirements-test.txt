@@ -1,5 +1,5 @@
 mock==5.0.2
-pg8000==1.29.5
+pg8000==1.29.6
 pytest==7.3.1
 pytest-asyncio==0.21.0
 pytest-cov==4.1.0
