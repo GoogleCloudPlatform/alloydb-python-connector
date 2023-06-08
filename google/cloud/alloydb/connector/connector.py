@@ -12,19 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import asyncio
 from functools import partial
 from threading import Thread
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, TYPE_CHECKING
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from google.auth import default
-from google.auth.credentials import Credentials, with_scopes_if_required
+from google.auth.credentials import with_scopes_if_required
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
+
+if TYPE_CHECKING:
+    from google.auth.credentials import Credentials
 
 
 class Connector:

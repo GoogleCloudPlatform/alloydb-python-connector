@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import asyncio
 import logging
-import ssl
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
-from cryptography.hazmat.primitives.asymmetric import rsa
-
-from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh import (
@@ -27,6 +25,11 @@ from google.cloud.alloydb.connector.refresh import (
     _seconds_until_refresh,
     RefreshResult,
 )
+
+if TYPE_CHECKING:
+    import ssl
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from google.cloud.alloydb.connector.client import AlloyDBClient
 
 logger = logging.getLogger(name=__name__)
 
