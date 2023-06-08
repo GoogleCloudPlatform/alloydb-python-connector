@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import asyncio
 from datetime import datetime
 import logging
 import ssl
 from tempfile import TemporaryDirectory
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 from google.cloud.alloydb.connector.utils import _write_to_file
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric import rsa
 
 logger = logging.getLogger(name=__name__)
 

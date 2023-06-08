@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 
-from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
 from google.cloud.alloydb.connector.utils import _create_certificate_request
 from google.cloud.alloydb.connector.version import __version__ as version
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from google.auth.credentials import Credentials
 
 USER_AGENT: str = f"alloydb-python-connector/{version}"
 API_VERSION: str = "v1beta"
