@@ -224,7 +224,7 @@ We test and support at a minimum, every [active version until it's
 end-of-life date][pyver]. Changes in supported Python versions will be
 considered a minor change, and will be listed in the release notes.
 
-[pyver]: https://devguide.python.org/versions/#versions
+[pyver]: https://devguide.python.org/versions/#supported-versions
 
 ### Release cadence
 
