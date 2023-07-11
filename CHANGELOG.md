@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.1...v0.1.2) (2023-07-11)
+
+
+### Dependencies
+
+* Update dependency cryptography to v41.0.2 ([#70](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/70)) ([0ec7da9](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0ec7da987ea1802ad394592feb8bc1f4d41b7c8f))
+* Update dependency google-auth to v2.21.0 ([#65](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/65)) ([3f98082](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3f9808283d9983e0f7f02a814d3360582ae0656e))
+* Update dependency pg8000 to v1.29.8 ([#62](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/62)) ([9ca943d](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9ca943d89125a4bf220a3b54358514500c474f74))
+
 ## [0.1.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.0...v0.1.1) (2023-06-08)
 
 
