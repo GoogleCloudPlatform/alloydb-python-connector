@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.2...v0.1.3) (2023-07-12)
+
+
+### Dependencies
+
+* Update dependency mock to v5.1.0 ([#72](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/72)) ([f89db58](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f89db5804020cfbb2e2df1659fab7872612e5f0a))
+
 ## [0.1.2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.1...v0.1.2) (2023-07-11)
 
 
