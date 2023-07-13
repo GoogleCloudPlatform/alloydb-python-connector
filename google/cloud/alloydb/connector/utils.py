@@ -14,14 +14,14 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple, TYPE_CHECKING
+import asyncio
+from functools import partial
+from typing import List, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
-
-if TYPE_CHECKING:
-    from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def _write_to_file(
@@ -74,3 +74,13 @@ def _create_certificate_request(
         .sign(private_key, hashes.SHA256())
     )
     return csr
+
+
+async def generate_key() -> rsa.RSAPrivateKey:
+    """
+    Helper function to wrap generation of private key in a future.
+    """
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None, partial(rsa.generate_private_key, public_exponent=65537, key_size=2048)
+    )

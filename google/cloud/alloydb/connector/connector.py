@@ -20,13 +20,12 @@ from threading import Thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING
 
-from cryptography.hazmat.primitives.asymmetric import rsa
-
 from google.auth import default
 from google.auth.credentials import with_scopes_if_required
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
+from google.cloud.alloydb.connector.utils import generate_key
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -68,7 +67,7 @@ class Connector:
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
-        self._key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        self._key = self._loop.create_task(generate_key())
         self._client: Optional[AlloyDBClient] = None
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
@@ -191,5 +190,6 @@ class Connector:
         await asyncio.gather(
             *[instance.close() for instance in self._instances.values()]
         )
+        self._key.cancel()
         if self._client:
             await self._client.close()

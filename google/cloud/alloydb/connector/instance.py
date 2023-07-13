@@ -46,12 +46,15 @@ class Instance:
         instance_uri (str): The instance URI of the AlloyDB instance.
             ex. projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>
         client (AlloyDBClient): Client used to make requests to AlloyDB Admin APIs.
-        key (rsa.RSAPrivateKey): Client private key used in refresh operation
+        key (asyncio.Task): Task for client private key used in refresh operation
             to generate client certificate.
     """
 
     def __init__(
-        self, instance_uri: str, client: AlloyDBClient, key: rsa.RSAPrivateKey
+        self,
+        instance_uri: str,
+        client: AlloyDBClient,
+        key: asyncio.Task["rsa.RSAPrivateKey"],
     ) -> None:
         # validate and parse instance_uri
         instance_uri_split = instance_uri.split("/")
@@ -96,7 +99,7 @@ class Instance:
 
         try:
             await self._refresh_rate_limiter.acquire()
-
+            key = await self._key
             # fetch metadata
             metadata_task = asyncio.create_task(
                 self._client._get_metadata(
@@ -112,7 +115,7 @@ class Instance:
                     self._project,
                     self._region,
                     self._cluster,
-                    self._key,
+                    key,
                 )
             )
 
@@ -127,7 +130,7 @@ class Instance:
         finally:
             self._refresh_in_progress.clear()
 
-        return RefreshResult(ip_addr, self._key, certs)
+        return RefreshResult(ip_addr, key, certs)
 
     def _schedule_refresh(self, delay: int) -> asyncio.Task:
         """
