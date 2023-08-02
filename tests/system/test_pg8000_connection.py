@@ -49,4 +49,4 @@ def test_pg8000_time() -> None:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
             conn.commit()
             curr_time = time[0]
-            assert type(curr_time) == datetime
+            assert type(curr_time) is datetime
