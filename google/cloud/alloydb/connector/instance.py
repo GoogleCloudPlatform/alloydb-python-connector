@@ -187,7 +187,7 @@ class Instance:
 
         return refresh_result
 
-    def force_refresh(self) -> None:
+    async def force_refresh(self) -> None:
         """
         Schedules a new refresh operation immediately to be used
         for future connection attempts.
@@ -196,8 +196,9 @@ class Instance:
         if not self._refresh_in_progress.is_set():
             self._next.cancel()
             self._next = self._schedule_refresh(0)
-        # block all sequential connection attempts on the next refresh result
-        self._current = self._next
+        # block all sequential connection attempts on the next refresh result if current is invalid
+        if not await _is_valid(self._current):
+            self._current = self._next
 
     async def connection_info(self) -> Tuple[str, ssl.SSLContext]:
         """
