@@ -155,7 +155,7 @@ class Connector:
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
-            instance.force_refresh()
+            await instance.force_refresh()
             raise
 
     def __enter__(self) -> "Connector":
