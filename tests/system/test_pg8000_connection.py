@@ -13,10 +13,10 @@
 # limitations under the License.
 
 
-# [START alloydb_sqlalchemy_connect_connector]
 from datetime import datetime
 import os
 
+# [START alloydb_sqlalchemy_connect_connector]
 import pg8000
 import sqlalchemy
 
