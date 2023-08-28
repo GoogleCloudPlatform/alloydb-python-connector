@@ -15,38 +15,85 @@
 from datetime import datetime
 import os
 
+# [START alloydb_sqlalchemy_connect_connector]
 import pg8000
 import sqlalchemy
 
 from google.cloud.alloydb.connector import Connector
 
 
-def init_connection_engine(connector: Connector) -> sqlalchemy.engine.Engine:
+def create_sqlalchemy_engine(
+    inst_uri: str,
+    user: str,
+    password: str,
+    db: str,
+) -> (sqlalchemy.engine.Engine, Connector):
+    """Creates a connection pool for an AlloyDB instance and returns the pool
+    and the connector. Callers are responsible for closing the pool and the
+    connector.
+
+    A sample invocation looks like:
+
+        engine, connector = create_sqlalchemy_engine(
+                inst_uri,
+                user,
+                password,
+                db,
+        )
+        with engine.connect() as conn:
+            time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+            conn.commit()
+            curr_time = time[0]
+            # do something with query result
+            connector.close()
+
+    Args:
+        instance_uri (str):
+            The instance URI specifies the instance relative to the project,
+            region, and cluster. For example:
+            "projects/my-project/locations/us-central1/clusters/my-cluster/instances/my-instance"
+        user (str):
+            The database user name, e.g., postgres
+        password (str):
+            The database user's password, e.g., secret-password
+        db_name (str):
+            The name of the database, e.g., mydb
+    """
+    connector = Connector()
+
     def getconn() -> pg8000.dbapi.Connection:
         conn: pg8000.dbapi.Connection = connector.connect(
-            os.environ["ALLOYDB_INSTANCE_URI"],
+            inst_uri,
             "pg8000",
-            user=os.environ["ALLOYDB_USER"],
-            password=os.environ["ALLOYDB_PASS"],
-            db=os.environ["ALLOYDB_DB"],
+            user=user,
+            password=password,
+            db=db,
         )
         return conn
 
     # create SQLAlchemy connection pool
-    pool = sqlalchemy.create_engine(
+    engine = sqlalchemy.create_engine(
         "postgresql+pg8000://",
         creator=getconn,
     )
-    pool.dialect.description_encoding = None
-    return pool
+    engine.dialect.description_encoding = None
+    return engine, connector
+
+
+# [END alloydb_sqlalchemy_connect_connector]
 
 
 def test_pg8000_time() -> None:
     """Basic test to get time from database."""
-    with Connector() as connector:
-        pool = init_connection_engine(connector)
-        with pool.connect() as conn:
-            time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
-            conn.commit()
-            curr_time = time[0]
-            assert type(curr_time) is datetime
+    inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
+    user = os.environ["ALLOYDB_USER"]
+    password = os.environ["ALLOYDB_PASS"]
+    db = os.environ["ALLOYDB_DB"]
+
+    engine, connector = create_sqlalchemy_engine(inst_uri, user, password, db)
+    with engine.connect() as conn:
+        time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        conn.commit()
+        curr_time = time[0]
+        assert type(curr_time) is datetime
+    connector.close()
