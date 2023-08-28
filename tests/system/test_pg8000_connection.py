@@ -97,4 +97,4 @@ def test_pg8000_time() -> None:
         conn.commit()
         curr_time = time[0]
         assert type(curr_time) is datetime
-        connector.close()
+    connector.close()
