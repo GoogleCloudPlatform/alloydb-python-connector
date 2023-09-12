@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.3...v0.1.4) (2023-09-08)
+
+
+### Bug Fixes
+
+* re-use existing connections on force refresh ([#98](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/98)) ([888abd4](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/888abd49202950a54a100e41f4d22821445b8798))
+
+
 ## [0.1.3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.2...v0.1.3) (2023-08-08)
 
 
