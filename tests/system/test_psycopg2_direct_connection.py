@@ -24,9 +24,9 @@ import google.auth
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
 
-# initialize Google Auth creds with login scope
+# initialize Google Auth creds
 creds, _ = google.auth.default(
-    scopes=["https://www.googleapis.com/auth/sqlservice.login"]
+    scopes=["https://www.googleapis.com/auth/cloud-platform"]
 )
 
 
