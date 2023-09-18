@@ -16,6 +16,7 @@
 from datetime import datetime
 import os
 
+# fmt: off
 # [START alloydb_psycopg2_connect_iam_authn_direct]
 import sqlalchemy
 from sqlalchemy import event
@@ -29,7 +30,6 @@ creds, _ = google.auth.default(
     scopes=["https://www.googleapis.com/auth/cloud-platform"]
 )
 
-
 def get_authentication_token(credentials: Credentials) -> str:
     """Get OAuth2 access token to be used for IAM database authentication"""
     # refresh credentials if expired
@@ -38,8 +38,8 @@ def get_authentication_token(credentials: Credentials) -> str:
         credentials.refresh(request)
     return credentials.token
 
-
 # [END alloydb_psycopg2_connect_iam_authn_direct]
+# fmt: on
 
 
 def create_sqlalchemy_engine(
@@ -79,10 +79,10 @@ def create_sqlalchemy_engine(
 
     engine = sqlalchemy.create_engine(
         # Equivalent URL:
-        # postgresql+psycopg2://<user>:empty@<host>:<port>/<db_name>
+        # postgresql+psycopg2://<user>:empty@<host>:5432/<db_name>
         sqlalchemy.engine.url.URL.create(
             drivername="postgresql+psycopg2",
-            username=user,  # IAM db user, service-account@project-id.iam
+            username=user,  # IAM db user, e.g. service-account@project-id.iam
             password="empty",  # placeholder to be replaced with OAuth2 token
             host=ip_address,  # AlloyDB instance IP address
             port=5432,
