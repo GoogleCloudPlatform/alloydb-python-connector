@@ -81,7 +81,7 @@ def create_sqlalchemy_engine(
         sqlalchemy.engine.url.URL.create(
             drivername="postgresql+psycopg2",
             username=user,  # IAM db user, service-account@project-id.iam
-            password="empty",  # placeholder to be replaced with OAuth2 token
+            password="",  # placeholder to be replaced with OAuth2 token
             host=ip_address,  # AlloyDB instance IP address
             port=5432,
             database=db_name,  # "my-database-name"
@@ -96,7 +96,7 @@ def create_sqlalchemy_engine(
 def test_psycopg2_time() -> None:
     """Basic test to get time from database."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance
-    user = os.environ["ALLOYDB_USER"]
+    user = os.environ["ALLOYDB_IAM_USER"]
     db = os.environ["ALLOYDB_DB"]
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
