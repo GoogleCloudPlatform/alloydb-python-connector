@@ -83,7 +83,7 @@ def create_sqlalchemy_engine(
         sqlalchemy.engine.url.URL.create(
             drivername="postgresql+psycopg2",
             username=user,  # IAM db user, e.g. service-account@project-id.iam
-            password="empty",  # placeholder to be replaced with OAuth2 token
+            password=os.environ["ALLOYDB_PASS"],  # placeholder to be replaced with OAuth2 token
             host=ip_address,  # AlloyDB instance IP address
             port=5432,
             database=db_name,  # "my-database-name"
