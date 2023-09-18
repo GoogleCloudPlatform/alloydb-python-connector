@@ -83,7 +83,7 @@ def create_sqlalchemy_engine(
         sqlalchemy.engine.url.URL.create(
             drivername="postgresql+psycopg2",
             username=user,  # IAM db user, e.g. service-account@project-id.iam
-            password=os.environ["ALLOYDB_PASS"],  # placeholder to be replaced with OAuth2 token
+            password="",  # placeholder to be replaced with OAuth2 token
             host=ip_address,  # AlloyDB instance IP address
             port=5432,
             database=db_name,  # "my-database-name"
@@ -105,7 +105,7 @@ def test_psycopg2_time() -> None:
     # fmt: off
     # [START alloydb_psycopg2_connect_iam_authn_direct]
     # set 'do_connect' event listener to replace password with OAuth2 token
-    event.listens_for(engine, "do_connect")
+    @event.listens_for(engine, "do_connect")
     def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
         cparams["password"] = os.environ["ALLOYDB_PASS"]
 
