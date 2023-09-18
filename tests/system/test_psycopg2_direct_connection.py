@@ -46,14 +46,14 @@ def create_sqlalchemy_engine(
                 user,
                 db,
         )
+
         with engine.connect() as conn:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
             conn.commit()
-            # do something with query result
 
     Args:
         ip_address (str):
-            The IP address of an AlloyDB instance, e.g., 10.20.0.1
+            The IP address of an AlloyDB instance, e.g., 10.0.0.1
         user (str):
             The formatted IAM database username.
             e.g., my-email@test.com, service-account@project-id.iam
@@ -80,7 +80,7 @@ def create_sqlalchemy_engine(
         sqlalchemy.engine.url.URL.create(
             drivername="postgresql+psycopg2",
             username=user,  # IAM db user, service-account@project-id.iam
-            password="empty",  # placeholder to be replaced with OAuth2 token
+            password=os.environ["ALLOYDB_PASS"],  # placeholder to be replaced with OAuth2 token
             host=ip_address,  # AlloyDB instance IP address
             port=5432,
             database=db_name,  # "my-database-name"
