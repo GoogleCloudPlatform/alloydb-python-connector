@@ -98,7 +98,7 @@ def create_sqlalchemy_engine(
 def test_psycopg2_time() -> None:
     """Basic test to get time from database."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance
-    user = os.environ["ALLOYDB_IAM_USER"]
+    user = os.environ["ALLOYDB_USER"]
     db = os.environ["ALLOYDB_DB"]
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
@@ -107,7 +107,7 @@ def test_psycopg2_time() -> None:
     # set 'do_connect' event listener to replace password with OAuth2 token
     event.listens_for(engine, "do_connect")
     def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
-        cparams["password"] = get_authentication_token(creds)
+        cparams["password"] = os.environ["ALLOYDB_PASS"]
 
     # use connection from connection pool to query Cloud SQL database
     with engine.connect() as conn:
