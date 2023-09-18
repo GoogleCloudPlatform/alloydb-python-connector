@@ -32,7 +32,7 @@ def create_sqlalchemy_engine(
     ip_address: str,
     user: str,
     db_name: str,
-) -> sqlalchemy.engine.Engine:
+) -> sqlalchemy.ext.asyncio.engine.AsyncEngine :
     """Creates a SQLAlchemy connection pool for an AlloyDB instance configured
     using asyncpg.
 
