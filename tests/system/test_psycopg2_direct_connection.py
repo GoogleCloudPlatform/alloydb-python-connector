@@ -36,7 +36,7 @@ def get_authentication_token(credentials: Credentials) -> str:
     if not credentials.valid:
         request = Request()
         credentials.refresh(request)
-    return credentials.token
+    return str(credentials.token)
 
 # [END alloydb_psycopg2_connect_iam_authn_direct]
 # fmt: on
