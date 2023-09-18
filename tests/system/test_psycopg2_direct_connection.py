@@ -16,7 +16,6 @@
 from datetime import datetime
 import os
 
-# fmt: off
 # [START alloydb_psycopg2_connect_iam_authn_direct]
 import sqlalchemy
 from sqlalchemy import event
@@ -25,21 +24,7 @@ import google.auth
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
 
-# initialize Google Auth creds
-creds, _ = google.auth.default(
-    scopes=["https://www.googleapis.com/auth/cloud-platform"]
-)
-
-def get_authentication_token(credentials: Credentials) -> str:
-    """Get OAuth2 access token to be used for IAM database authentication"""
-    # refresh credentials if expired
-    if not credentials.valid:
-        request = Request()
-        credentials.refresh(request)
-    return credentials.token
-
 # [END alloydb_psycopg2_connect_iam_authn_direct]
-# fmt: on
 
 
 def create_sqlalchemy_engine(
@@ -76,6 +61,18 @@ def create_sqlalchemy_engine(
             The name of the database, e.g., mydb
     """
     # [START alloydb_psycopg2_connect_iam_authn_direct]
+    # initialize Google Auth creds
+    creds, _ = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+
+    def get_authentication_token(credentials: Credentials) -> str:
+        """Get OAuth2 access token to be used for IAM database authentication"""
+        # refresh credentials if expired
+        if not credentials.valid:
+            request = Request()
+            credentials.refresh(request)
+        return credentials.token
 
     engine = sqlalchemy.create_engine(
         # Equivalent URL:
@@ -91,6 +88,11 @@ def create_sqlalchemy_engine(
         connect_args={"sslmode": "require"},
     )
 
+    # set 'do_connect' event listener to replace password with OAuth2 token
+    @event.listens_for(engine, "do_connect")
+    def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
+        cparams["password"] = get_authentication_token(creds)
+
     # [END alloydb_psycopg2_connect_iam_authn_direct]
     return engine
 
@@ -102,19 +104,12 @@ def test_psycopg2_time() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
-    # fmt: off
     # [START alloydb_psycopg2_connect_iam_authn_direct]
-    # set 'do_connect' event listener to replace password with OAuth2 token
-    @event.listens_for(engine, "do_connect")
-    def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
-        cparams["password"] = get_authentication_token(creds)
-
     # use connection from connection pool to query Cloud SQL database
     with engine.connect() as conn:
         time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
         conn.commit()
         print("Current time is ", time[0])
         # [END alloydb_psycopg2_connect_iam_authn_direct]
-        # fmt: on
         curr_time = time[0]
         assert type(curr_time) is datetime
