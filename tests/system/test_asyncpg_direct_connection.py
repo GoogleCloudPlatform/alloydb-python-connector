@@ -32,7 +32,7 @@ def create_sqlalchemy_engine(
     ip_address: str,
     user: str,
     db_name: str,
-) -> sqlalchemy.ext.asyncio.engine.AsyncEngine :
+) -> sqlalchemy.ext.asyncio.engine.AsyncEngine:
     """Creates a SQLAlchemy connection pool for an AlloyDB instance configured
     using asyncpg.
 
@@ -98,7 +98,7 @@ def create_sqlalchemy_engine(
     return engine
 
 
-def test_asyncpg_time() -> None:
+async def test_asyncpg_time() -> None:
     """Basic test to get time from database."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance
     user = os.environ["ALLOYDB_IAM_USER"]
@@ -107,10 +107,12 @@ def test_asyncpg_time() -> None:
     engine = create_sqlalchemy_engine(ip_address, user, db)
     # [START alloydb_asyncpg_connect_iam_authn_direct]
     # use connection from connection pool to query Cloud SQL database
-    with engine.connect() as conn:
-        time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
-        conn.commit()
+    async with engine.connect() as conn:
+        result = await conn.execute(sqlalchemy.text("SELECT NOW()"))
+        time = result.fetchone()
         print("Current time is ", time[0])
         # [END alloydb_asyncpg_connect_iam_authn_direct]
         curr_time = time[0]
         assert type(curr_time) is datetime
+    # cleanup AsyncEngine
+    await engine.dispose()
