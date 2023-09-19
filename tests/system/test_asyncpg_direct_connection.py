@@ -139,6 +139,6 @@ async def test_native_asyncpg_time() -> None:
     ) as pool:
         # acquire connection from native asyncpg connection pool
         async with pool.acquire() as conn:
-            time = await conn.execute("SELECT NOW")
+            time = await conn.fetch("SELECT NOW()")
             print(time)
             assert type(time[0]) is datetime
