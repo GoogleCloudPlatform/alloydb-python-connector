@@ -16,13 +16,18 @@
 from datetime import datetime
 import os
 
+# fmt: off
+# [START alloydb_native_asyncpg_connect_iam_authn_direct]
 import asyncpg
 
-# [START alloydb_asyncpg_connect_iam_authn_direct]
+# [END alloydb_native_asyncpg_connect_iam_authn_direct]
+
+# [START alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import event
 
+# [START alloydb_native_asyncpg_connect_iam_authn_direct]
 import google.auth
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -32,7 +37,6 @@ creds, _ = google.auth.default(
     scopes=["https://www.googleapis.com/auth/cloud-platform"]
 )
 
-
 def get_authentication_token(credentials: Credentials) -> str:
     """Get OAuth2 access token to be used for IAM database authentication"""
     # refresh credentials if expired
@@ -41,8 +45,9 @@ def get_authentication_token(credentials: Credentials) -> str:
         credentials.refresh(request)
     return credentials.token
 
-
-# [END alloydb_asyncpg_connect_iam_authn_direct]
+# [END alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
+# [END alloydb_native_asyncpg_connect_iam_authn_direct]
+# fmt: on
 
 
 def create_sqlalchemy_engine(
@@ -78,7 +83,7 @@ def create_sqlalchemy_engine(
         db_name (str):
             The name of the database, e.g., mydb
     """
-    # [START alloydb_asyncpg_connect_iam_authn_direct]
+    # [START alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
     engine = create_async_engine(
         # Equivalent URL:
         # postgresql+asyncpg://<user>:empty@<host>:5432/<db_name>
@@ -110,13 +115,13 @@ async def test_sqlalchemy_asyncpg_time() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
-    # [START alloydb_asyncpg_connect_iam_authn_direct]
+    # [START alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
     # use connection from connection pool to query AlloyDB database
     async with engine.connect() as conn:
         result = await conn.execute(sqlalchemy.text("SELECT NOW()"))
         time = result.fetchone()
         print("Current time is ", time[0])
-        # [END alloydb_asyncpg_connect_iam_authn_direct]
+        # [END alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
         curr_time = time[0]
         assert type(curr_time) is datetime
     # cleanup AsyncEngine
@@ -129,6 +134,7 @@ async def test_native_asyncpg_time() -> None:
     user = os.environ["ALLOYDB_IAM_USER"]
     db = os.environ["ALLOYDB_DB"]
 
+    # [START alloydb_native_asyncpg_connect_iam_authn_direct]
     async with asyncpg.create_pool(
         user=user,  # IAM db user, e.g. service-account@project-id.iam
         password=get_authentication_token(creds),  # set OAuth2 token as password
@@ -140,5 +146,6 @@ async def test_native_asyncpg_time() -> None:
         # acquire connection from native asyncpg connection pool
         async with pool.acquire() as conn:
             time = await conn.fetchrow("SELECT NOW()")
-            print(time)
+            print("Current time is ", time[0])
+            # [END alloydb_native_asyncpg_connect_iam_authn_direct]
             assert type(time[0]) is datetime
