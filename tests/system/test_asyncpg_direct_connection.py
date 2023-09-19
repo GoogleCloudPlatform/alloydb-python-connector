@@ -90,7 +90,8 @@ def create_sqlalchemy_engine(
     )
 
     # set 'do_connect' event listener to replace password with OAuth2 token
-    @event.listens_for(engine, "do_connect")
+    # must use engine.sync_engine as async events are not implemented
+    @event.listens_for(engine.sync_engine, "do_connect")
     def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
         cparams["password"] = get_authentication_token(creds)
 
