@@ -135,6 +135,7 @@ async def test_native_asyncpg_time() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     # [START alloydb_native_asyncpg_connect_iam_authn_direct]
+    # ... inside async context
     async with asyncpg.create_pool(
         user=user,  # IAM db user, e.g. service-account@project-id.iam
         password=get_authentication_token(creds),  # set OAuth2 token as password
