@@ -107,7 +107,7 @@ async def test_asyncpg_time() -> None:
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
     # [START alloydb_asyncpg_connect_iam_authn_direct]
-    # use connection from connection pool to query Cloud SQL database
+    # use connection from connection pool to query AlloyDB database
     async with engine.connect() as conn:
         result = await conn.execute(sqlalchemy.text("SELECT NOW()"))
         time = result.fetchone()

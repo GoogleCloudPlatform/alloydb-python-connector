@@ -105,7 +105,7 @@ def test_psycopg2_time() -> None:
 
     engine = create_sqlalchemy_engine(ip_address, user, db)
     # [START alloydb_psycopg2_connect_iam_authn_direct]
-    # use connection from connection pool to query Cloud SQL database
+    # use connection from connection pool to query AlloyDB database
     with engine.connect() as conn:
         time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
         conn.commit()
