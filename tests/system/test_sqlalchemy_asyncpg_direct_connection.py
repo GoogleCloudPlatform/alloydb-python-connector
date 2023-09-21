@@ -98,7 +98,7 @@ def create_sqlalchemy_engine(
     def auto_iam_authentication(dialect, conn_rec, cargs, cparams) -> None:
         cparams["password"] = get_authentication_token(credentials)
 
-    # [END alloydb_asyncpg_connect_iam_authn_direct]
+    # [END alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
     return engine
 
 
