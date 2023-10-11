@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.5](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.4...v0.1.5) (2023-10-09)
+
+
+### Dependencies
+
+* Update actions/setup-python action to v4.7.1 ([#128](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/128)) ([9143712](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9143712cb5150b78f00b071246446d228786bd3e))
+* Update dependencies for github ([#135](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/135)) ([25ce604](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/25ce604ff5669d308b2198ccce001dbcdeb79d2a))
+* Update dependency aiohttp to v3.8.6 ([#136](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/136)) ([a1c0c23](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/a1c0c235cb60364d3273afceef0d7e9d103bc3a0))
+* Update dependency cryptography to v41.0.4 ([#123](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/123)) ([58da93b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/58da93bb7c8b66cfbd47c101e77c5d3e196838e3))
+* Update dependency pg8000 to v1.30.2 ([#118](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/118)) ([8a27d53](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8a27d53f09d61a1de67f5053e2375e17759799a9))
+* Update dependency psycopg2-binary to v2.9.8 ([#126](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/126)) ([f11afa7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f11afa7c18a642083710239b170ae9c5badf2c13))
+* Update dependency psycopg2-binary to v2.9.9 ([#130](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/130)) ([1a40b66](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1a40b6604284ec4ed40ac9b2f1d7e0eab843d901))
+* Update dependency SQLAlchemy to v2.0.21 ([#122](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/122)) ([feab579](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/feab5793469617afbf8ac2a955f7249aa2a05dd5))
+* Update github/codeql-action action to v2.21.6 ([#111](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/111)) ([f51baa2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f51baa28fec9391a5d2bd6959e9d8b4fe151f7f0))
+* Update github/codeql-action action to v2.21.8 ([#116](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/116)) ([3241078](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3241078bc0cf1089913d969b71bc800e230c4a20))
+* Update github/codeql-action action to v2.21.9 ([#125](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/125)) ([db941f9](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/db941f9dcb4c89f900872fa2312011b7aecb1b4a))
+
+
+### Documentation
+
+* add direct asyncpg IAM authentication tests ([#121](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/121)) ([70701c6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/70701c630bfcce44d0b3455b836275b3c5dd855d))
+* add direct psycopg2 IAM authentication test ([#119](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/119)) ([b15a3ba](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/b15a3ba720c67a752e83c7f3ada47a974fb2e95b))
+
 ## [0.1.4](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.3...v0.1.4) (2023-09-08)
 
 
