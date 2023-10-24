@@ -16,16 +16,14 @@ from __future__ import annotations
 
 from typing import List, Tuple, TYPE_CHECKING
 
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import serialization
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def _write_to_file(
-    dir_path: str, cert_chain: List[str], client_cert: str, key: rsa.RSAPrivateKey
+    dir_path: str, cert_chain: List[str], key: rsa.RSAPrivateKey
 ) -> Tuple[str, str, str]:
     """
     Helper function to write the server_ca, client certificate and
@@ -41,13 +39,10 @@ def _write_to_file(
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    # add client cert to beginning of cert chain
-    full_chain = [client_cert] + cert_chain
-
     with open(ca_filename, "w+") as ca_out:
         ca_out.write("".join(cert_chain))
     with open(cert_chain_filename, "w+") as chain_out:
-        chain_out.write("".join(full_chain))
+        chain_out.write("".join(cert_chain))
     with open(key_filename, "wb") as priv_out:
         priv_out.write(key_bytes)
 

@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 import aiohttp
 from cryptography.hazmat.primitives import serialization
@@ -117,7 +117,7 @@ class AlloyDBClient:
         region: str,
         cluster: str,
         key: rsa.RSAPrivateKey,
-    ) -> Tuple[str, List[str]]:
+    ) -> List[str]:
         """
         Fetch a client certificate for the given AlloyDB cluster.
 
@@ -166,7 +166,7 @@ class AlloyDBClient:
         )
         resp_dict = await resp.json()
 
-        return (resp_dict["pemCertificate"], resp_dict["pemCertificateChain"])
+        return resp_dict["pemCertificateChain"]
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""
