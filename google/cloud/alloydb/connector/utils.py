@@ -14,12 +14,10 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple
 
 from cryptography.hazmat.primitives import serialization
-
-if TYPE_CHECKING:
-    from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def _write_to_file(
