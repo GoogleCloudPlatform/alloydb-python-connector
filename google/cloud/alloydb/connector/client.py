@@ -150,12 +150,15 @@ class AlloyDBClient:
 
         url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}:generateClientCertificate"
 
-        # create the certificate signing request
-        csr = _create_certificate_request(key)
-        csr_str = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
+        # get client public key
+        pub_key = key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        pub_key_str = pub_key.decode("UTF-8")
 
         data = {
-            "pemCsr": csr_str,
+            "publicKey": pub_key_str,
             "certDuration": "3600s",
         }
 

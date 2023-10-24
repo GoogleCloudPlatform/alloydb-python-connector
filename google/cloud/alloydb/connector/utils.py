@@ -54,23 +54,14 @@ def _write_to_file(
     return (ca_filename, cert_chain_filename, key_filename)
 
 
-def _create_certificate_request(
-    private_key: rsa.RSAPrivateKey,
-) -> x509.CertificateSigningRequest:
-    csr = (
-        x509.CertificateSigningRequestBuilder()
-        .subject_name(
-            x509.Name(
-                [
-                    x509.NameAttribute(NameOID.COMMON_NAME, "alloydb-connector"),
-                    x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-                    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "CA"),
-                    x509.NameAttribute(NameOID.LOCALITY_NAME, "Sunnyvale"),
-                    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Google LLC"),
-                    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Cloud"),
-                ]
-            )
+async def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
+    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pub_key = (
+        priv_key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-        .sign(private_key, hashes.SHA256())
+        .decode("UTF-8")
     )
-    return csr
+    return (priv_key, pub_key)
