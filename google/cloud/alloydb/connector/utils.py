@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 def _write_to_file(
-    dir_path: str, cert_chain: List[str], key: rsa.RSAPrivateKey
+    dir_path: str, ca_cert: str, cert_chain: List[str], key: rsa.RSAPrivateKey
 ) -> Tuple[str, str, str]:
     """
     Helper function to write the server_ca, client certificate and
@@ -40,7 +40,7 @@ def _write_to_file(
     )
 
     with open(ca_filename, "w+") as ca_out:
-        ca_out.write("".join(cert_chain))
+        ca_out.write(ca_cert)
     with open(cert_chain_filename, "w+") as chain_out:
         chain_out.write("".join(cert_chain))
     with open(key_filename, "wb") as priv_out:
@@ -49,7 +49,7 @@ def _write_to_file(
     return (ca_filename, cert_chain_filename, key_filename)
 
 
-async def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
+def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
     priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     pub_key = (
         priv_key.public_key()
