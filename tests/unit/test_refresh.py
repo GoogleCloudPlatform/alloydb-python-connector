@@ -24,7 +24,6 @@ from google.cloud.alloydb.connector.refresh import (
     _seconds_until_refresh,
     RefreshResult,
 )
-from google.cloud.alloydb.connector.utils import _create_certificate_request
 
 
 def test_seconds_until_refresh_over_1_hour() -> None:
@@ -61,14 +60,13 @@ def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
     """
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     fake_instance.generate_certs()
-    root_cert, intermediate_cert, _ = fake_instance.get_pem_certs()
-    csr = _create_certificate_request(key)
+    root_cert, intermediate_cert, ca_cert = fake_instance.get_pem_certs()
     # build client cert
     client_cert = (
         x509.CertificateBuilder()
-        .subject_name(csr.subject)
+        .subject_name(fake_instance.intermediate_cert.subject)
         .issuer_name(fake_instance.intermediate_cert.issuer)
-        .public_key(csr.public_key())
+        .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now())
         .not_valid_after(datetime.now() + timedelta(minutes=10))
@@ -78,7 +76,7 @@ def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
     client_cert = client_cert.public_bytes(encoding=serialization.Encoding.PEM).decode(
         "UTF-8"
     )
-    certs = (client_cert, [intermediate_cert, root_cert])
+    certs = (ca_cert, [client_cert, intermediate_cert, root_cert])
     refresh = RefreshResult(fake_instance.ip_address, key, certs)
     # verify TLS requirements
     assert refresh.context.minimum_version == ssl.TLSVersion.TLSv1_3

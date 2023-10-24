@@ -16,11 +16,11 @@ import json
 from typing import Any
 
 from aiohttp import web
-from cryptography.hazmat.primitives.asymmetric import rsa
 from mocks import FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
+from google.cloud.alloydb.connector.utils import generate_keys
 from google.cloud.alloydb.connector.version import __version__ as version
 
 
@@ -34,8 +34,9 @@ async def connectionInfo(request: Any) -> web.Response:
 
 async def generateClientCertificate(request: Any) -> web.Response:
     response = {
-        "pemCertificate": "This is the client cert",
+        "caCert": "This is the CA cert",
         "pemCertificateChain": [
+            "This is the client cert",
             "This is the intermediate cert",
             "This is the root cert",
         ],
@@ -76,14 +77,15 @@ async def test__get_client_certificate(
     Test _get_client_certificate returns successfully.
     """
     test_client = AlloyDBClient("", "", credentials, client)
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    keys = generate_keys()
     certs = await test_client._get_client_certificate(
-        "test-project", "test-region", "test-cluster", key
+        "test-project", "test-region", "test-cluster", keys[1]
     )
-    client_cert, cert_chain = certs
-    assert client_cert == "This is the client cert"
-    assert cert_chain[0] == "This is the intermediate cert"
-    assert cert_chain[1] == "This is the root cert"
+    ca_cert, cert_chain = certs
+    assert ca_cert == "This is the CA cert"
+    assert cert_chain[0] == "This is the client cert"
+    assert cert_chain[1] == "This is the intermediate cert"
+    assert cert_chain[2] == "This is the root cert"
 
 
 @pytest.mark.asyncio
