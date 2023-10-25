@@ -78,9 +78,6 @@ class RefreshResult:
         self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, List[str]]
     ) -> None:
         self.instance_ip = instance_ip
-        self._key = key
-        self._certs = certs
-
         # create TLS context
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         # update ssl.PROTOCOL_TLS_CLIENT default
@@ -89,10 +86,10 @@ class RefreshResult:
         self.context.minimum_version = ssl.TLSVersion.TLSv1_3
         # add request_ssl attribute to ssl.SSLContext, required for pg8000 driver
         self.context.request_ssl = False  # type: ignore
-
-        client_cert, cert_chain = self._certs
+        # unpack certs
+        ca_cert, cert_chain = certs
         # get expiration from client certificate
-        cert_obj = x509.load_pem_x509_certificate(client_cert.encode("UTF-8"))
+        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
         self.expiration = cert_obj.not_valid_after
 
         # tmpdir and its contents are automatically deleted after the CA cert
@@ -100,7 +97,7 @@ class RefreshResult:
         # need to be written to files in order to be loaded by the SSLContext
         with TemporaryDirectory() as tmpdir:
             ca_filename, cert_chain_filename, key_filename = _write_to_file(
-                tmpdir, cert_chain, client_cert, self._key
+                tmpdir, ca_cert, cert_chain, key
             )
             self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
             self.context.load_verify_locations(cafile=ca_filename)

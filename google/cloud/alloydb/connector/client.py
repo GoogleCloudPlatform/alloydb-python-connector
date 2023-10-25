@@ -18,14 +18,11 @@ import logging
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
-from cryptography.hazmat.primitives import serialization
 
 from google.auth.transport.requests import Request
-from google.cloud.alloydb.connector.utils import _create_certificate_request
 from google.cloud.alloydb.connector.version import __version__ as version
 
 if TYPE_CHECKING:
-    from cryptography.hazmat.primitives.asymmetric import rsa
     from google.auth.credentials import Credentials
 
 USER_AGENT: str = f"alloydb-python-connector/{version}"
@@ -117,7 +114,7 @@ class AlloyDBClient:
         project: str,
         region: str,
         cluster: str,
-        key: rsa.RSAPrivateKey,
+        pub_key: str,
     ) -> Tuple[str, List[str]]:
         """
         Fetch a client certificate for the given AlloyDB cluster.
@@ -131,11 +128,10 @@ class AlloyDBClient:
                 resides in.
             region (str): Google Cloud region of the AlloyDB instance.
             cluster (str): The name of the AlloyDB cluster.
-            key (rsa.RSAPrivateKey): Client private key used in refresh operation
-                to generate client certificate.
+            pub_key (str): PEM-encoded client public key.
 
         Returns:
-            Tuple[str, list[str]]: Tuple containing the client certificate
+            Tuple[str, list[str]]: Tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
         logger.debug(f"['{project}/{region}/{cluster}']: Requesting client certificate")
@@ -150,12 +146,8 @@ class AlloyDBClient:
 
         url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}:generateClientCertificate"
 
-        # create the certificate signing request
-        csr = _create_certificate_request(key)
-        csr_str = csr.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
-
         data = {
-            "pemCsr": csr_str,
+            "publicKey": pub_key,
             "certDuration": "3600s",
         }
 
@@ -164,7 +156,7 @@ class AlloyDBClient:
         )
         resp_dict = await resp.json()
 
-        return (resp_dict["pemCertificate"], resp_dict["pemCertificateChain"])
+        return (resp_dict["caCert"], resp_dict["pemCertificateChain"])
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""

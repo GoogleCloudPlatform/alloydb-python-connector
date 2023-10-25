@@ -20,8 +20,6 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
-from google.cloud.alloydb.connector.utils import _create_certificate_request
-
 
 class FakeCredentials:
     def __init__(self) -> None:
@@ -164,17 +162,20 @@ class FakeAlloyDBClient:
         project: str,
         region: str,
         cluster: str,
-        key: rsa.RSAPrivateKey,
+        pub_key: str,
     ) -> Tuple[str, List[str]]:
         self.instance.generate_certs()
-        root_cert, intermediate_cert, _ = self.instance.get_pem_certs()
-        csr = _create_certificate_request(key)
+        root_cert, intermediate_cert, ca_cert = self.instance.get_pem_certs()
+        # encode public key to bytes
+        pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
+            pub_key.encode("UTF-8"),
+        )
         # build client cert
         client_cert = (
             x509.CertificateBuilder()
-            .subject_name(csr.subject)
+            .subject_name(self.instance.intermediate_cert.subject)
             .issuer_name(self.instance.intermediate_cert.issuer)
-            .public_key(csr.public_key())
+            .public_key(pub_key_bytes)
             .serial_number(x509.random_serial_number())
             .not_valid_before(self.instance.cert_before)
             .not_valid_after(self.instance.cert_expiry)
@@ -184,7 +185,7 @@ class FakeAlloyDBClient:
         client_cert = client_cert.public_bytes(
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
-        return (client_cert, [intermediate_cert, root_cert])
+        return (ca_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
         pass
