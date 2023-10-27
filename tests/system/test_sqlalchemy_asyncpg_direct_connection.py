@@ -48,7 +48,7 @@ def create_sqlalchemy_engine(
                 db,
         )
 
-        with engine.connect() as conn:
+        async with engine.connect() as conn:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
             conn.commit()
 
