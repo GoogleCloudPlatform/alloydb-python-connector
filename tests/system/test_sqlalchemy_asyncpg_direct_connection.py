@@ -48,9 +48,10 @@ def create_sqlalchemy_engine(
                 db,
         )
 
-        with engine.connect() as conn:
-            time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        async with engine.connect() as conn:
+            result = await conn.execute(sqlalchemy.text("SELECT NOW()"))
             conn.commit()
+            time = result.fetchone()
 
     Args:
         ip_address (str):
