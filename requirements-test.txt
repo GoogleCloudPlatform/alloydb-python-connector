@@ -1,4 +1,4 @@
-asyncpg==0.28.0
+asyncpg==0.29.0
 mock==5.1.0
 pg8000==1.30.3
 psycopg2-binary==2.9.9
