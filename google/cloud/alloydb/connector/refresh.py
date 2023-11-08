@@ -35,7 +35,9 @@ logger = logging.getLogger(name=__name__)
 _refresh_buffer: int = 4 * 60  # 4 minutes
 
 
-def _seconds_until_refresh(expiration: datetime, now: datetime = datetime.now()) -> int:
+def _seconds_until_refresh(
+    expiration: datetime, now: datetime = datetime.utcnow()
+) -> int:
     """
     Calculates the duration to wait before starting the next refresh.
     Usually the duration will be half of the time until certificate
@@ -43,7 +45,7 @@ def _seconds_until_refresh(expiration: datetime, now: datetime = datetime.now())
 
     Args:
         expiration (datetime.datetime): Time of certificate expiration.
-        now (datetime.datetime): Current time. Defaults to datetime.now()
+        now (datetime.datetime): Current time. Defaults to datetime.utcnow()
     Returns:
         int: Time in seconds to wait before performing next refresh.
     """
@@ -107,7 +109,7 @@ async def _is_valid(task: asyncio.Task) -> bool:
     try:
         result = await task
         # valid if current time is before cert expiration
-        if datetime.now() < result.expiration:
+        if datetime.utcnow() < result.expiration:
             return True
     except Exception:
         # suppress any errors from task
