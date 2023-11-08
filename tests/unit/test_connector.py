@@ -69,7 +69,7 @@ def test_connect(credentials: FakeCredentials) -> None:
     with Connector(credentials) as connector:
         connector._client = client
         # patch db connection creation
-        with patch("pg8000.dbapi.connect") as mock_connect:
+        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
             connection = connector.connect(
                 "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",

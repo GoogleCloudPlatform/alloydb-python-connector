@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import socket
 import ssl
 from typing import Any, TYPE_CHECKING
 
@@ -45,16 +45,19 @@ def connect(
         raise ImportError(
             'Unable to import module "pg8000." Please install and try again.'
         )
+    # Create socket and wrap with context.
+    sock = ctx.wrap_socket(
+        socket.create_connection((ip_address, SERVER_PROXY_PORT)),
+        server_hostname=ip_address,
+    )
+
     user = kwargs.pop("user")
     db = kwargs.pop("db")
     passwd = kwargs.pop("password")
-    setattr(ctx, "request_ssl", False)
     return pg8000.dbapi.connect(
         user,
         database=db,
         password=passwd,
-        host=ip_address,
-        port=SERVER_PROXY_PORT,
-        ssl_context=ctx,
+        sock=sock,
         **kwargs,
     )
