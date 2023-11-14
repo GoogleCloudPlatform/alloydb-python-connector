@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.5...v0.1.6) (2023-11-14)
+
+
+### Bug Fixes
+
+* use utcnow() for refresh calculation ([#155](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/155)) ([e33366f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e33366f89faa4dd526c51d91cbf3d81033b74edf))
+
+
+### Dependencies
+
+* Update dependencies for github (major) ([#117](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/117)) ([78108f0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/78108f0d70d3ac062f7f6c166e4ebd71c82bd95c))
+* Update dependency asyncpg to v0.29.0 ([#154](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/154)) ([87a3920](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/87a39205864389775c09af0d5af2d32cafa1e0d2))
+* Update dependency cryptography to v41.0.5 ([#144](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/144)) ([01c6307](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/01c6307cc5b870275b39cfc91406df95b3ca5d47))
+* Update dependency pg8000 to v1.30.3 ([#149](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/149)) ([b487f31](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/b487f31790a42bda20b4e43a0334c2ce3e9a5994))
+* Update dependency pytest to v7.4.3 ([#145](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/145)) ([9f4ce0c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9f4ce0cf50c757c15aa768b26162819d2dd9817f))
+* Update dependency pytest-asyncio to v0.22.0 ([#148](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/148)) ([f0d9e00](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f0d9e00440bcb30d24a3d473bb24571db59eb21d))
+* Update dependency SQLAlchemy to v2.0.22 ([#138](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/138)) ([3529937](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3529937818d1572a51d65f2735531f716d548d8f))
+* Update dependency SQLAlchemy to v2.0.23 ([#150](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/150)) ([210ca07](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/210ca07f6eba4b33e8d3f104694ece3038feb0e4))
+* Update github/codeql-action action to v2.22.4 ([#137](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/137)) ([7518330](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/75183305b88c3954cd896221c9835b788ea0a607))
+* Update github/codeql-action action to v2.22.5 ([#147](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/147)) ([8121df6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8121df69e168a827dbcc5f9c23297977f098f4eb))
+* Update github/codeql-action action to v2.22.6 ([#157](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/157)) ([6605def](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/6605defbbfb081898a49f426c4cdf0f98d2319da))
+* Update ossf/scorecard-action action to v2.3.1 ([#142](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/142)) ([46aeddc](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/46aeddcc68b966ac39b7dfbf794f552206f979f5))
+
 ## [0.1.5](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.4...v0.1.5) (2023-10-09)
 
 
