@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.5...v0.1.6) (2023-11-14)
+
+
+### Bug Fixes
+
+* use utcnow() for refresh calculation ([#155](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/155)) ([e33366f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e33366f89faa4dd526c51d91cbf3d81033b74edf))
+
+
+### Dependencies
+
+* Update dependency cryptography to v41.0.5 ([#144](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/144)) ([01c6307](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/01c6307cc5b870275b39cfc91406df95b3ca5d47))
+* Update dependency pg8000 to v1.30.3 ([#149](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/149)) ([b487f31](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/b487f31790a42bda20b4e43a0334c2ce3e9a5994))
+
 ## [0.1.5](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.4...v0.1.5) (2023-10-09)
 
 
