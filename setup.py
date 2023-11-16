@@ -69,7 +69,7 @@ setup(
     namespace_packages=namespaces,
     install_requires=core_dependencies,
     extras_require={
-        "pg8000": ["pg8000==1.30.3"],
+        "pg8000": ["pg8000>=1.30.3"],
     },
     python_requires=">=3.8",
     include_package_data=True,
