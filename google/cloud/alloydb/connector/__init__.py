@@ -11,15 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .connector import Connector
+from google.cloud.alloydb.connector.connector import Connector
+from google.cloud.alloydb.connector.version import __version__
 
-__ALL__ = [Connector]
 
-try:
-    import pkg_resources
-
-    pkg_resources.declare_namespace(__name__)
-except ImportError:
-    import pkgutil
-
-    __path__ = pkgutil.extend_path(__path__, __name__)
+__all__ = ["__version__", "Connector"]

@@ -13,7 +13,19 @@
 # limitations under the License.
 import io
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_namespace_packages, setup
+
+name = "google-cloud-alloydb-connector"
+description = "A Python client library for connecting securely to your Google Cloud AlloyDB instances."
+
+release_status = "Development Status :: 4 - Beta"
+dependencies = [
+    "aiohttp",
+    "cryptography>=38.0.3",
+    "requests",
+    "google-auth",
+]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,28 +33,19 @@ readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-packages = [package for package in find_packages() if package.startswith("google")]
-
-# Determine which namespaces are needed.
-namespaces = ["google"]
-if "google.cloud" in packages:
-    namespaces.append("google.cloud")
-
-name = "google-cloud-alloydb-connector"
-description = "A Python client library for connecting securely to your Google Cloud AlloyDB instances."
-
 version = {}
-with open("google/cloud/alloydb/connector/version.py") as fp:
+with open(
+    os.path.join(package_root, "google/cloud/alloydb/connector/version.py")
+) as fp:
     exec(fp.read(), version)
 version = version["__version__"]
 
-release_status = "Development Status :: 4 - Beta"
-core_dependencies = [
-    "aiohttp",
-    "cryptography>=38.0.3",
-    "requests",
-    "google-auth",
+# Only include packages under the 'google' namespace. Do not include tests,
+# samples, etc.
+packages = [
+    package for package in find_namespace_packages() if package.startswith("google")
 ]
+
 
 setup(
     name=name,
@@ -66,8 +69,7 @@ setup(
     ],
     platforms="Posix; MacOS X; Windows",
     packages=packages,
-    namespace_packages=namespaces,
-    install_requires=core_dependencies,
+    install_requires=dependencies,
     extras_require={
         "pg8000": ["pg8000>=1.30.3"],
     },
