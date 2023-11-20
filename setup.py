@@ -76,4 +76,5 @@ setup(
     python_requires=">=3.8",
     include_package_data=True,
     zip_safe=False,
+    package_data={"google.cloud.alloydb.connector": ["py.typed"]},
 )
