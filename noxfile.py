@@ -55,7 +55,14 @@ def lint(session):
         "google",
         "tests",
     )
-    session.run("mypy", "google", "--install-types", "--non-interactive")
+    session.run(
+        "mypy",
+        "-p",
+        "google",
+        "--install-types",
+        "--non-interactive",
+        "--show-traceback",
+    )
     session.run("python", "setup.py", "sdist")
     session.run("twine", "check", "dist/*")
 
