@@ -67,7 +67,11 @@ class Connector:
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
-        self._keys = generate_keys()
+        self._keys = asyncio.wrap_future(
+            asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
+            loop=self.__loop
+            )
+        
         self._client: Optional[AlloyDBClient] = None
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:

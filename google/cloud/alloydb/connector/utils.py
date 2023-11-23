@@ -47,8 +47,12 @@ def _write_to_file(
     return (ca_filename, cert_chain_filename, key_filename)
 
 
-def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
-    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+async def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
+
+    priv_key = rsa.generate_private_key(public_exponent=65537, 
+                                        key_size=2048
+    )
+
     pub_key = (
         priv_key.public_key()
         .public_bytes(
@@ -57,4 +61,5 @@ def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
         )
         .decode("UTF-8")
     )
+
     return (priv_key, pub_key)
