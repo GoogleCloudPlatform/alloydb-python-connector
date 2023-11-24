@@ -49,8 +49,7 @@ def _write_to_file(
 
 async def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
 
-    priv_key = rsa.generate_private_key(public_exponent=65537, 
-                                        key_size=2048)
+    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     pub_key = (
         priv_key.public_key()

@@ -69,9 +69,9 @@ class Connector:
             self._credentials, _ = default(scopes=scopes)
         self._keys = asyncio.wrap_future(
             asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
-            loop=self.__loop
-            )
-        
+            loop=self._loop,
+        )
+
         self._client: Optional[AlloyDBClient] = None
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
@@ -127,11 +127,7 @@ class Connector:
         if instance_uri in self._instances:
             instance = self._instances[instance_uri]
         else:
-            instance = Instance(
-                instance_uri,
-                self._client,
-                self._keys,
-            )
+            instance = Instance(instance_uri, self._client, self._keys)
             self._instances[instance_uri] = instance
 
         connect_func = {

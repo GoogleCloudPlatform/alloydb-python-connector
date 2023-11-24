@@ -31,7 +31,10 @@ async def test_Instance_init() -> None:
     Test to check whether the __init__ method of Instance
     can tell if the instance URI that's passed in is formatted correctly.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     async with aiohttp.ClientSession() as client:
         instance = Instance(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -52,7 +55,10 @@ async def test_Instance_init_invalid_instant_uri() -> None:
     Test to check whether the __init__ method of Instance
     will throw error for invalid instance URI.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
             Instance("invalid/instance/uri/", client, keys)
@@ -64,7 +70,10 @@ async def test_Instance_close() -> None:
     Test that Instance's close method
     cancels tasks gracefully.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -84,7 +93,10 @@ async def test_Instance_close() -> None:
 @pytest.mark.asyncio
 async def test_perform_refresh() -> None:
     """Test that _perform refresh returns valid RefreshResult"""
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -104,7 +116,10 @@ async def test_schedule_refresh_replaces_result() -> None:
     Test to check whether _schedule_refresh replaces a valid refresh result
     with another refresh result.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -131,7 +146,10 @@ async def test_schedule_refresh_wont_replace_valid_result_with_invalid() -> None
     Test to check whether _schedule_refresh won't replace a valid
     refresh result with an invalid one.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -160,7 +178,10 @@ async def test_schedule_refresh_expired_cert() -> None:
     Test to check whether _schedule_refresh will throw RefreshError on
     expired certificate.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     # set certificate to be expired
     client.instance.cert_before = datetime.now() - timedelta(minutes=20)
@@ -182,7 +203,10 @@ async def test_force_refresh_cancels_pending_refresh() -> None:
     """
     Test that force_refresh cancels pending task if refresh_in_progress event is not set.
     """
-    keys = await generate_keys()
+    event_loop = asyncio.get_running_loop()
+    keys = asyncio.wrap_future(
+        asyncio.run_coroutine_threadsafe(generate_keys(), event_loop), loop=event_loop
+    )
     client = FakeAlloyDBClient()
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
