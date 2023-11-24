@@ -38,21 +38,6 @@ You can install this library with `pip install`:
 pip install "google-cloud-alloydb-connector[pg8000]"
 ```
 
-## Usage
-
-This package provides several functions for authorizing and encrypting
-connections. These functions are used with your database driver to connect to
-your AlloyDB instance.
-
-AlloyDB supports network connectivity through private, internal IP addresses only. 
-This package must be run in an environment that is connected to the
-[VPC Network][vpc] that hosts your AlloyDB private IP address.
-
-Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
-
-[vpc]: https://cloud.google.com/vpc/docs/vpc
-[alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
-
 ### APIs and Services
 
 This package requires the following to connect successfully:
@@ -78,6 +63,21 @@ or consult the [google.auth][google-auth] package.
 [adc]: https://cloud.google.com/docs/authentication#adc
 [set-adc]: https://cloud.google.com/docs/authentication/provide-credentials-adc
 [google-auth]: https://google-auth.readthedocs.io/en/master/reference/google.auth.html
+
+## Usage
+
+This package provides several functions for authorizing and encrypting
+connections. These functions are used with your database driver to connect to
+your AlloyDB instance.
+
+AlloyDB supports network connectivity through private, internal IP addresses only. 
+This package must be run in an environment that is connected to the
+[VPC Network][vpc] that hosts your AlloyDB private IP address.
+
+Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
+
+[vpc]: https://cloud.google.com/vpc/docs/vpc
+[alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
 
 ### How to use this Connector
 
