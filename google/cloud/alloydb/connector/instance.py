@@ -98,7 +98,7 @@ class Instance:
 
         try:
             await self._refresh_rate_limiter.acquire()
-            priv_key, pub_key = self._keys
+            priv_key, pub_key = await self._keys
             # fetch metadata
             metadata_task = asyncio.create_task(
                 self._client._get_metadata(

@@ -77,7 +77,7 @@ async def test__get_client_certificate(
     Test _get_client_certificate returns successfully.
     """
     test_client = AlloyDBClient("", "", credentials, client)
-    keys = generate_keys()
+    keys = await generate_keys()
     certs = await test_client._get_client_certificate(
         "test-project", "test-region", "test-cluster", keys[1]
     )
