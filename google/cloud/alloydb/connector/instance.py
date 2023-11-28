@@ -28,7 +28,6 @@ from google.cloud.alloydb.connector.refresh import (
 
 if TYPE_CHECKING:
     import ssl
-
     from cryptography.hazmat.primitives.asymmetric import rsa
     from google.cloud.alloydb.connector.client import AlloyDBClient
 
