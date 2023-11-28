@@ -53,7 +53,7 @@ class Instance:
         self,
         instance_uri: str,
         client: AlloyDBClient,
-        keys: Tuple[rsa.RSAPrivateKey, str],
+        keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
         # validate and parse instance_uri
         instance_uri_split = instance_uri.split("/")
@@ -98,7 +98,7 @@ class Instance:
 
         try:
             await self._refresh_rate_limiter.acquire()
-            priv_key, pub_key = self._keys
+            priv_key, pub_key = await self._keys
             # fetch metadata
             metadata_task = asyncio.create_task(
                 self._client._get_metadata(
