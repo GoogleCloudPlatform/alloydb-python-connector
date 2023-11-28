@@ -71,7 +71,6 @@ class Connector:
             asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
             loop=self._loop,
         )
-
         self._client: Optional[AlloyDBClient] = None
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
