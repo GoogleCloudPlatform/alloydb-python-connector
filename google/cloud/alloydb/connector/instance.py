@@ -29,7 +29,7 @@ from google.cloud.alloydb.connector.refresh import (
 if TYPE_CHECKING:
     import ssl
 
-    # from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.asymmetric import rsa
     from google.cloud.alloydb.connector.client import AlloyDBClient
 
 logger = logging.getLogger(name=__name__)
@@ -54,7 +54,7 @@ class Instance:
         self,
         instance_uri: str,
         client: AlloyDBClient,
-        keys: asyncio.Future,
+        keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
         # validate and parse instance_uri
         instance_uri_split = instance_uri.split("/")
