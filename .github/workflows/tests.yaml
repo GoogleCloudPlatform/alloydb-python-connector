@@ -67,7 +67,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa # v4.8.0
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -145,7 +145,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@b64ffcaf5b410884ad320a9cfac8866006a109aa # v4.8.0
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -162,7 +162,7 @@ jobs:
 
       - id: 'secrets'
         name: Get secrets
-        uses: google-github-actions/get-secretmanager-secrets@4d6d3dfd94110800dda8d84109cb6da0f6a5919d # v1.0.1
+        uses: google-github-actions/get-secretmanager-secrets@ae0d4054c32840e2ced71207a9df55161ae3debc # v2.0.0
         with:
           secrets: |-
             ALLOYDB_INSTANCE_URI:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_INSTANCE_URI
