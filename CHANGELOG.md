@@ -11,25 +11,9 @@
 
 ### Dependencies
 
-* Update actions/github-script action to v7.0.1 ([#162](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/162)) ([9ecd247](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9ecd247ee8c561b6fb783f7053f521a21ab7aec8))
-* Update actions/setup-python action to v4.8.0 ([#177](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/177)) ([2120150](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/21201508979c732cef8a0553cfae07fa344618a9))
-* Update dependencies for github (major) ([#178](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/178)) ([856946e](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/856946e2915107ae692bc0ead398c3728c10a55b))
-* Update dependency aiohttp to v3.9.0 ([#163](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/163)) ([e0ba316](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e0ba3167b80f6cb636c20ec4e523358618022c17))
 * Update dependency aiohttp to v3.9.1 ([#170](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/170)) ([cf44016](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cf44016dcfd70f02b339189f8d0442fa3198ebb0))
 * Update dependency cryptography to v41.0.7 ([#171](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/171)) ([5d95ee2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5d95ee2c5bf0b5c779d4c385e1b45258ff4f6d3d))
-* Update dependency google-auth to v2.23.4 ([#87](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/87)) ([0a7cdb3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0a7cdb374a3a33f903b7f39ae4795d7d4f7c3b25))
 * Update dependency google-auth to v2.25.2 ([#175](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/175)) ([cea26d7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cea26d7eae7464b37e4497938e46b4d50ff00df5))
-* Update dependency pytest-asyncio to v0.23.2 ([#176](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/176)) ([47fe8ab](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/47fe8ab14e87b688764f029f4fa2d0810f485188))
-* Update github/codeql-action action to v2.22.7 ([#158](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/158)) ([2ec5a2d](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2ec5a2de3345e5ca6b141944e604f0e3f21a70f7))
-* Update github/codeql-action action to v2.22.8 ([#167](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/167)) ([50c9ff5](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/50c9ff5f0b47e5a6631170b90c0e67bd4b24ea4b))
-* Update github/codeql-action action to v2.22.9 ([#179](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/179)) ([c99fcaf](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c99fcaf53b0a6001d05cd171be073c2ff915fac2))
-* Update google-github-actions/auth action to v1.2.0 ([#164](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/164)) ([8d5e492](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8d5e492bf901b305c585c74a17185cf4f519174a))
-* Update google-github-actions/auth action to v2 ([#174](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/174)) ([c988e2a](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c988e2af226315efe06aadda416c74547c3f8d32))
-
-
-### Documentation
-
-* update README instructions ([#169](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/169)) ([2f6c554](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2f6c554936135dbb07dafa1aa29c20c65d078720))
 
 ## [0.1.6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.5...v0.1.6) (2023-11-14)
 
