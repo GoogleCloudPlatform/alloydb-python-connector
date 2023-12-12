@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.6...v0.2.0) (2023-12-12)
+
+
+### Features
+
+* introduce compatibility with native namespace packages ([#165](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/165)) ([8b0e2ae](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8b0e2ae022afb754fd69e73f0d606dd192b2dfa8))
+* wrap `generate_keys()` in future ([#168](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/168)) ([964deb0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/964deb05d927ac5d310b44b5962c870947f44930))
+
+
+### Dependencies
+
+* Update dependency aiohttp to v3.9.1 ([#170](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/170)) ([cf44016](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cf44016dcfd70f02b339189f8d0442fa3198ebb0))
+* Update dependency cryptography to v41.0.7 ([#171](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/171)) ([5d95ee2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5d95ee2c5bf0b5c779d4c385e1b45258ff4f6d3d))
+* Update dependency google-auth to v2.25.2 ([#175](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/175)) ([cea26d7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cea26d7eae7464b37e4497938e46b4d50ff00df5))
+
 ## [0.1.6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.5...v0.1.6) (2023-11-14)
 
 
