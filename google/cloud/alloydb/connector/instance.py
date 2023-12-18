@@ -60,6 +60,7 @@ class Instance:
         client: AlloyDBClient,
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
+        
         # validate and parse instance_uri
         (
             self._instance_uri,
