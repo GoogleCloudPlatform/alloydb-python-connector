@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Tuple, TYPE_CHECKING
 import re
+from typing import Tuple, TYPE_CHECKING
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
@@ -60,7 +60,7 @@ class Instance:
         client: AlloyDBClient,
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
-        
+
         # validate and parse instance_uri
         (
             self._instance_uri,
