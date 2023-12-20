@@ -14,36 +14,50 @@
 
 import asyncio
 from datetime import datetime, timedelta
+from typing import Tuple
 
 import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
-from google.cloud.alloydb.connector.instance import Instance, parse_instance_uri
+from google.cloud.alloydb.connector.instance import _parse_instance_uri, Instance
 from google.cloud.alloydb.connector.refresh import _is_valid, RefreshResult
 from google.cloud.alloydb.connector.utils import generate_keys
 
 
-@pytest.mark.asycio
-async def test_parser_instance_uri() -> None:
+@pytest.mark.parametrize(
+    "instance_uri, expected",
+    [
+        (
+            "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+            ("test-project", "test-region", "test-cluster", "test-instance"),
+        ),
+        (
+            "projects/test-domain:test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+            (
+                "test-domain:test-project",
+                "test-region",
+                "test-cluster",
+                "test-instance",
+            ),
+        ),
+    ],
+)
+def test_parse_instance_uri(instance_uri: str, expected: Tuple[str, str, str]) -> None:
     """
-    Test to check whether the __init__ method of Instance
-    can tell if the instance URI that's passed in is formatted correctly.
+    Test that _parse_instance_uri correctly on
+    normal instance uri and domain-scoped projects.
     """
-    instance_uri = [
-        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-        "projects/google.com:test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-    ]
+    assert expected == _parse_instance_uri(instance_uri)
 
-    for uri in instance_uri:
-        project, region, cluster, name = parse_instance_uri(uri)
-        assert (
-            project in ["test-project", "google.com:test-project"]
-            and region == "test-region"
-            and cluster == "test-cluster"
-            and name == "test-instance"
-        )
+
+def test_parse_bad_instance_uri() -> None:
+    """
+    Tests that ValueError is thrown for bad instance uri.
+    """
+    with pytest.raises(ValueError):
+        _parse_instance_uri("test-project:test-instance")
 
 
 @pytest.mark.asyncio

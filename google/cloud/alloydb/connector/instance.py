@@ -39,7 +39,7 @@ INSTANCE_URI_REGEX = re.compile(
 )
 
 
-def parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
+def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
     # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
     if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
         raise ValueError(
@@ -47,9 +47,7 @@ def parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
             "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, projects/<DOMAIN>:<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
             f"got {instance_uri}."
         )
-
     instance_uri_split = INSTANCE_URI_REGEX.split(instance_uri)
-
     return (
         instance_uri_split[1],
         instance_uri_split[3],
@@ -79,17 +77,15 @@ class Instance:
         client: AlloyDBClient,
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
-
-        self._instance_uri = instance_uri
-
         # validate and parse instance_uri
         (
             self._project,
             self._region,
             self._cluster,
             self._name,
-        ) = parse_instance_uri(instance_uri)
+        ) = _parse_instance_uri(instance_uri)
 
+        self._instance_uri = instance_uri
         self._client = client
         self._keys = keys
         self._refresh_rate_limiter = AsyncRateLimiter(
