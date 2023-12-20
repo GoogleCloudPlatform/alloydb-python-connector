@@ -20,9 +20,30 @@ from mocks import FakeAlloyDBClient
 import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
-from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import Instance, parse_instance_uri
 from google.cloud.alloydb.connector.refresh import _is_valid, RefreshResult
 from google.cloud.alloydb.connector.utils import generate_keys
+
+
+@pytest.mark.asycio
+async def test_parser_instance_uri() -> None:
+    """
+    Test to check whether the __init__ method of Instance
+    can tell if the instance URI that's passed in is formatted correctly.
+    """
+    instance_uri = [
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        "projects/google.com:test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+    ]
+
+    for uri in instance_uri:
+        project, region, cluster, name = parse_instance_uri(uri)
+        assert (
+            project in ["test-project", "google.com:test-project"]
+            and region == "test-region"
+            and cluster == "test-cluster"
+            and name == "test-instance"
+        )
 
 
 @pytest.mark.asyncio

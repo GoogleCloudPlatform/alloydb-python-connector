@@ -39,6 +39,25 @@ INSTANCE_URI_REGEX = re.compile(
 )
 
 
+def parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
+    # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
+    if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
+        raise ValueError(
+            "Arg `instance_uri` must have "
+            "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, projects/<DOMAIN>:<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
+            f"got {instance_uri}."
+        )
+
+    instance_uri_split = INSTANCE_URI_REGEX.split(instance_uri)
+
+    return (
+        instance_uri_split[1],
+        instance_uri_split[3],
+        instance_uri_split[4],
+        instance_uri_split[5],
+    )
+
+
 class Instance:
     """
     Manages the information used to connect to the AlloyDB instance.
@@ -61,14 +80,15 @@ class Instance:
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
 
+        self._instance_uri = instance_uri
+
         # validate and parse instance_uri
         (
-            self._instance_uri,
             self._project,
             self._region,
             self._cluster,
             self._name,
-        ) = self._parse_instance_uri(instance_uri)
+        ) = parse_instance_uri(instance_uri)
 
         self._client = client
         self._keys = keys
@@ -81,25 +101,6 @@ class Instance:
         # connection requests block until the first refresh is complete.
         self._current: asyncio.Task = self._schedule_refresh(0)
         self._next: asyncio.Task = self._current
-
-    def _parse_instance_uri(self, instance_uri: str) -> Tuple[str, str, str, str, str]:
-        # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
-        if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
-            raise ValueError(
-                "Arg `instance_uri` must have "
-                "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, "
-                f"got {instance_uri}."
-            )
-
-        instance_uri_split = INSTANCE_URI_REGEX.split(instance_uri)
-
-        return (
-            instance_uri,
-            instance_uri_split[1],
-            instance_uri_split[3],
-            instance_uri_split[5],
-            instance_uri_split[7],
-        )
 
     async def _perform_refresh(self) -> RefreshResult:
         """
