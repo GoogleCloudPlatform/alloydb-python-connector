@@ -78,12 +78,9 @@ class Instance:
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
         # validate and parse instance_uri
-        (
-            self._project,
-            self._region,
-            self._cluster,
-            self._name,
-        ) = _parse_instance_uri(instance_uri)
+        self._project, self._region, self._cluster, self._name = _parse_instance_uri(
+            instance_uri
+        )
 
         self._instance_uri = instance_uri
         self._client = client

@@ -44,9 +44,11 @@ from google.cloud.alloydb.connector.utils import generate_keys
         ),
     ],
 )
-def test_parse_instance_uri(instance_uri: str, expected: Tuple[str, str, str]) -> None:
+def test_parse_instance_uri(
+    instance_uri: str, expected: Tuple[str, str, str, str]
+) -> None:
     """
-    Test that _parse_instance_uri correctly on
+    Test that _parse_instance_uri works correctly on
     normal instance uri and domain-scoped projects.
     """
     assert expected == _parse_instance_uri(instance_uri)
