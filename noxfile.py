@@ -21,8 +21,8 @@ import nox
 BLACK_VERSION = "black==22.3.0"
 LINT_PATHS = ["google", "tests", "noxfile.py", "setup.py"]
 
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11"]
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 
 @nox.session
