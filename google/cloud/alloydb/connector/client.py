@@ -67,6 +67,7 @@ class AlloyDBClient:
         self._client = client if client else aiohttp.ClientSession(headers=headers)
         self._credentials = credentials
         self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._user_agent = USER_AGENT
 
     async def _get_metadata(
         self,

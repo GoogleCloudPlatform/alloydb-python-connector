@@ -11,25 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import socket
-import ssl
 from typing import Any, TYPE_CHECKING
-
-SERVER_PROXY_PORT = 5433
 
 if TYPE_CHECKING:
     import pg8000
+    import ssl
 
 
 def connect(
-    ip_address: str, ctx: ssl.SSLContext, **kwargs: Any
+    ip_address: str, sock: ssl.SSLSocket, **kwargs: Any
 ) -> "pg8000.dbapi.Connection":
     """Create a pg8000 DBAPI connection object.
 
     Args:
         ip_address (str): IP address of AlloyDB instance to connect to.
-        ctx (ssl.SSLContext): Context used to create a TLS connection
-            with AlloyDB instance ssl certificates.
+        sock (ssl.SSLSocket): SSL/TLS secure socket stream connected to the
+            AlloyDB proxy server.
 
     Returns:
         pg8000.dbapi.Connection: A pg8000 Connection object for
@@ -45,11 +42,6 @@ def connect(
         raise ImportError(
             'Unable to import module "pg8000." Please install and try again.'
         )
-    # Create socket and wrap with context.
-    sock = ctx.wrap_socket(
-        socket.create_connection((ip_address, SERVER_PROXY_PORT)),
-        server_hostname=ip_address,
-    )
 
     user = kwargs.pop("user")
     db = kwargs.pop("db")

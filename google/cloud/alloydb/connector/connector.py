@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
+import socket
 from threading import Thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING
@@ -26,9 +27,13 @@ from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.utils import generate_keys
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
+    import ssl
     from google.auth.credentials import Credentials
+
+SERVER_PROXY_PORT = 5433
 
 
 class Connector:
@@ -44,6 +49,7 @@ class Connector:
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
+        enable_iam_auth (bool): Enables automatic IAM database authentication.
     """
 
     def __init__(
@@ -51,6 +57,7 @@ class Connector:
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        enable_iam_auth: bool = False,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -60,6 +67,7 @@ class Connector:
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._enable_iam_auth = enable_iam_auth
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -122,6 +130,7 @@ class Connector:
             self._client = AlloyDBClient(
                 self._alloydb_api_endpoint, self._quota_project, self._credentials
             )
+        enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible
         if instance_uri in self._instances:
             instance = self._instances[instance_uri]
@@ -155,6 +164,27 @@ class Connector:
             # we attempt a force refresh, then throw the error
             await instance.force_refresh()
             raise
+
+    def metadata_exchange(
+        self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool, driver: str
+    ):
+        # Create socket and wrap with SSL/TLS context
+        sock = ctx.wrap_socket(
+            socket.create_connection((ip_address, SERVER_PROXY_PORT)),
+            server_hostname=ip_address,
+        )
+        # set auth type for metadata exchange
+        if enable_iam_auth:
+            auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
+        else:
+            auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
+
+        # form metadata exchange request
+        req = connectorspb.MetadataExchangeRequest(
+            user_agent=self._client._user_agent + f"+{driver}",
+            auth_type=auth_type,
+            oauth2_token=self._credentials.token,
+        )
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
