@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import ssl
 
 from cryptography import x509
@@ -41,7 +41,7 @@ def test_seconds_until_refresh_under_1_hour_over_4_mins() -> None:
     If expiration is under 1 hour and over 4 minutes,
     should return duration-refresh_buffer (refresh_buffer = 4 minutes).
     """
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     assert _seconds_until_refresh(now + timedelta(minutes=5), now) == 60
 
 
@@ -50,7 +50,9 @@ def test_seconds_until_refresh_under_4_mins() -> None:
     Test _seconds_until_refresh returns proper time in seconds.
     If expiration is under 4 minutes, should return 0.
     """
-    assert _seconds_until_refresh(datetime.now() + timedelta(minutes=3)) == 0
+    assert (
+        _seconds_until_refresh(datetime.now(timezone.utc) + timedelta(minutes=3)) == 0
+    )
 
 
 def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
@@ -68,8 +70,8 @@ def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
         .issuer_name(fake_instance.intermediate_cert.issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.now())
-        .not_valid_after(datetime.now() + timedelta(minutes=10))
+        .not_valid_before(datetime.now(timezone.utc))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(minutes=10))
     )
     # sign client cert with intermediate cert
     client_cert = client_cert.sign(fake_instance.intermediate_key, hashes.SHA256())

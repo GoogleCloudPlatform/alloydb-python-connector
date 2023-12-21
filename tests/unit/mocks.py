@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, List, Optional, Tuple
 
 from cryptography import x509
@@ -29,7 +29,7 @@ class FakeCredentials:
     def refresh(self, request: Callable) -> None:
         """Refreshes the access token."""
         self.token = "12345"
-        self.expiry = datetime.utcnow() + timedelta(minutes=60)
+        self.expiry = datetime.now(timezone.utc) + timedelta(minutes=60)
 
     @property
     def expired(self) -> bool:
@@ -67,7 +67,7 @@ def generate_cert(
     # generate private key
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     # calculate expiry time
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expiration = now + timedelta(minutes=expires_in)
     # configure cert subject
     subject = issuer = x509.Name(
@@ -103,8 +103,8 @@ class FakeInstance:
         name: str = "test-instance",
         ip_address: str = "127.0.0.1",
         server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
-        cert_before: datetime = datetime.utcnow(),
-        cert_expiry: datetime = datetime.utcnow() + timedelta(hours=1),
+        cert_before: datetime = datetime.now(timezone.utc),
+        cert_expiry: datetime = datetime.now(timezone.utc) + timedelta(hours=1),
     ) -> None:
         self.project = project
         self.region = region
