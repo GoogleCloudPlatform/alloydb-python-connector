@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Tuple, TYPE_CHECKING
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
@@ -32,6 +33,27 @@ if TYPE_CHECKING:
     from google.cloud.alloydb.connector.client import AlloyDBClient
 
 logger = logging.getLogger(name=__name__)
+
+INSTANCE_URI_REGEX = re.compile(
+    "projects/([^:]+(:[^:]+)?)/locations/([^:]+)/clusters/([^:]+)/instances/([^:]+)"
+)
+
+
+def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
+    # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
+    if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
+        raise ValueError(
+            "Arg `instance_uri` must have "
+            "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, projects/<DOMAIN>:<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
+            f"got {instance_uri}."
+        )
+    instance_uri_split = INSTANCE_URI_REGEX.split(instance_uri)
+    return (
+        instance_uri_split[1],
+        instance_uri_split[3],
+        instance_uri_split[4],
+        instance_uri_split[5],
+    )
 
 
 class Instance:
@@ -56,21 +78,11 @@ class Instance:
         keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
         # validate and parse instance_uri
-        instance_uri_split = instance_uri.split("/")
-        # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
-        if len(instance_uri_split) == 8:
-            self._instance_uri = instance_uri
-            self._project = instance_uri_split[1]
-            self._region = instance_uri_split[3]
-            self._cluster = instance_uri_split[5]
-            self._name = instance_uri_split[7]
-        else:
-            raise ValueError(
-                "Arg `instance_uri` must have "
-                "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, "
-                f"got {instance_uri}."
-            )
+        self._project, self._region, self._cluster, self._name = _parse_instance_uri(
+            instance_uri
+        )
 
+        self._instance_uri = instance_uri
         self._client = client
         self._keys = keys
         self._refresh_rate_limiter = AsyncRateLimiter(
