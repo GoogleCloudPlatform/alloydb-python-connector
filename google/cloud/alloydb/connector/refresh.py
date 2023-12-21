@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import ssl
 from tempfile import TemporaryDirectory
@@ -36,7 +36,7 @@ _refresh_buffer: int = 4 * 60  # 4 minutes
 
 
 def _seconds_until_refresh(
-    expiration: datetime, now: datetime = datetime.utcnow()
+    expiration: datetime, now: datetime = datetime.now(timezone.utc)
 ) -> int:
     """
     Calculates the duration to wait before starting the next refresh.
@@ -45,7 +45,7 @@ def _seconds_until_refresh(
 
     Args:
         expiration (datetime.datetime): Time of certificate expiration.
-        now (datetime.datetime): Current time. Defaults to datetime.utcnow()
+        now (datetime.datetime): Current time (UTC)
     Returns:
         int: Time in seconds to wait before performing next refresh.
     """
@@ -109,7 +109,7 @@ async def _is_valid(task: asyncio.Task) -> bool:
     try:
         result = await task
         # valid if current time is before cert expiration
-        if datetime.utcnow() < result.expiration:
+        if datetime.now(timezone.utc) < result.expiration:
             return True
     except Exception:
         # suppress any errors from task
