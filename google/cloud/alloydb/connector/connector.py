@@ -25,10 +25,13 @@ from google.auth.credentials import with_scopes_if_required
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
+import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
+
+ASYNC_DRIVERS = ["asyncpg"]
 
 
 class Connector:
@@ -51,9 +54,10 @@ class Connector:
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        loop: asyncio.AbstractEventLoop = None
     ) -> None:
         # create event loop and start it in background thread
-        self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+        self._loop: asyncio.AbstractEventLoop = loop or asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
         self._instances: Dict[str, Instance] = {}
@@ -63,7 +67,8 @@ class Connector:
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
-            self._credentials = with_scopes_if_required(credentials, scopes=scopes)
+            self._credentials = with_scopes_if_required(
+                credentials, scopes=scopes)
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
@@ -131,12 +136,14 @@ class Connector:
 
         connect_func = {
             "pg8000": pg8000.connect,
+            "asyncpg": asyncpg.connect,
         }
         # only accept supported database drivers
         try:
             connector = connect_func[driver]
         except KeyError:
-            raise ValueError(f"Driver '{driver}' is not a supported database driver.")
+            raise ValueError(
+                f"Driver '{driver}' is not a supported database driver.")
 
         # Host and ssl options come from the certificates and instance IP address
         # so we don't want the user to specify them.
@@ -149,6 +156,10 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
+            # async drivers are unblocking and can be awaited directly
+            if driver in ASYNC_DRIVERS:
+                return await connector(ip_address, context, **kwargs)
+
             connect_partial = partial(connector, ip_address, context, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
@@ -168,6 +179,19 @@ class Connector:
     ) -> None:
         """Exit context manager by closing Connector"""
         self.close()
+
+    async def __aenter__(self) -> Any:
+        """Enter async context manager by returning Connector object"""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Exit async context manager by closing Connector"""
+        await self.close_async()
 
     def close(self) -> None:
         """Close Connector by stopping tasks and releasing resources."""
