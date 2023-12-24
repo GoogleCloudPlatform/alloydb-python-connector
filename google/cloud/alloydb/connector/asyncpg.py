@@ -72,7 +72,10 @@ def get_authentication_token(credentials: Credentials) -> str:
 async def _connector_factory(proto_factory, host, port, loop=None, ssl=None):
     tr, pr = await loop.create_connection(
         lambda: MetadataExchangeProtocol(loop),
-        host, port, ssl=ssl)
+        host, port,
+        ssl=ssl,
+        server_hostname=host,
+    )
 
     creds, _ = google.auth.default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"]
