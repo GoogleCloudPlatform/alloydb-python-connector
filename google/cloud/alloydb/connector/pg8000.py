@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def connect(
-    sock: ssl.SSLSocket, **kwargs: Any
+    sock: "ssl.SSLSocket", **kwargs: Any
 ) -> "pg8000.dbapi.Connection":
     """Create a pg8000 DBAPI connection object.
 
