@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 from functools import partial
 import socket
+import struct
 from threading import Thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING
@@ -158,7 +159,9 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
-            connect_partial = partial(connector, ip_address, context, **kwargs)
+            metadata_partial = partial(self.metadata_exchange, ip_address, context, enable_iam_auth, driver)
+            sock = await self._loop.run_in_executor(None, metadata_partial)
+            connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
@@ -185,6 +188,39 @@ class Connector:
             auth_type=auth_type,
             oauth2_token=self._credentials.token,
         )
+
+        # set I/O timeout
+        sock.settimeout(30)
+
+        # pack big-endian unsigned integer
+        packed_len = struct.pack('>I', req.ByteSize())
+
+        # send message length
+        sock.sendall(packed_len)
+        # send message
+        sock.sendall(req.SerializeToString())
+
+        # form metadata exchange response
+        resp = connectorspb.MetadataExchangeResponse()
+
+        # read response
+        message_len_buffer_size = struct.Struct("I").size
+        buffer = b''
+        while message_len_buffer_size > 0:
+            chunk = sock.recv(message_len_buffer_size)
+            if not chunk:
+                raise RuntimeError('connection closed before chunk was read')
+            buffer += chunk
+            message_len_buffer_size -= len(chunk)
+        (message_len,) = struct.unpack('>I', buffer)
+
+        resp.ParseFromString(sock.recv(message_len))
+
+        if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
+            raise ValueError("Metadata Exchange request has failed")
+        
+        return sock
+
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
