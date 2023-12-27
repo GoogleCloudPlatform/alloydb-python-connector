@@ -14,15 +14,52 @@
 
 import asyncio
 from datetime import datetime, timedelta
+from typing import Tuple
 
 import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
-from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import _parse_instance_uri, Instance
 from google.cloud.alloydb.connector.refresh import _is_valid, RefreshResult
 from google.cloud.alloydb.connector.utils import generate_keys
+
+
+@pytest.mark.parametrize(
+    "instance_uri, expected",
+    [
+        (
+            "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+            ("test-project", "test-region", "test-cluster", "test-instance"),
+        ),
+        (
+            "projects/test-domain:test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+            (
+                "test-domain:test-project",
+                "test-region",
+                "test-cluster",
+                "test-instance",
+            ),
+        ),
+    ],
+)
+def test_parse_instance_uri(
+    instance_uri: str, expected: Tuple[str, str, str, str]
+) -> None:
+    """
+    Test that _parse_instance_uri works correctly on
+    normal instance uri and domain-scoped projects.
+    """
+    assert expected == _parse_instance_uri(instance_uri)
+
+
+def test_parse_bad_instance_uri() -> None:
+    """
+    Tests that ValueError is thrown for bad instance uri.
+    """
+    with pytest.raises(ValueError):
+        _parse_instance_uri("test-project:test-instance")
 
 
 @pytest.mark.asyncio
