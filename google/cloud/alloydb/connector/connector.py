@@ -159,7 +159,9 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
-            metadata_partial = partial(self.metadata_exchange, ip_address, context, enable_iam_auth, driver)
+            metadata_partial = partial(
+                self.metadata_exchange, ip_address, context, enable_iam_auth, driver
+            )
             sock = await self._loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
@@ -193,7 +195,7 @@ class Connector:
         sock.settimeout(30)
 
         # pack big-endian unsigned integer
-        packed_len = struct.pack('>I', req.ByteSize())
+        packed_len = struct.pack(">I", req.ByteSize())
 
         # send message length
         sock.sendall(packed_len)
@@ -203,24 +205,33 @@ class Connector:
         # form metadata exchange response
         resp = connectorspb.MetadataExchangeResponse()
 
-        # read response
+        # read message length
         message_len_buffer_size = struct.Struct("I").size
-        buffer = b''
+        message_len_buffer = b""
         while message_len_buffer_size > 0:
             chunk = sock.recv(message_len_buffer_size)
             if not chunk:
-                raise RuntimeError('connection closed before chunk was read')
-            buffer += chunk
+                raise RuntimeError("connection closed before chunk was read")
+            message_len_buffer += chunk
             message_len_buffer_size -= len(chunk)
-        (message_len,) = struct.unpack('>I', buffer)
 
-        resp.ParseFromString(sock.recv(message_len))
+        (message_len,) = struct.unpack(">I", message_len_buffer)
+
+        # read message
+        buffer = b""
+        while message_len > 0:
+            chunk = sock.recv(message_len)
+            if not chunk:
+                raise RuntimeError("connection closed before chunk was read")
+            buffer += chunk
+            size -= len(chunk)
+        # parse mdx resp from buffer
+        resp.ParseFromString(buffer)
 
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
             raise ValueError("Metadata Exchange request has failed")
-        
-        return sock
 
+        return sock
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
