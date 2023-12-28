@@ -224,7 +224,7 @@ class Connector:
             if not chunk:
                 raise RuntimeError("connection closed before chunk was read")
             buffer += chunk
-            size -= len(chunk)
+            message_len -= len(chunk)
         # parse mdx resp from buffer
         resp.ParseFromString(buffer)
 
