@@ -150,6 +150,7 @@ class AlloyDBClient:
         data = {
             "publicKey": pub_key,
             "certDuration": "3600s",
+            "useMetadataExchange": True,
         }
 
         resp = await self._client.post(
