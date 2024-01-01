@@ -194,42 +194,48 @@ class Connector:
         # set I/O timeout
         sock.settimeout(30)
 
-        # pack big-endian unsigned integer
+        # pack big-endian unsigned integer (4 bytes)
         packed_len = struct.pack(">I", req.ByteSize())
 
-        # send message length
+        # send metadata message length
         sock.sendall(packed_len)
-        # send message
+        # send metadata request message
         sock.sendall(req.SerializeToString())
 
         # form metadata exchange response
         resp = connectorspb.MetadataExchangeResponse()
 
-        # read message length
+        # read metadata message length (4 bytes)
         message_len_buffer_size = struct.Struct("I").size
         message_len_buffer = b""
         while message_len_buffer_size > 0:
             chunk = sock.recv(message_len_buffer_size)
             if not chunk:
-                raise RuntimeError("connection closed before chunk was read")
+                raise RuntimeError(
+                    "Connection closed while getting metadata exchange length!"
+                )
             message_len_buffer += chunk
             message_len_buffer_size -= len(chunk)
 
         (message_len,) = struct.unpack(">I", message_len_buffer)
 
-        # read message
+        # read metadata exchange message
         buffer = b""
         while message_len > 0:
             chunk = sock.recv(message_len)
             if not chunk:
-                raise RuntimeError("connection closed before chunk was read")
+                raise RuntimeError(
+                    "Connection closed while performing metadata exchange!"
+                )
             buffer += chunk
             message_len -= len(chunk)
-        # parse mdx resp from buffer
+
+        # parse metadata exchange response from buffer
         resp.ParseFromString(buffer)
 
+        # validate metadata exchange response
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
-            raise ValueError("Metadata Exchange request has failed")
+            raise ValueError("Metadata Exchange request has failed!")
 
         return sock
 

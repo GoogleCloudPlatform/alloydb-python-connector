@@ -18,9 +18,7 @@ if TYPE_CHECKING:
     import ssl
 
 
-def connect(
-    sock: "ssl.SSLSocket", **kwargs: Any
-) -> "pg8000.dbapi.Connection":
+def connect(sock: "ssl.SSLSocket", **kwargs: Any) -> "pg8000.dbapi.Connection":
     """Create a pg8000 DBAPI connection object.
 
     Args:
