@@ -172,7 +172,7 @@ class Connector:
 
     def metadata_exchange(
         self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool, driver: str
-    ):
+    ) -> ssl.SSLSocket:
         # Create socket and wrap with SSL/TLS context
         sock = ctx.wrap_socket(
             socket.create_connection((ip_address, SERVER_PROXY_PORT)),
@@ -186,7 +186,7 @@ class Connector:
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
-            user_agent=self._client._user_agent + f"+{driver}",
+            user_agent=self._client._user_agent + f"+{driver}",  # type: ignore
             auth_type=auth_type,
             oauth2_token=self._credentials.token,
         )
