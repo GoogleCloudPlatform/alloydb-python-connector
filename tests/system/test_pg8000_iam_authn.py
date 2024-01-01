@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,8 +52,6 @@ def create_sqlalchemy_engine(
             "projects/my-project/locations/us-central1/clusters/my-cluster/instances/my-instance"
         user (str):
             The database user name, e.g., postgres
-        password (str):
-            The database user's password, e.g., secret-password
         db_name (str):
             The name of the database, e.g., mydb
     """
@@ -81,7 +79,7 @@ def create_sqlalchemy_engine(
 # [END alloydb_sqlalchemy_connect_connector]
 
 
-def test_pg8000_time() -> None:
+def test_pg8000_iam_authn_time() -> None:
     """Basic test to get time from database."""
     inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
     user = os.environ["ALLOYDB_IAM_USER"]
