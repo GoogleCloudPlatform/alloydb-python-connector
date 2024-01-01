@@ -38,7 +38,7 @@ def connect(sock: "ssl.SSLSocket", **kwargs: Any) -> "pg8000.dbapi.Connection":
 
     user = kwargs.pop("user")
     db = kwargs.pop("db")
-    passwd = kwargs.pop("password")
+    passwd = kwargs.pop("password", None)
     return pg8000.dbapi.connect(
         user,
         database=db,
