@@ -63,7 +63,7 @@ def create_sqlalchemy_engine(
             "pg8000",
             user=user,
             db=db,
-            enable_iam_authn=True,
+            enable_iam_auth=True,
         )
         return conn
 
