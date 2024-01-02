@@ -173,16 +173,47 @@ class Connector:
     def metadata_exchange(
         self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool, driver: str
     ) -> ssl.SSLSocket:
+        """
+        Sends metadata about the connection prior to the database
+        protocol taking over.
+
+        The exchange consists of four steps:
+
+        1. Prepare a MetadataExchangeRequest including the IAM Principal's
+           OAuth2 token, the user agent, and the requested authentication type.
+
+        2. Write the size of the message as a big endian uint32 (4 bytes) to
+           the server followed by the serialized message. The length does not
+           include the initial four bytes.
+
+        3. Read a big endian uint32 (4 bytes) from the server. This is the
+           MetadataExchangeResponse message length and does not include the
+           initial four bytes.
+
+        4. Parse the response using the message length in step 3. If the
+           response is not OK, return the response's error. If there is no error,
+           the metadata exchange has succeeded and the connection is complete.
+
+        Args:
+            ip_address (str): IP address of AlloyDB instance to connect to.
+            ctx (ssl.SSLContext): Context used to create a TLS connection
+                with AlloyDB instance ssl certificates.
+            enable_iam_auth (bool): Flag to enable IAM database authentication.
+            driver (str): A string representing the database driver to connect with.
+                Supported drivers are pg8000.
+
+        Returns:
+            sock (ssl.SSLSocket): mTLS/SSL socket connected to AlloyDB Proxy server.
+        """
         # Create socket and wrap with SSL/TLS context
         sock = ctx.wrap_socket(
             socket.create_connection((ip_address, SERVER_PROXY_PORT)),
             server_hostname=ip_address,
         )
         # set auth type for metadata exchange
+        auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
         if enable_iam_auth:
             auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
-        else:
-            auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
