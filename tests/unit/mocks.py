@@ -14,11 +14,15 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, List, Optional, Tuple
+import ssl
+import struct
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 
 class FakeCredentials:
@@ -189,3 +193,67 @@ class FakeAlloyDBClient:
 
     async def close(self) -> None:
         pass
+
+
+def metadata_exchange(sock: ssl.SSLSocket) -> None:
+    """
+        Mimics server side metadata exchange behavior in four steps:
+
+        1. Read a big endian uint32 (4 bytes) from the client. This is the number of
+         bytes the message consumes. The length does not include the initial four
+         bytes.
+
+        2. Read the message from the client using the message length and serialize
+         it into a MetadataExchangeResponse message.
+
+        The real server implementation will then validate the client has connection
+        permissions using the provided OAuth2 token based on the auth type. Here in
+        the test implementation, the server does nothing.
+
+        3. Prepare a response and write the size of the response as a big endian
+         uint32 (4 bytes)
+
+        4. Parse the response to bytes and write those to the client as well.
+
+    Subsequent interactions with the test server use the database protocol.
+    """
+    # read metadata message length (4 bytes)
+    message_len_buffer_size = struct.Struct("I").size
+    message_len_buffer = b""
+    while message_len_buffer_size > 0:
+        chunk = sock.recv(message_len_buffer_size)
+        if not chunk:
+            raise RuntimeError(
+                "Connection closed while getting metadata exchange length!"
+            )
+        message_len_buffer += chunk
+        message_len_buffer_size -= len(chunk)
+
+    (message_len,) = struct.unpack(">I", message_len_buffer)
+
+    # read metadata exchange message
+    buffer = b""
+    while message_len > 0:
+        chunk = sock.recv(message_len)
+        if not chunk:
+            raise RuntimeError("Connection closed while performing metadata exchange!")
+        buffer += chunk
+        message_len -= len(chunk)
+
+    # form metadata exchange request to be received from client
+    message = connectorspb.MetadataExchangeRequest()
+    # parse metadata exchange request from buffer
+    message.ParseFromString(buffer)
+
+    # form metadata exchange response to send to client
+    resp = connectorspb.MetadataExchangeResponse(
+        response_code=connectorspb.MetadataExchangeResponse.OK
+    )
+
+    # pack big-endian unsigned integer (4 bytes)
+    resp_len = struct.pack(">I", resp.ByteSize())
+
+    # send metadata response message length
+    sock.sendall(resp_len)
+    # send metadata request response message
+    sock.sendall(resp.SerializeToString())
