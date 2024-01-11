@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mocks import (
-    FakeCredentials,
-    FakeInstance,
-)
+from mocks import FakeCredentials
+from mocks import FakeInstance
 import pytest
 
 

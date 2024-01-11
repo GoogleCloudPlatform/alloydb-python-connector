@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from typing import Tuple
 
 import aiohttp
@@ -21,8 +22,10 @@ from mocks import FakeAlloyDBClient
 import pytest
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
-from google.cloud.alloydb.connector.instance import _parse_instance_uri, Instance
-from google.cloud.alloydb.connector.refresh import _is_valid, RefreshResult
+from google.cloud.alloydb.connector.instance import _parse_instance_uri
+from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.refresh import _is_valid
+from google.cloud.alloydb.connector.refresh import RefreshResult
 from google.cloud.alloydb.connector.utils import generate_keys
 
 

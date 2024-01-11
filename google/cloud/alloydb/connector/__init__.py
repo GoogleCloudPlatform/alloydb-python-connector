@@ -14,5 +14,4 @@
 from google.cloud.alloydb.connector.connector import Connector
 from google.cloud.alloydb.connector.version import __version__
 
-
 __all__ = ["__version__", "Connector"]

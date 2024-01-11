@@ -14,7 +14,7 @@
 import io
 import os
 
-from setuptools import find_namespace_packages, setup
+import setuptools
 
 name = "google-cloud-alloydb-connector"
 description = "A Python client library for connecting securely to your Google Cloud AlloyDB instances."
@@ -43,11 +43,13 @@ version = version["__version__"]
 # Only include packages under the 'google' namespace. Do not include tests,
 # samples, etc.
 packages = [
-    package for package in find_namespace_packages() if package.startswith("google")
+    package
+    for package in setuptools.find_namespace_packages()
+    if package.startswith("google")
 ]
 
 
-setup(
+setuptools.setup(
     name=name,
     version=version,
     description=description,
