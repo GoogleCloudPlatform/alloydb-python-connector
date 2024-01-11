@@ -34,9 +34,21 @@ Currently supported drivers are:
 
 You can install this library with `pip install`:
 
+### pg8000
+
 ```sh
 pip install "google-cloud-alloydb-connector[pg8000]"
 ```
+
+See [Synchronous Driver Usage](#synchronous-driver-usage) for details.
+
+### asyncpg
+
+```sh
+pip install "google-cloud-alloydb-connector[asyncpg]"
+```
+
+See [Async Driver Usage](#async-driver-usage) for details.
 
 ### APIs and Services
 
@@ -70,7 +82,7 @@ This package provides several functions for authorizing and encrypting
 connections. These functions are used with your database driver to connect to
 your AlloyDB instance.
 
-AlloyDB supports network connectivity through private, internal IP addresses only. 
+AlloyDB supports network connectivity through private, internal IP addresses only.
 This package must be run in an environment that is connected to the
 [VPC Network][vpc] that hosts your AlloyDB private IP address.
 
@@ -79,7 +91,7 @@ Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more det
 [vpc]: https://cloud.google.com/vpc/docs/vpc
 [alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
 
-### How to use this Connector
+### Synchronous Driver Usage
 
 To connect to AlloyDB using the connector, inititalize a `Connector`
 object and call it's `connect` method with the proper input parameters.
@@ -151,7 +163,7 @@ To close the `Connector` object's background resources, call it's `close()` meth
 connector.close()
 ```
 
-### Using Connector as a Context Manager
+### Synchronous Context Manager
 
 The `Connector` object can also be used as a context manager in order to
 automatically close and cleanup resources, removing the need for explicit
@@ -200,6 +212,118 @@ with pool.connect() as db_conn:
     # Do something with the results
     for row in result:
         print(row)
+```
+
+### Async Driver Usage
+
+The AlloyDB Connector is compatible with [asyncio][] to improve the speed and
+efficiency of database connections through concurrency. The `AsyncConnector`
+currently supports the following asyncio database drivers:
+
+- [asyncpg](https://magicstack.github.io/asyncpg)
+
+[asyncio]: https://docs.python.org/3/library/asyncio.html
+
+```python
+import asyncpg
+
+import sqlalchemy
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+
+from google.cloud.alloydb.connector import AsyncConnector
+
+async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
+    # initialize Connector object for connections to AlloyDB
+    async def getconn() -> asyncpg.Connection:
+        conn: asyncpg.Connection = await connector.connect(
+            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+            "asyncpg",
+            user="my-user",
+            password="my-password",
+            db="my-db-name"
+            # ... additional database driver args
+        )
+        return conn
+
+    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
+    # 'async_creator' argument to 'create_async_engine'
+    pool = create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=getconn,
+    )
+    return pool
+
+async def main():
+    connector = AsyncConnector()
+
+    # initialize connection pool
+    pool = await init_connection_pool(connector)
+
+    # example query
+    async with pool.connect() as conn:
+        await conn.execute(sqlalchemy.text("SELECT NOW()"))
+
+    # dispose of connection pool
+    await pool.dispose()
+
+    # close Connector
+    await connector.close()
+
+```
+
+For more details on additional arguments with an `asyncpg.Connection`, please
+visit the [official documentation][asyncpg-docs].
+
+
+[asyncpg-docs]: https://magicstack.github.io/asyncpg/current/api/index.html
+
+### Async Context Manager
+
+The `AsyncConnector` also may be used as an async context manager, removing the
+need for explicit calls to `connector.close()` to cleanup resources.
+
+```python
+import asyncio
+import asyncpg
+
+import sqlalchemy
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+
+from google.cloud.alloydb.connector import AsyncConnector
+
+async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
+    # initialize Connector object for connections to AlloyDB
+    async def getconn() -> asyncpg.Connection:
+            conn: asyncpg.Connection = await connector.connect(
+                "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+                "asyncpg",
+                user="my-user",
+                password="my-password",
+                db="my-db-name"
+                # ... additional database driver args
+            )
+            return conn
+
+    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
+    # 'async_creator' argument to 'create_async_engine'
+    pool = create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=getconn,
+    )
+    return pool
+
+async def main():
+    # initialize Connector object for connections to AlloyDB
+    async with AsyncConnector() as connector:
+        # initialize connection pool
+        pool = await init_connection_pool(connector)
+
+        # example query
+        async with pool.connect() as conn:
+            await conn.execute(sqlalchemy.text("SELECT NOW()"))
+
+        # dispose of connection pool
+        await pool.dispose()
 ```
 
 ## Support policy

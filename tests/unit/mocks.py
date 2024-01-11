@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -156,6 +157,7 @@ class FakeAlloyDBClient:
 
     def __init__(self) -> None:
         self.instance = FakeInstance()
+        self.closed = False
 
     async def _get_metadata(*args: Any, **kwargs: Any) -> str:
         return "127.0.0.1"
@@ -191,4 +193,23 @@ class FakeAlloyDBClient:
         return (ca_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
-        pass
+        self.closed = True
+
+
+class FakeConnectionInfo:
+    """Fake connection info class that doesn't perform a refresh"""
+
+    def __init__(self) -> None:
+        self._close_called = False
+        self._force_refresh_called = False
+
+    def connection_info(self) -> Tuple[str, Any]:
+        f = asyncio.Future()
+        f.set_result(("10.0.0.1", None))
+        return f
+
+    async def force_refresh(self) -> None:
+        self._force_refresh_called = True
+
+    async def close(self) -> None:
+        self._close_called = True
