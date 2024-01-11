@@ -44,5 +44,4 @@ async def test_connection_with_asyncpg() -> None:
     )
     async with pool.connect() as conn:
         res = (await conn.execute(sqlalchemy.text("SELECT 1"))).fetchone()
-        res = res[0]
-        assert res == 1
+        assert res[0] == 1
