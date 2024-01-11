@@ -13,12 +13,13 @@
 # limitations under the License.
 
 from __future__ import absolute_import
+
 import os
 
 import nox
 
-
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black==23.12.1"
+ISORT_VERSION = "isort==5.13.2"
 LINT_PATHS = ["google", "tests", "noxfile.py", "setup.py"]
 
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
@@ -36,22 +37,29 @@ def lint(session):
     session.install("-r", "requirements.txt")
     session.install(
         "flake8",
-        "flake8-import-order",
         "flake8-annotations",
         "mypy",
         BLACK_VERSION,
+        ISORT_VERSION,
         "types-setuptools",
         "twine",
     )
     session.run(
+        "isort",
+        "--fss",
+        "--check-only",
+        "--diff",
+        "--profile=google",
+        *LINT_PATHS,
+    )
+    session.run(
         "black",
         "--check",
+        "--diff",
         *LINT_PATHS,
     )
     session.run(
         "flake8",
-        "--import-order-style=google",
-        "--application-import-names=google,tests",
         "google",
         "tests",
     )
@@ -74,6 +82,27 @@ def blacken(session):
     Format code to uniform standard.
     """
     session.install(BLACK_VERSION)
+    session.run(
+        "black",
+        *LINT_PATHS,
+    )
+
+
+@nox.session()
+def format(session):
+    """
+    Run isort to sort imports. Then run black
+    to format code to uniform standard.
+    """
+    session.install(BLACK_VERSION, ISORT_VERSION)
+    # Use the --fss option to sort imports using strict alphabetical order.
+    # See https://pycqa.github.io/isort/docs/configuration/options.html#force-sort-within-sectionss
+    session.run(
+        "isort",
+        "--fss",
+        "--profile=google",
+        *LINT_PATHS,
+    )
     session.run(
         "black",
         *LINT_PATHS,

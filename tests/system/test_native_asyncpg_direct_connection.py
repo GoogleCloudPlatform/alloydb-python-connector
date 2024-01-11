@@ -18,7 +18,6 @@ import os
 
 # [START alloydb_native_asyncpg_connect_iam_authn_direct]
 import asyncpg
-
 import google.auth
 from google.auth.transport.requests import Request
 

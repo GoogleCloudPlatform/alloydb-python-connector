@@ -17,12 +17,11 @@ from datetime import datetime
 import os
 
 # [START alloydb_psycopg2_connect_iam_authn_direct]
-import sqlalchemy
-from sqlalchemy import event
-
 import google.auth
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
+import sqlalchemy
+from sqlalchemy import event
 
 # [END alloydb_psycopg2_connect_iam_authn_direct]
 
