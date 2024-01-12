@@ -233,10 +233,8 @@ class Connector:
         # pack big-endian unsigned integer (4 bytes)
         packed_len = struct.pack(">I", req.ByteSize())
 
-        # send metadata message length
-        sock.sendall(packed_len)
-        # send metadata request message
-        sock.sendall(req.SerializeToString())
+        # send metadata message length and request message
+        sock.sendall(packed_len + req.SerializeToString())
 
         # form metadata exchange response
         resp = connectorspb.MetadataExchangeResponse()

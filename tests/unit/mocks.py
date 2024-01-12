@@ -256,10 +256,8 @@ def metadata_exchange(sock: ssl.SSLSocket) -> None:
     # pack big-endian unsigned integer (4 bytes)
     resp_len = struct.pack(">I", resp.ByteSize())
 
-    # send metadata response message length
-    sock.sendall(resp_len)
-    # send metadata request response message
-    sock.sendall(resp.SerializeToString())
+    # send metadata response length and response message
+    sock.sendall(resp_len + resp.SerializeToString())
 
 
 class FakeConnectionInfo:
