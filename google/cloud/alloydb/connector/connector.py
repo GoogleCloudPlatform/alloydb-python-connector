@@ -242,7 +242,7 @@ class Connector:
         resp = connectorspb.MetadataExchangeResponse()
 
         # read metadata message length (4 bytes)
-        message_len_buffer_size = struct.Struct("I").size
+        message_len_buffer_size = struct.Struct(">I").size
         message_len_buffer = b""
         while message_len_buffer_size > 0:
             chunk = sock.recv(message_len_buffer_size)
@@ -271,7 +271,9 @@ class Connector:
 
         # validate metadata exchange response
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
-            raise ValueError("Metadata Exchange request has failed!")
+            raise ValueError(
+                f"Metadata Exchange request has failed with error: {resp.error}"
+            )
 
         return sock
 
