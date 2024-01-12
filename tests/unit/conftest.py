@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from mocks import (
+    FakeAlloyDBClient,
     FakeCredentials,
     FakeInstance,
     metadata_exchange,
@@ -21,6 +22,8 @@ import pytest
 import socket
 import ssl
 from tempfile import TemporaryDirectory
+from threading import Thread
+from typing import Generator
 
 from google.cloud.alloydb.connector.utils import _write_to_file
 
@@ -32,39 +35,50 @@ def credentials() -> FakeCredentials:
 
 @pytest.fixture(scope="session")
 def fake_instance() -> FakeInstance:
-    instance = FakeInstance()
-    instance.generate_certs()
-    return instance
+    return FakeInstance()
 
 
-@pytest.fixture(scope="session")
-def proxy_server(fake_instance: FakeInstance) -> None:
+@pytest.fixture
+def fake_client(fake_instance: FakeInstance) -> FakeAlloyDBClient:
+    return FakeAlloyDBClient(fake_instance)
+
+
+def start_proxy_server(instance: FakeInstance) -> None:
     """Run local proxy server capable of performing metadata exchange"""
     ip_address = "127.0.0.1"
     port = 5433
     # create socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # create SSL/TLS context
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        # create SSL/TLS context
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        root, intermediate, server = instance.get_pem_certs()
+        # tmpdir and its contents are automatically deleted after the CA cert
+        # and cert chain are loaded into the SSLcontext. The values
+        # need to be written to files in order to be loaded by the SSLContext
+        with TemporaryDirectory() as tmpdir:
+            ca_filename, cert_chain_filename, key_filename = _write_to_file(
+                tmpdir, server, [server, root], instance.server_key
+            )
+            context.load_cert_chain(cert_chain_filename, key_filename)
+        # bind socket to AlloyDB proxy server port on localhost
+        sock.bind((ip_address, port))
+        # listen for incoming connections
+        sock.listen(5)
 
-    root, intermediate, server = fake_instance.get_pem_certs()
-    # tmpdir and its contents are automatically deleted after the CA cert
-    # and cert chain are loaded into the SSLcontext. The values
-    # need to be written to files in order to be loaded by the SSLContext
-    with TemporaryDirectory() as tmpdir:
-        ca_filename, _, key_filename = _write_to_file(
-            tmpdir, server, [root, intermediate], fake_instance.server_key
-        )
-        ssock: ssl.SSLSocket = context.wrap_socket(
-            sock, server_side=True, certfile=ca_filename, keyfile=key_filename
-        )
-    # bind socket to AlloyDB proxy server port on localhost
-    ssock.bind((ip_address, port))
-    # listen for incoming connections
-    ssock.listen(5)
+        while True:
+            print("WAITING!!!!!")
+            with context.wrap_socket(sock, server_side=True) as ssock:
+                conn, _ = ssock.accept()
+                print("GOT CONNECTION!!!!!!!!")
+                metadata_exchange(conn)
+                conn.sendall(instance.name.encode("utf-8"))
+                conn.close()
 
-    while True:
-        conn, _ = ssock.accept()
-        metadata_exchange(conn)
-        conn.sendall(fake_instance.name.encode("utf-8"))
-        conn.close()
+
+@pytest.fixture(autouse=True, scope="session")
+def proxy_server(fake_instance: FakeInstance) -> Generator:
+    """Run local proxy server capable of performing metadata exchange"""
+    thread = Thread(target=start_proxy_server, args=(fake_instance,), daemon=True)
+    thread.start()
+    yield thread
+    thread.join()

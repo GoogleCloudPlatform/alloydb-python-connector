@@ -61,7 +61,7 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert thread.is_alive() is False
 
 
-def test_connect(credentials: FakeCredentials) -> None:
+def test_connect(credentials: FakeCredentials, proxy_server) -> None:
     """
     Test that connector.connect returns connection object.
     """

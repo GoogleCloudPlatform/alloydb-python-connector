@@ -119,10 +119,6 @@ class FakeInstance:
         self.cert_before = cert_before
         self.cert_expiry = cert_expiry
 
-    def generate_certs(self) -> None:
-        """
-        Build certs required for chain of trust with testing server.
-        """
         # build root cert
         self.root_cert, self.root_key = generate_cert("root.alloydb")
         # create self signed root cert
@@ -155,8 +151,8 @@ class FakeInstance:
 class FakeAlloyDBClient:
     """Fake class for testing AlloyDBClient"""
 
-    def __init__(self) -> None:
-        self.instance = FakeInstance()
+    def __init__(self, instance: Optional[FakeInstance] = None) -> None:
+        self.instance = FakeInstance() if instance is None else instance
 
     async def _get_metadata(*args: Any, **kwargs: Any) -> str:
         return "127.0.0.1"
@@ -168,7 +164,6 @@ class FakeAlloyDBClient:
         cluster: str,
         pub_key: str,
     ) -> Tuple[str, List[str]]:
-        self.instance.generate_certs()
         root_cert, intermediate_cert, ca_cert = self.instance.get_pem_certs()
         # encode public key to bytes
         pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
@@ -189,7 +184,7 @@ class FakeAlloyDBClient:
         client_cert = client_cert.public_bytes(
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
-        return (ca_cert, [client_cert, intermediate_cert, root_cert])
+        return (root_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
         pass
