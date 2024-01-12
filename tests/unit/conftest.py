@@ -66,10 +66,8 @@ def start_proxy_server(instance: FakeInstance) -> None:
         sock.listen(5)
 
         while True:
-            print("WAITING!!!!!")
             with context.wrap_socket(sock, server_side=True) as ssock:
                 conn, _ = ssock.accept()
-                print("GOT CONNECTION!!!!!!!!")
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
                 conn.close()
