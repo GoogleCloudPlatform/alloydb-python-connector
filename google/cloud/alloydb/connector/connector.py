@@ -131,7 +131,10 @@ class Connector:
         if self._client is None:
             # lazy init client as it has to be initialized in async context
             self._client = AlloyDBClient(
-                self._alloydb_api_endpoint, self._quota_project, self._credentials
+                self._alloydb_api_endpoint,
+                self._quota_project,
+                self._credentials,
+                driver=driver,
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible

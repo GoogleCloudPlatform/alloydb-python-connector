@@ -155,10 +155,12 @@ class FakeInstance:
 class FakeAlloyDBClient:
     """Fake class for testing AlloyDBClient"""
 
-    def __init__(self, instance: Optional[FakeInstance] = None) -> None:
+    def __init__(
+        self, instance: Optional[FakeInstance] = None, driver: str = "pg8000"
+    ) -> None:
         self.instance = FakeInstance() if instance is None else instance
         self.closed = False
-        self._user_agent = "test-user-agent"
+        self._user_agent = f"test-user-agent+{driver}"
 
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
         return self.instance.ip_address
