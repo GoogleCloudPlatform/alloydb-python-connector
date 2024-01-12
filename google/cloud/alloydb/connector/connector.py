@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional, Type, TYPE_CHECKING
 
 from google.auth import default
 from google.auth.credentials import with_scopes_if_required
+
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
@@ -32,6 +33,7 @@ import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
     import ssl
+
     from google.auth.credentials import Credentials
 
 SERVER_PROXY_PORT = 5433

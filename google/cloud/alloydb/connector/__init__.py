@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from google.cloud.alloydb.connector.async_connector import AsyncConnector
 from google.cloud.alloydb.connector.connector import Connector
 from google.cloud.alloydb.connector.version import __version__
 
-
-__all__ = ["__version__", "Connector"]
+__all__ = ["__version__", "Connector", "AsyncConnector"]

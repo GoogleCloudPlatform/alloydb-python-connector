@@ -21,15 +21,15 @@ from typing import Tuple, TYPE_CHECKING
 
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
-from google.cloud.alloydb.connector.refresh import (
-    _is_valid,
-    _seconds_until_refresh,
-    RefreshResult,
-)
+from google.cloud.alloydb.connector.refresh import _is_valid
+from google.cloud.alloydb.connector.refresh import _seconds_until_refresh
+from google.cloud.alloydb.connector.refresh import RefreshResult
 
 if TYPE_CHECKING:
     import ssl
+
     from cryptography.hazmat.primitives.asymmetric import rsa
+
     from google.cloud.alloydb.connector.client import AlloyDBClient
 
 logger = logging.getLogger(name=__name__)

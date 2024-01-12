@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 import ssl
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from mocks import FakeInstance
 
-from google.cloud.alloydb.connector.refresh import (
-    _seconds_until_refresh,
-    RefreshResult,
-)
+from google.cloud.alloydb.connector.refresh import _seconds_until_refresh
+from google.cloud.alloydb.connector.refresh import RefreshResult
 
 
 def test_seconds_until_refresh_over_1_hour() -> None:

@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mocks import (
-    FakeAlloyDBClient,
-    FakeCredentials,
-    FakeInstance,
-    metadata_exchange,
-)
-import pytest
 import socket
 import ssl
 from tempfile import TemporaryDirectory
 from threading import Thread
 from typing import Generator
+
+from mocks import FakeAlloyDBClient
+from mocks import FakeCredentials
+from mocks import FakeInstance
+from mocks import metadata_exchange
+import pytest
 
 from google.cloud.alloydb.connector.utils import _write_to_file
 

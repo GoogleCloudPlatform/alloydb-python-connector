@@ -14,8 +14,9 @@
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pg8000
     import ssl
+
+    import pg8000
 
 
 def connect(sock: "ssl.SSLSocket", **kwargs: Any) -> "pg8000.dbapi.Connection":

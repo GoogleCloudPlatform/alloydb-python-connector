@@ -18,8 +18,8 @@ import logging
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
-
 from google.auth.transport.requests import Request
+
 from google.cloud.alloydb.connector.version import __version__ as version
 
 if TYPE_CHECKING:

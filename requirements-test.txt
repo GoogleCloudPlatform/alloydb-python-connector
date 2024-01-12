@@ -2,8 +2,8 @@ asyncpg==0.29.0
 mock==5.1.0
 pg8000==1.30.3
 psycopg2-binary==2.9.9
-pytest==7.4.3
-pytest-asyncio==0.23.2
+pytest==7.4.4
+pytest-asyncio==0.23.3
 pytest-cov==4.1.0
 pytest-aiohttp==1.0.5
-SQLAlchemy==2.0.23
+SQLAlchemy==2.0.25

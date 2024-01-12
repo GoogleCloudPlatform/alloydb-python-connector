@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, List, Optional, Tuple
+import asyncio
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 import ssl
 import struct
+from typing import Any, Callable, List, Optional, Tuple
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
@@ -153,6 +157,7 @@ class FakeAlloyDBClient:
 
     def __init__(self, instance: Optional[FakeInstance] = None) -> None:
         self.instance = FakeInstance() if instance is None else instance
+        self.closed = False
         self._user_agent = "test-user-agent"
 
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
@@ -188,7 +193,7 @@ class FakeAlloyDBClient:
         return (ca_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
-        pass
+        self.closed = True
 
 
 def metadata_exchange(sock: ssl.SSLSocket) -> None:
@@ -253,3 +258,22 @@ def metadata_exchange(sock: ssl.SSLSocket) -> None:
     sock.sendall(resp_len)
     # send metadata request response message
     sock.sendall(resp.SerializeToString())
+
+
+class FakeConnectionInfo:
+    """Fake connection info class that doesn't perform a refresh"""
+
+    def __init__(self) -> None:
+        self._close_called = False
+        self._force_refresh_called = False
+
+    def connection_info(self) -> Tuple[str, Any]:
+        f = asyncio.Future()
+        f.set_result(("10.0.0.1", None))
+        return f
+
+    async def force_refresh(self) -> None:
+        self._force_refresh_called = True
+
+    async def close(self) -> None:
+        self._close_called = True

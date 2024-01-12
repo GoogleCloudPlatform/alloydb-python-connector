@@ -16,7 +16,8 @@ import asyncio
 from threading import Thread
 
 from mock import patch
-from mocks import FakeAlloyDBClient, FakeCredentials
+from mocks import FakeAlloyDBClient
+from mocks import FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector import Connector
