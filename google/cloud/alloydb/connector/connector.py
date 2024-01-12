@@ -267,6 +267,9 @@ class Connector:
         # parse metadata exchange response from buffer
         resp.ParseFromString(buffer)
 
+        # reset socket back to blocking mode
+        sock.setblocking(True)
+
         # validate metadata exchange response
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
             raise ValueError(
