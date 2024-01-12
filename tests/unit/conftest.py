@@ -50,6 +50,7 @@ def start_proxy_server(instance: FakeInstance) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         # create SSL/TLS context
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_3
         root, intermediate, server = instance.get_pem_certs()
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
