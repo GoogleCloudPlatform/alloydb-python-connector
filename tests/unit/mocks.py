@@ -153,9 +153,10 @@ class FakeAlloyDBClient:
 
     def __init__(self, instance: Optional[FakeInstance] = None) -> None:
         self.instance = FakeInstance() if instance is None else instance
+        self._user_agent = "test-user-agent"
 
-    async def _get_metadata(*args: Any, **kwargs: Any) -> str:
-        return "127.0.0.1"
+    async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
+        return self.instance.ip_address
 
     async def _get_client_certificate(
         self,
@@ -184,7 +185,7 @@ class FakeAlloyDBClient:
         client_cert = client_cert.public_bytes(
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
-        return (root_cert, [client_cert, intermediate_cert, root_cert])
+        return (ca_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
         pass

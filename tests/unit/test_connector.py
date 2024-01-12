@@ -16,7 +16,7 @@ import asyncio
 from threading import Thread
 
 from mock import patch
-from mocks import FakeAlloyDBClient, FakeCredentials, FakeInstance
+from mocks import FakeAlloyDBClient, FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector import Connector
@@ -61,11 +61,11 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert thread.is_alive() is False
 
 
-def test_connect(credentials: FakeCredentials, fake_instance: FakeInstance) -> None:
+def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
     """
     Test that connector.connect returns connection object.
     """
-    client = FakeAlloyDBClient(instance=fake_instance)
+    client = fake_client
     with Connector(credentials) as connector:
         connector._client = client
         # patch db connection creation
