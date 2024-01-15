@@ -36,7 +36,10 @@ if TYPE_CHECKING:
 
     from google.auth.credentials import Credentials
 
+# the port the AlloyDB server-side proxy receives connections on
 SERVER_PROXY_PORT = 5433
+# the maximum amount of time to wait before aborting a metadata exchange
+IO_TIMEOUT = 30
 
 
 class Connector:
@@ -228,7 +231,7 @@ class Connector:
         )
 
         # set I/O timeout
-        sock.settimeout(30)
+        sock.settimeout(IO_TIMEOUT)
 
         # pack big-endian unsigned integer (4 bytes)
         packed_len = struct.pack(">I", req.ByteSize())

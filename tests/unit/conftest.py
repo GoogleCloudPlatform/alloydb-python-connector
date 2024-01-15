@@ -51,12 +51,12 @@ def start_proxy_server(instance: FakeInstance) -> None:
         # create SSL/TLS context
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.minimum_version = ssl.TLSVersion.TLSv1_3
-        root, intermediate, server = instance.get_pem_certs()
+        root, _, server = instance.get_pem_certs()
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
         # need to be written to files in order to be loaded by the SSLContext
         with TemporaryDirectory() as tmpdir:
-            ca_filename, cert_chain_filename, key_filename = _write_to_file(
+            _, cert_chain_filename, key_filename = _write_to_file(
                 tmpdir, server, [server, root], instance.server_key
             )
             context.load_cert_chain(cert_chain_filename, key_filename)

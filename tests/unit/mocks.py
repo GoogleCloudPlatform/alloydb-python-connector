@@ -172,7 +172,7 @@ class FakeAlloyDBClient:
         cluster: str,
         pub_key: str,
     ) -> Tuple[str, List[str]]:
-        root_cert, intermediate_cert, ca_cert = self.instance.get_pem_certs()
+        root_cert, intermediate_cert, server_cert = self.instance.get_pem_certs()
         # encode public key to bytes
         pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
             pub_key.encode("UTF-8"),
@@ -192,7 +192,7 @@ class FakeAlloyDBClient:
         client_cert = client_cert.public_bytes(
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
-        return (ca_cert, [client_cert, intermediate_cert, root_cert])
+        return (server_cert, [client_cert, intermediate_cert, root_cert])
 
     async def close(self) -> None:
         self.closed = True

@@ -151,7 +151,7 @@ class AlloyDBClient:
         url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}:generateClientCertificate"
 
         # asyncpg does not currently support using metadata exchange
-        # only use metadata exchangefor pg8000 driver
+        # only use metadata exchange for pg8000 driver
         use_metadata = self._user_agent.endswith("pg8000")
         data = {
             "publicKey": pub_key,
