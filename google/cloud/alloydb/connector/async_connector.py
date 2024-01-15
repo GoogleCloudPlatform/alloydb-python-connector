@@ -63,7 +63,13 @@ class AsyncConnector:
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
-        self._keys = asyncio.create_task(generate_keys())
+
+        # check if AsyncConnector is being initialized with event loop running
+        # Otherwise we will lazy init keys
+        try:
+            self._keys: Optional[asyncio.Task] = asyncio.create_task(generate_keys())
+        except RuntimeError:
+            self._keys = None
         self._client: Optional[AlloyDBClient] = None
 
     async def connect(
@@ -90,6 +96,8 @@ class AsyncConnector:
         Returns:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
+        if self._keys is None:
+            self._keys = asyncio.create_task(generate_keys())
         if self._client is None:
             # lazy init client as it has to be initialized in async context
             self._client = AlloyDBClient(

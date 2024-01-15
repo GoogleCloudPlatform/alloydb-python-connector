@@ -191,3 +191,12 @@ async def test_connect_unsupported_driver(
             exc_info.value.args[0]
             == "Driver 'bad_driver' is not a supported database driver."
         )
+
+
+def test_synchronous_init(credentials: FakeCredentials) -> None:
+    """
+    Test that AsyncConnector can be successfully initialized without an
+    event loop running.
+    """
+    connector = AsyncConnector(credentials)
+    assert connector._keys is None
