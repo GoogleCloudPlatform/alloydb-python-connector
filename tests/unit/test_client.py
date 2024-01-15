@@ -120,15 +120,9 @@ async def test_AlloyDBClient_user_agent(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
     )
     if driver is None:
-        assert (
-            client._client.headers["User-Agent"]
-            == f"alloydb-python-connector/{version}"
-        )
+        assert client._user_agent == f"alloydb-python-connector/{version}"
     else:
-        assert (
-            client._client.headers["User-Agent"]
-            == f"alloydb-python-connector/{version}+{driver}"
-        )
+        assert client._user_agent == f"alloydb-python-connector/{version}+{driver}"
     # close client
     await client.close()
 

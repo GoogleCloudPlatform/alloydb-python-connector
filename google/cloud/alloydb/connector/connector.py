@@ -225,7 +225,7 @@ class Connector:
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
-            user_agent=f"{self._client._user_agent}+{driver}",  # type: ignore
+            user_agent=f"{self._client._user_agent}",  # type: ignore
             auth_type=auth_type,
             oauth2_token=self._credentials.token,
         )
