@@ -76,7 +76,7 @@ setuptools.setup(
     install_requires=dependencies,
     extras_require={
         "pg8000": ["pg8000>=1.30.4"],
-        "asyncpg": ["asyncpg==0.29.0"],
+        "asyncpg": ["asyncpg>=0.29.0"],
     },
     python_requires=">=3.8",
     include_package_data=True,
