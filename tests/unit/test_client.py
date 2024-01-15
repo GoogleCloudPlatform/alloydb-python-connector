@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-from typing import Any
+from typing import Any, Optional
 
 from aiohttp import web
 from mocks import FakeCredentials
@@ -100,5 +100,48 @@ async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
     # verify proper headers are set
     assert client._client.headers["User-Agent"] == f"alloydb-python-connector/{version}"
     assert client._client.headers["x-goog-user-project"] == "my-quota-project"
+    # close client
+    await client.close()
+
+
+@pytest.mark.parametrize(
+    "driver",
+    [None, "pg8000", "asyncpg"],
+)
+@pytest.mark.asyncio
+async def test_AlloyDBClient_user_agent(
+    driver: Optional[str], credentials: FakeCredentials
+) -> None:
+    """
+    Test to check whether the __init__ method of AlloyDBClient
+    properly sets user agent when passed a database driver.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
+    )
+    if driver is None:
+        assert client._user_agent == f"alloydb-python-connector/{version}"
+    else:
+        assert client._user_agent == f"alloydb-python-connector/{version}+{driver}"
+    # close client
+    await client.close()
+
+
+@pytest.mark.parametrize(
+    "driver, expected",
+    [(None, False), ("pg8000", True), ("asyncpg", False)],
+)
+@pytest.mark.asyncio
+async def test_AlloyDBClient_use_metadata(
+    driver: Optional[str], expected: bool, credentials: FakeCredentials
+) -> None:
+    """
+    Test to check whether the __init__ method of AlloyDBClient
+    properly sets use_metadata.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
+    )
+    assert client._use_metadata == expected
     # close client
     await client.close()

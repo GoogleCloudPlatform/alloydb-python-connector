@@ -96,6 +96,7 @@ class AsyncConnector:
                 self._alloydb_api_endpoint,
                 self._quota_project,
                 self._credentials,
+                driver=driver,
             )
 
         # use existing connection info if possible

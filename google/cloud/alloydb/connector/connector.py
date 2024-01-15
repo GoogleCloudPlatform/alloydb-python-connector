@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
+import socket
+import struct
 from threading import Thread
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING
@@ -27,9 +29,17 @@ from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.utils import generate_keys
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
+    import ssl
+
     from google.auth.credentials import Credentials
+
+# the port the AlloyDB server-side proxy receives connections on
+SERVER_PROXY_PORT = 5433
+# the maximum amount of time to wait before aborting a metadata exchange
+IO_TIMEOUT = 30
 
 
 class Connector:
@@ -45,6 +55,7 @@ class Connector:
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
+        enable_iam_auth (bool): Enables automatic IAM database authentication.
     """
 
     def __init__(
@@ -52,6 +63,7 @@ class Connector:
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        enable_iam_auth: bool = False,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -61,6 +73,7 @@ class Connector:
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._enable_iam_auth = enable_iam_auth
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -121,8 +134,12 @@ class Connector:
         if self._client is None:
             # lazy init client as it has to be initialized in async context
             self._client = AlloyDBClient(
-                self._alloydb_api_endpoint, self._quota_project, self._credentials
+                self._alloydb_api_endpoint,
+                self._quota_project,
+                self._credentials,
+                driver=driver,
             )
+        enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible
         if instance_uri in self._instances:
             instance = self._instances[instance_uri]
@@ -150,12 +167,119 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
-            connect_partial = partial(connector, ip_address, context, **kwargs)
+            metadata_partial = partial(
+                self.metadata_exchange, ip_address, context, enable_iam_auth, driver
+            )
+            sock = await self._loop.run_in_executor(None, metadata_partial)
+            connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
             await instance.force_refresh()
             raise
+
+    def metadata_exchange(
+        self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool, driver: str
+    ) -> ssl.SSLSocket:
+        """
+        Sends metadata about the connection prior to the database
+        protocol taking over.
+
+        The exchange consists of four steps:
+
+        1. Prepare a MetadataExchangeRequest including the IAM Principal's
+           OAuth2 token, the user agent, and the requested authentication type.
+
+        2. Write the size of the message as a big endian uint32 (4 bytes) to
+           the server followed by the serialized message. The length does not
+           include the initial four bytes.
+
+        3. Read a big endian uint32 (4 bytes) from the server. This is the
+           MetadataExchangeResponse message length and does not include the
+           initial four bytes.
+
+        4. Parse the response using the message length in step 3. If the
+           response is not OK, return the response's error. If there is no error,
+           the metadata exchange has succeeded and the connection is complete.
+
+        Args:
+            ip_address (str): IP address of AlloyDB instance to connect to.
+            ctx (ssl.SSLContext): Context used to create a TLS connection
+                with AlloyDB instance ssl certificates.
+            enable_iam_auth (bool): Flag to enable IAM database authentication.
+            driver (str): A string representing the database driver to connect with.
+                Supported drivers are pg8000.
+
+        Returns:
+            sock (ssl.SSLSocket): mTLS/SSL socket connected to AlloyDB Proxy server.
+        """
+        # Create socket and wrap with SSL/TLS context
+        sock = ctx.wrap_socket(
+            socket.create_connection((ip_address, SERVER_PROXY_PORT)),
+            server_hostname=ip_address,
+        )
+        # set auth type for metadata exchange
+        auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
+        if enable_iam_auth:
+            auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
+
+        # form metadata exchange request
+        req = connectorspb.MetadataExchangeRequest(
+            user_agent=f"{self._client._user_agent}",  # type: ignore
+            auth_type=auth_type,
+            oauth2_token=self._credentials.token,
+        )
+
+        # set I/O timeout
+        sock.settimeout(IO_TIMEOUT)
+
+        # pack big-endian unsigned integer (4 bytes)
+        packed_len = struct.pack(">I", req.ByteSize())
+
+        # send metadata message length and request message
+        sock.sendall(packed_len + req.SerializeToString())
+
+        # form metadata exchange response
+        resp = connectorspb.MetadataExchangeResponse()
+
+        # read metadata message length (4 bytes)
+        message_len_buffer_size = struct.Struct(">I").size
+        message_len_buffer = b""
+        while message_len_buffer_size > 0:
+            chunk = sock.recv(message_len_buffer_size)
+            if not chunk:
+                raise RuntimeError(
+                    "Connection closed while getting metadata exchange length!"
+                )
+            message_len_buffer += chunk
+            message_len_buffer_size -= len(chunk)
+
+        (message_len,) = struct.unpack(">I", message_len_buffer)
+
+        # read metadata exchange message
+        buffer = b""
+        while message_len > 0:
+            chunk = sock.recv(message_len)
+            if not chunk:
+                raise RuntimeError(
+                    "Connection closed while performing metadata exchange!"
+                )
+            buffer += chunk
+            message_len -= len(chunk)
+
+        # parse metadata exchange response from buffer
+        resp.ParseFromString(buffer)
+
+        # reset socket back to blocking mode
+        sock.setblocking(True)
+
+        # validate metadata exchange response
+        if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
+            raise ValueError(
+                f"Metadata Exchange request has failed with error: {resp.error}"
+            )
+
+        return sock
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""

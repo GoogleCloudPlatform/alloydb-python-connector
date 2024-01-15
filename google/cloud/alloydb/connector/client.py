@@ -38,6 +38,7 @@ class AlloyDBClient:
         quota_project: Optional[str],
         credentials: Credentials,
         client: Optional[aiohttp.ClientSession] = None,
+        driver: Optional[str] = None,
     ) -> None:
         """
         Establish the client to be used for AlloyDB Admin API requests.
@@ -55,10 +56,12 @@ class AlloyDBClient:
             client (aiohttp.ClientSession): Async client used to make requests to
                 AlloyDB Admin APIs.
                 Optional, defaults to None and creates new client.
+            driver (str): Database driver to be used by the client.
         """
+        user_agent = f"{USER_AGENT}+{driver}" if driver else USER_AGENT
         headers = {
-            "x-goog-api-client": USER_AGENT,
-            "User-Agent": USER_AGENT,
+            "x-goog-api-client": user_agent,
+            "User-Agent": user_agent,
             "Content-Type": "application/json",
         }
         if quota_project:
@@ -67,6 +70,10 @@ class AlloyDBClient:
         self._client = client if client else aiohttp.ClientSession(headers=headers)
         self._credentials = credentials
         self._alloydb_api_endpoint = alloydb_api_endpoint
+        # asyncpg does not currently support using metadata exchange
+        # only use metadata exchange for pg8000 driver
+        self._use_metadata = True if driver == "pg8000" else False
+        self._user_agent = user_agent
 
     async def _get_metadata(
         self,
@@ -149,6 +156,7 @@ class AlloyDBClient:
         data = {
             "publicKey": pub_key,
             "certDuration": "3600s",
+            "useMetadataExchange": self._use_metadata,
         }
 
         resp = await self._client.post(

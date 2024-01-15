@@ -11,49 +11,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import socket
-import ssl
 from typing import Any, TYPE_CHECKING
 
-SERVER_PROXY_PORT = 5433
-
 if TYPE_CHECKING:
+    import ssl
+
     import pg8000
 
 
-def connect(
-    ip_address: str, ctx: ssl.SSLContext, **kwargs: Any
-) -> "pg8000.dbapi.Connection":
+def connect(sock: "ssl.SSLSocket", **kwargs: Any) -> "pg8000.dbapi.Connection":
     """Create a pg8000 DBAPI connection object.
 
     Args:
-        ip_address (str): IP address of AlloyDB instance to connect to.
-        ctx (ssl.SSLContext): Context used to create a TLS connection
-            with AlloyDB instance ssl certificates.
+        sock (ssl.SSLSocket): SSL/TLS secure socket stream connected to the
+            AlloyDB proxy server.
 
     Returns:
         pg8000.dbapi.Connection: A pg8000 Connection object for
         the AlloyDB instance.
     """
-    # Connecting through pg8000 is done by passing in an SSL Context and setting the
-    # "request_ssl" attr to false. This works because when "request_ssl" is false,
-    # the driver skips the database level SSL/TLS exchange, but still uses the
-    # ssl_context (if it is not None) to create the connection.
     try:
         import pg8000
     except ImportError:
         raise ImportError(
             'Unable to import module "pg8000." Please install and try again.'
         )
-    # Create socket and wrap with context.
-    sock = ctx.wrap_socket(
-        socket.create_connection((ip_address, SERVER_PROXY_PORT)),
-        server_hostname=ip_address,
-    )
 
     user = kwargs.pop("user")
     db = kwargs.pop("db")
-    passwd = kwargs.pop("password")
+    passwd = kwargs.pop("password", None)
     return pg8000.dbapi.connect(
         user,
         database=db,

@@ -25,6 +25,7 @@ dependencies = [
     "cryptography>=38.0.3",
     "requests",
     "google-auth",
+    "protobuf",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
