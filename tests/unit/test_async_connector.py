@@ -194,5 +194,9 @@ async def test_connect_unsupported_driver(
 
 
 def test_synchronous_init(credentials: FakeCredentials) -> None:
+    """
+    Test that AsyncConnector can be successfully initialized without an
+    event loop running.
+    """
     connector = AsyncConnector(credentials)
     assert connector._keys is None
