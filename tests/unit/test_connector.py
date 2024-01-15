@@ -62,11 +62,11 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert thread.is_alive() is False
 
 
-def test_connect(credentials: FakeCredentials) -> None:
+def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
     """
     Test that connector.connect returns connection object.
     """
-    client = FakeAlloyDBClient()
+    client = fake_client
     with Connector(credentials) as connector:
         connector._client = client
         # patch db connection creation
