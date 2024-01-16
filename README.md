@@ -25,6 +25,11 @@ Using an AlloyDB Connector provides the following benefits:
 * **Convenience:** removes the requirement to use and distribute SSL
   certificates, as well as manage firewalls or source/destination IP addresses.
 
+* (optionally) **IAM DB Authentication:** provides support for
+  [AlloyDB’s automatic IAM DB AuthN][iam-db-authn] feature.
+
+[iam-db-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn
+
 The AlloyDB Python Connector is a package to be used alongside a database driver.
 Currently supported drivers are:
 
@@ -325,6 +330,40 @@ async def main():
         # dispose of connection pool
         await pool.dispose()
 ```
+
+### Automatic IAM Database Authentication
+
+The Python Connector supports [Automatic IAM database authentication][].
+
+Make sure to [configure your AlloyDB Instance to allow IAM authentication][configure-iam-authn]
+and [add an IAM database user][add-iam-user].
+
+A `Connector` or `AsyncConnector` can be configured to connect to an AlloyDB instance using
+automatic IAM database authentication with the `enable_iam_auth` argument set to `True`.
+
+When configuring the `connector.connect` call for IAM authentication, the `password` field can be
+omitted and the `user` field should be formatted as follows:
+
+* For an IAM user account, this is the user's email address.
+* For a service account, it is the service account's email without the
+`.gserviceaccount.com` domain suffix.
+
+For example, to connect with IAM authentication using the
+`test-sa@test-project.iam.gserviceaccount.com` service account:
+
+```python
+connector.connect(
+    "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+    "pg8000",  # asyncpg for AsyncConnector
+    user="test-sa@test-project.iam",
+    db="my-db-name",
+    enable_iam_auth=True,
+)
+```
+
+[Automatic IAM database authentication]: https://cloud.google.com/alloydb/docs/manage-iam-authn
+[configure-iam-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn#enable
+[add-iam-user]: https://cloud.google.com/alloydb/docs/manage-iam-authn#create-user
 
 ## Support policy
 
