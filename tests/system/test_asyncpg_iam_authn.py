@@ -72,9 +72,9 @@ async def create_sqlalchemy_engine(
     # create async SQLAlchemy connection pool
     engine = sqlalchemy.ext.asyncio.create_async_engine(
         "postgresql+asyncpg://",
-        creator=getconn,
+        async_creator=getconn,
+        execution_options={"isolation_level": "AUTOCOMMIT"},
     )
-    engine.dialect.description_encoding = None
     return engine, connector
 
 
@@ -87,7 +87,6 @@ async def test_asyncpg_iam_authn_time() -> None:
     pool, connector = await create_sqlalchemy_engine(inst_uri, user, db)
     async with pool.connect() as conn:
         time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
-        conn.commit()
         curr_time = time[0]
         assert type(curr_time) is datetime
     await connector.close()
