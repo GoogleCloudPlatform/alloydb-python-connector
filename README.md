@@ -344,7 +344,7 @@ omitted and the `user` field should be formatted as follows:
 `.gserviceaccount.com` domain suffix.
 
 For example, to connect with IAM authentication using the
-`test-sa@test-project.iam.gserviceaccount.com` service account, it would look like:
+`test-sa@test-project.iam.gserviceaccount.com` service account:
 
 ```python
 connector.connect(
