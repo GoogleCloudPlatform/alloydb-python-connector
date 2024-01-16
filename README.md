@@ -25,6 +25,11 @@ Using an AlloyDB Connector provides the following benefits:
 * **Convenience:** removes the requirement to use and distribute SSL
   certificates, as well as manage firewalls or source/destination IP addresses.
 
+* (optionally) **IAM DB Authentication:** provides support for
+  [AlloyDB’s automatic IAM DB AuthN][iam-db-authn] feature.
+
+[iam-db-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn
+
 The AlloyDB Python Connector is a package to be used alongside a database driver.
 Currently supported drivers are:
 
