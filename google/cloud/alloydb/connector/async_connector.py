@@ -18,8 +18,9 @@ import asyncio
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING
 
-from google.auth import default
+import google.auth
 from google.auth.credentials import with_scopes_if_required
+import google.auth.transport.requests
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
@@ -44,6 +45,7 @@ class AsyncConnector:
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
+        enable_iam_auth (bool): Enables automatic IAM database authentication.
     """
 
     def __init__(
@@ -51,18 +53,20 @@ class AsyncConnector:
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        enable_iam_auth: bool = False,
     ) -> None:
         self._instances: Dict[str, Instance] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._enable_iam_auth = enable_iam_auth
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
             self._credentials = with_scopes_if_required(credentials, scopes=scopes)
         # otherwise use application default credentials
         else:
-            self._credentials, _ = default(scopes=scopes)
+            self._credentials, _ = google.auth.default(scopes=scopes)
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
@@ -107,6 +111,8 @@ class AsyncConnector:
                 driver=driver,
             )
 
+        enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
+
         # use existing connection info if possible
         if instance_uri in self._instances:
             instance = self._instances[instance_uri]
@@ -132,6 +138,18 @@ class AsyncConnector:
         # get connection info for AlloyDB instance
         ip_address, context = await instance.connection_info()
 
+        # callable to be used for auto IAM authn
+        def get_authentication_token() -> str:
+            """Get OAuth2 access token to be used for IAM database authentication"""
+            # refresh credentials if expired
+            if not self._credentials.valid:
+                request = google.auth.transport.requests.Request()
+                self._credentials.refresh(request)
+            return self._credentials.token
+
+        # if enable_iam_auth is set, use auth token as database password
+        if enable_iam_auth:
+            kwargs["password"] = get_authentication_token
         try:
             return await connector(ip_address, context, **kwargs)
         except Exception:
