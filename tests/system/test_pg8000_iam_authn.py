@@ -14,6 +14,7 @@
 
 from datetime import datetime
 import os
+from typing import Tuple
 
 import pg8000
 import sqlalchemy
@@ -25,7 +26,7 @@ def create_sqlalchemy_engine(
     inst_uri: str,
     user: str,
     db: str,
-) -> (sqlalchemy.engine.Engine, Connector):
+) -> Tuple[sqlalchemy.engine.Engine, Connector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.

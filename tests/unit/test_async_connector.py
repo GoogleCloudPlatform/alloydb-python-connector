@@ -36,6 +36,7 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     assert connector._alloydb_api_endpoint == ALLOYDB_API_ENDPOINT
     assert connector._client is None
     assert connector._credentials == credentials
+    assert connector._enable_iam_auth is False
     await connector.close()
 
 
@@ -52,6 +53,7 @@ async def test_AsyncConnector_context_manager(
         assert connector._alloydb_api_endpoint == ALLOYDB_API_ENDPOINT
         assert connector._client is None
         assert connector._credentials == credentials
+        assert connector._enable_iam_auth is False
 
 
 TEST_INSTANCE_NAME = "/".join(
