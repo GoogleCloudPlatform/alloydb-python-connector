@@ -59,8 +59,8 @@ async def create_sqlalchemy_engine(
     """
     connector = AsyncConnector()
 
-    def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = connector.connect(
+    async def getconn() -> asyncpg.Connection:
+        conn: asyncpg.Connection = await connector.connect(
             inst_uri,
             "asyncpg",
             user=user,
