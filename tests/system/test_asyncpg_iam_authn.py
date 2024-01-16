@@ -14,35 +14,37 @@
 
 from datetime import datetime
 import os
+from typing import Tuple
 
-import pg8000
+import asyncpg
 import sqlalchemy
+import sqlalchemy.ext.asyncio
 
-from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb.connector import AsyncConnector
 
 
-def create_sqlalchemy_engine(
+async def create_sqlalchemy_engine(
     inst_uri: str,
     user: str,
     db: str,
-) -> (sqlalchemy.engine.Engine, Connector):
+) -> Tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.
 
     A sample invocation looks like:
 
-        engine, connector = create_sqlalchemy_engine(
+        pool, connector = await create_sqlalchemy_engine(
                 inst_uri,
                 user,
                 db,
         )
-        with engine.connect() as conn:
-            time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        async with pool.connect() as conn:
+            time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
             conn.commit()
             curr_time = time[0]
             # do something with query result
-            connector.close()
+            await connector.close()
 
     Args:
         instance_uri (str):
@@ -55,37 +57,39 @@ def create_sqlalchemy_engine(
         db_name (str):
             The name of the database, e.g., mydb
     """
-    connector = Connector()
+    connector = AsyncConnector()
 
-    def getconn() -> pg8000.dbapi.Connection:
-        conn: pg8000.dbapi.Connection = connector.connect(
+    def getconn() -> asyncpg.Connection:
+        conn: asyncpg.Connection = connector.connect(
             inst_uri,
-            "pg8000",
+            "asyncpg",
             user=user,
             db=db,
             enable_iam_auth=True,
         )
         return conn
 
-    # create SQLAlchemy connection pool
-    engine = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
+    # create async SQLAlchemy connection pool
+    engine = sqlalchemy.ext.asyncio.create_async_engine(
+        "postgresql+asyncpg://",
         creator=getconn,
     )
     engine.dialect.description_encoding = None
     return engine, connector
 
 
-def test_pg8000_iam_authn_time() -> None:
+async def test_asyncpg_iam_authn_time() -> None:
     """Basic test to get time from database."""
     inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
     user = os.environ["ALLOYDB_IAM_USER"]
     db = os.environ["ALLOYDB_DB"]
 
-    engine, connector = create_sqlalchemy_engine(inst_uri, user, db)
-    with engine.connect() as conn:
-        time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+    pool, connector = await create_sqlalchemy_engine(inst_uri, user, db)
+    async with pool.connect() as conn:
+        time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
         conn.commit()
         curr_time = time[0]
         assert type(curr_time) is datetime
-    connector.close()
+    await connector.close()
+    # cleanup AsyncEngine
+    await pool.dispose()
