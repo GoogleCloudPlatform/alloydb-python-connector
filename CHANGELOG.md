@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.3.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.2.0...v0.3.0) (2024-01-17)
+
+
+### Features
+
+* add auto IAM authn for `asyncpg` ([#210](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/210)) ([165b059](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/165b05904dd4ace10cfbcd733b01452082607247))
+* add Python 3.12 support ([#188](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/188)) ([0a5864f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0a5864f2a0c480313527f80cdd8e4289ba3c8d0c))
+* add support for asyncpg ([#199](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/199)) ([d14617b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/d14617bf01383cd61846ecb39cf3be44fd20c89a))
+* add support for auto IAM authentication to `Connector` ([#191](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/191)) ([c6c16e8](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c6c16e8d6dedc7aa5221aefd2ffd6bdad99566a8))
+* add support for domain-scoped projects ([#185](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/185)) ([59e10f1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/59e10f1f5576256a97abf767ee22cef0f8e904db))
+* allow sync init of AsyncConnector ([#207](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/207)) ([7358b37](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/7358b37adf6ca15619f489a30a3877bd4fb7b9cf))
+
+
+### Bug Fixes
+
+* add asyncpg as optional dep ([#209](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/209)) ([1ed5aa2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1ed5aa2126af00e4096252129d4704b56a3f0997))
+
+
+### Dependencies
+
+* Update dependency google-auth to v2.26.1 ([#195](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/195)) ([ea7e414](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/ea7e4144d362676b900ecde9e130f2c53e9313b5))
+* Update dependency google-auth to v2.26.2 ([#200](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/200)) ([0a51d2f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0a51d2f68f1714c15df622fea67f1ed65f297c6e))
+* Update dependency pg8000 to v1.30.4 ([#196](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/196)) ([05d18d7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/05d18d7b97db060afe9309263156c42daf166abe))
+* Update dependency protobuf to v4.25.2 ([#208](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/208)) ([77e46da](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/77e46da12fc8204a6d720243a177c8701b10b845))
+* Update dependency pytest to v7.4.4 ([#193](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/193)) ([98220c2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/98220c237ec268eb520c245b5407a5228749251d))
+* Update dependency pytest-asyncio to v0.23.3 ([#194](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/194)) ([313832c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/313832cde0f9b708b061d2ceaeb86830fb03a8ed))
+* Update dependency SQLAlchemy to v2.0.25 ([#192](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/192)) ([5892406](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5892406ffe4d499bf9b77d0667ccc045ac2824bb))
+
+
+### Documentation
+
+* document auto IAM authn in README ([#211](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/211)) ([c72192c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c72192cb4d994ab1c0a528b899ab461e5cb3728b))
+
 ## [0.2.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.1.6...v0.2.0) (2023-12-12)
 
 
