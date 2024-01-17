@@ -20,13 +20,8 @@
 
 ### Dependencies
 
-* Update dependency google-auth to v2.26.1 ([#195](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/195)) ([ea7e414](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/ea7e4144d362676b900ecde9e130f2c53e9313b5))
 * Update dependency google-auth to v2.26.2 ([#200](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/200)) ([0a51d2f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0a51d2f68f1714c15df622fea67f1ed65f297c6e))
 * Update dependency pg8000 to v1.30.4 ([#196](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/196)) ([05d18d7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/05d18d7b97db060afe9309263156c42daf166abe))
-* Update dependency protobuf to v4.25.2 ([#208](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/208)) ([77e46da](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/77e46da12fc8204a6d720243a177c8701b10b845))
-* Update dependency pytest to v7.4.4 ([#193](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/193)) ([98220c2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/98220c237ec268eb520c245b5407a5228749251d))
-* Update dependency pytest-asyncio to v0.23.3 ([#194](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/194)) ([313832c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/313832cde0f9b708b061d2ceaeb86830fb03a8ed))
-* Update dependency SQLAlchemy to v2.0.25 ([#192](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/192)) ([5892406](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5892406ffe4d499bf9b77d0667ccc045ac2824bb))
 
 
 ### Documentation
