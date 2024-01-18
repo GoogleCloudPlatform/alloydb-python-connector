@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 import logging
 import re
 from typing import Tuple, TYPE_CHECKING
@@ -37,6 +38,11 @@ logger = logging.getLogger(name=__name__)
 INSTANCE_URI_REGEX = re.compile(
     "projects/([^:]+(:[^:]+)?)/locations/([^:]+)/clusters/([^:]+)/instances/([^:]+)"
 )
+
+
+class IPTypes(Enum):
+    PUBLIC: str = "PRIMARY"
+    PRIVATE: str = "PRIVATE"
 
 
 def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
