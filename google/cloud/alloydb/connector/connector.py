@@ -27,6 +27,7 @@ from google.auth.credentials import with_scopes_if_required
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import IPTypes
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.utils import generate_keys
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
@@ -56,6 +57,8 @@ class Connector:
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
+        ip_type (IPTypes): Default IP type for all AlloyDB connections.
+            Defaults to IPTypes.PRIVATE for private IP connections.
     """
 
     def __init__(
@@ -64,6 +67,7 @@ class Connector:
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
         enable_iam_auth: bool = False,
+        ip_type: IPTypes = IPTypes.PRIVATE,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -74,6 +78,7 @@ class Connector:
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
         self._enable_iam_auth = enable_iam_auth
+        self._ip_type = ip_type
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -163,7 +168,8 @@ class Connector:
         kwargs.pop("port", None)
 
         # get connection info for AlloyDB instance
-        ip_address, context = await instance.connection_info()
+        ip_type: IPTypes = kwargs.pop("ip_type", self._ip_type)
+        ip_address, context = await instance.connection_info(ip_type)
 
         # synchronous drivers are blocking and run using executor
         try:

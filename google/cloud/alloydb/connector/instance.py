@@ -41,7 +41,11 @@ INSTANCE_URI_REGEX = re.compile(
 
 
 class IPTypes(Enum):
-    PUBLIC: str = "PRIMARY"
+    """
+    Enum for specifying IP type to connect to AlloyDB with.
+    """
+
+    PUBLIC: str = "PUBLIC"
     PRIVATE: str = "PRIVATE"
 
 
