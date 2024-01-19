@@ -22,12 +22,12 @@ import sqlalchemy
 from google.cloud.alloydb.connector import AsyncConnector
 
 
-def create_sqlalchemy_engine(
+async def create_sqlalchemy_engine(
     inst_uri: str,
     user: str,
     password: str,
     db: str,
-) -> (sqlalchemy.engine.Engine, AsyncConnector):
+) -> (sqlalchemy.engine.AsyncEngine, AsyncConnector):
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.
@@ -62,7 +62,7 @@ def create_sqlalchemy_engine(
     connector = AsyncConnector()
 
     async def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = connector.connect(
+        conn: asyncpg.Connection = await connector.connect(
             inst_uri,
             "asyncpg",
             user=user,
@@ -72,7 +72,7 @@ def create_sqlalchemy_engine(
         return conn
 
     # create SQLAlchemy connection pool
-    engine = sqlalchemy.create_async_engine(
+    engine = await sqlalchemy.create_async_engine(
         "postgresql+asyncpg://",
         async_creator=getconn,
         execution_options={"isolation_level": "AUTOCOMMIT"},
@@ -92,7 +92,7 @@ async def test_connection_with_asyncpg() -> None:
     password = os.environ["ALLOYDB_PASS"]
     db = os.environ["ALLOYDB_DB"]
 
-    pool = create_sqlalchemy_engine(inst_uri, user, password, db)
+    pool = await create_sqlalchemy_engine(inst_uri, user, password, db)
 
     async with pool.connect() as conn:
         res = (await conn.execute(sqlalchemy.text("SELECT 1"))).fetchone()
