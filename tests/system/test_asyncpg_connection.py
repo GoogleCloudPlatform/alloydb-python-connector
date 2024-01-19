@@ -27,25 +27,25 @@ async def create_sqlalchemy_engine(
     user: str,
     password: str,
     db: str,
-) -> (sqlalchemy.engine.AsyncEngine, AsyncConnector):
+) -> (sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector):
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.
 
     A sample invocation looks like:
 
-        engine, connector = create_sqlalchemy_engine(
+        engine, connector = await create_sqlalchemy_engine(
                 inst_uri,
                 user,
                 password,
                 db,
         )
-        with engine.connect() as conn:
-            time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
-            conn.commit()
+        async with engine.connect() as conn:
+            time = await conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+            await conn.commit()
             curr_time = time[0]
             # do something with query result
-            connector.close()
+            await connector.close()
 
     Args:
         instance_uri (str):
@@ -92,8 +92,10 @@ async def test_connection_with_asyncpg() -> None:
     password = os.environ["ALLOYDB_PASS"]
     db = os.environ["ALLOYDB_DB"]
 
-    pool = await create_sqlalchemy_engine(inst_uri, user, password, db)
+    pool, connector = await create_sqlalchemy_engine(inst_uri, user, password, db)
 
     async with pool.connect() as conn:
         res = (await conn.execute(sqlalchemy.text("SELECT 1"))).fetchone()
         assert res[0] == 1
+
+    await connector.close()
