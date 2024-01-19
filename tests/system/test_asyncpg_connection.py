@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import os
+from typing import Tuple
 
 # [START alloydb_sqlalchemy_connect_async_connector]
 import asyncpg
 import pytest
 import sqlalchemy
+import sqlalchemy.ext.asyncio
 
 from google.cloud.alloydb.connector import AsyncConnector
 
@@ -27,7 +29,7 @@ async def create_sqlalchemy_engine(
     user: str,
     password: str,
     db: str,
-) -> (sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector):
+) -> Tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.
@@ -42,7 +44,6 @@ async def create_sqlalchemy_engine(
         )
         async with engine.connect() as conn:
             time = await conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
-            await conn.commit()
             curr_time = time[0]
             # do something with query result
             await connector.close()
@@ -72,12 +73,11 @@ async def create_sqlalchemy_engine(
         return conn
 
     # create SQLAlchemy connection pool
-    engine = await sqlalchemy.create_async_engine(
+    engine = sqlalchemy.ext.asyncio.create_async_engine(
         "postgresql+asyncpg://",
         async_creator=getconn,
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
-    engine.dialect.description_encoding = None
     return engine, connector
 
 
