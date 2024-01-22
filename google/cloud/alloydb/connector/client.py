@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
 from google.auth.transport.requests import Request
@@ -81,7 +81,7 @@ class AlloyDBClient:
         region: str,
         cluster: str,
         name: str,
-    ) -> str:
+    ) -> Dict[str, Optional[str]]:
         """
         Fetch the metadata for a given AlloyDB instance.
 

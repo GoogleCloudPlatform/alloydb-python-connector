@@ -73,7 +73,7 @@ def start_proxy_server(instance: FakeInstance) -> None:
                 conn.close()
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def proxy_server(fake_instance: FakeInstance) -> Generator:
     """Run local proxy server capable of performing metadata exchange"""
     thread = Thread(target=start_proxy_server, args=(fake_instance,), daemon=True)

@@ -79,7 +79,7 @@ def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
         "UTF-8"
     )
     certs = (ca_cert, [client_cert, intermediate_cert, root_cert])
-    refresh = RefreshResult(fake_instance.ip_address, key, certs)
+    refresh = RefreshResult(fake_instance.ip_addrs, key, certs)
     # verify TLS requirements
     assert refresh.context.minimum_version == ssl.TLSVersion.TLSv1_3
     assert refresh.context.request_ssl is False

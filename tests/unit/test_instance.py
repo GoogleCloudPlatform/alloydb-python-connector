@@ -132,7 +132,10 @@ async def test_perform_refresh() -> None:
         keys,
     )
     refresh = await instance._perform_refresh()
-    assert refresh.instance_ip == "127.0.0.1"
+    assert refresh.ip_addrs == {
+        "PRIVATE": "127.0.0.1",
+        "PUBLIC": "0.0.0.0",
+    }
     assert refresh.expiration == client.instance.cert_expiry.replace(microsecond=0)
     # close instance
     await instance.close()
