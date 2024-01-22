@@ -77,7 +77,7 @@ def create_sqlalchemy_engine(
     return engine, connector
 
 
-# [END alloydb_sqlalchemy_connect_connector]
+# [END alloydb_sqlalchemy_connect_connector_iam_authn]
 
 
 def test_pg8000_iam_authn_time() -> None:
