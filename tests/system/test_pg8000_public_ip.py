@@ -16,16 +16,18 @@ from datetime import datetime
 import os
 from typing import Tuple
 
-# [START alloydb_sqlalchemy_connect_connector_iam_authn]
+# [START alloydb_sqlalchemy_connect_connector_public_ip]
 import pg8000
 import sqlalchemy
 
 from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb.connector import IPTypes
 
 
 def create_sqlalchemy_engine(
     inst_uri: str,
     user: str,
+    password: str,
     db: str,
 ) -> Tuple[sqlalchemy.engine.Engine, Connector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
@@ -37,6 +39,7 @@ def create_sqlalchemy_engine(
         engine, connector = create_sqlalchemy_engine(
                 inst_uri,
                 user,
+                password,
                 db,
         )
         with engine.connect() as conn:
@@ -52,8 +55,9 @@ def create_sqlalchemy_engine(
             region, and cluster. For example:
             "projects/my-project/locations/us-central1/clusters/my-cluster/instances/my-instance"
         user (str):
-            The formatted IAM database username.
-            e.g., my-email@test.com, service-account@project-id.iam
+            The database user name, e.g., postgres
+        password (str):
+            The database user's password, e.g., secret-password
         db_name (str):
             The name of the database, e.g., mydb
     """
@@ -64,8 +68,9 @@ def create_sqlalchemy_engine(
             inst_uri,
             "pg8000",
             user=user,
+            password=password,
             db=db,
-            enable_iam_auth=True,
+            ip_type=IPTypes.PUBLIC,
         )
         return conn
 
@@ -77,16 +82,17 @@ def create_sqlalchemy_engine(
     return engine, connector
 
 
-# [END alloydb_sqlalchemy_connect_connector]
+# [END alloydb_sqlalchemy_connect_connector_public_ip]
 
 
-def test_pg8000_iam_authn_time() -> None:
+def test_pg8000_time() -> None:
     """Basic test to get time from database."""
     inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
-    user = os.environ["ALLOYDB_IAM_USER"]
+    user = os.environ["ALLOYDB_USER"]
+    password = os.environ["ALLOYDB_PASS"]
     db = os.environ["ALLOYDB_DB"]
 
-    engine, connector = create_sqlalchemy_engine(inst_uri, user, db)
+    engine, connector = create_sqlalchemy_engine(inst_uri, user, password, db)
     with engine.connect() as conn:
         time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
         conn.commit()
