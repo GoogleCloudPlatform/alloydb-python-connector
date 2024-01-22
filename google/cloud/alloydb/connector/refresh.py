@@ -20,7 +20,7 @@ from datetime import timezone
 import logging
 import ssl
 from tempfile import TemporaryDirectory
-from typing import List, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from cryptography import x509
 
@@ -71,16 +71,19 @@ class RefreshResult:
     Builds the TLS context required to connect to AlloyDB database.
 
     Args:
-        instance_ip (str): The IP address of the AlloyDB instance.
+        ip_addrs (Dict[str, str]): The IP addresses of the AlloyDB instance.
         key (rsa.RSAPrivateKey): Private key for the client connection.
         certs (Tuple[str, List(str)]): Client cert and CA certs for establishing
             the chain of trust used in building the TLS context.
     """
 
     def __init__(
-        self, instance_ip: str, key: rsa.RSAPrivateKey, certs: Tuple[str, List[str]]
+        self,
+        ip_addrs: Dict[str, Optional[str]],
+        key: rsa.RSAPrivateKey,
+        certs: Tuple[str, List[str]],
     ) -> None:
-        self.instance_ip = instance_ip
+        self.ip_addrs = ip_addrs
         # create TLS context
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         # update ssl.PROTOCOL_TLS_CLIENT default

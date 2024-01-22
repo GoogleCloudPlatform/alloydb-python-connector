@@ -25,6 +25,7 @@ import google.auth.transport.requests
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import IPTypes
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -46,6 +47,8 @@ class AsyncConnector:
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
+        ip_type (IPTypes): Default IP type for all AlloyDB connections.
+            Defaults to IPTypes.PRIVATE for private IP connections.
     """
 
     def __init__(
@@ -54,12 +57,14 @@ class AsyncConnector:
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
         enable_iam_auth: bool = False,
+        ip_type: IPTypes = IPTypes.PRIVATE,
     ) -> None:
         self._instances: Dict[str, Instance] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
         self._enable_iam_auth = enable_iam_auth
+        self._ip_type = ip_type
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -136,7 +141,8 @@ class AsyncConnector:
         kwargs.pop("port", None)
 
         # get connection info for AlloyDB instance
-        ip_address, context = await instance.connection_info()
+        ip_type: IPTypes = kwargs.pop("ip_type", self._ip_type)
+        ip_address, context = await instance.connection_info(ip_type)
 
         # callable to be used for auto IAM authn
         def get_authentication_token() -> str:

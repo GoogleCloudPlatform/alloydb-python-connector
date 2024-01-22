@@ -15,3 +15,7 @@
 
 class RefreshError(Exception):
     pass
+
+
+class IPTypeNotFoundError(Exception):
+    pass

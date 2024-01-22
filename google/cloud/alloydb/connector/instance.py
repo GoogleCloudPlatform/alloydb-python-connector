@@ -20,6 +20,7 @@ import logging
 import re
 from typing import Tuple, TYPE_CHECKING
 
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh import _is_valid
@@ -224,16 +225,24 @@ class Instance:
         if not await _is_valid(self._current):
             self._current = self._next
 
-    async def connection_info(self) -> Tuple[str, ssl.SSLContext]:
+    async def connection_info(self, ip_type: IPTypes) -> Tuple[str, ssl.SSLContext]:
         """
         Return connection info for current refresh result.
 
+        Args:
+            ip_type (IpTypes): Type of AlloyDB instance IP to connect over.
         Returns:
             Tuple[str, ssl.SSLContext]: AlloyDB instance IP address
                 and configured TLS connection.
         """
         refresh: RefreshResult = await self._current
-        return refresh.instance_ip, refresh.context
+        ip_address = refresh.ip_addrs.get(ip_type.value)
+        if ip_address is None:
+            raise IPTypeNotFoundError(
+                "AlloyDB instance does not have an IP addresses matching "
+                f"type: '{ip_type.value}'"
+            )
+        return ip_address, refresh.context
 
     async def close(self) -> None:
         """

@@ -97,7 +97,7 @@ class AlloyDBClient:
             name (str): The name of the AlloyDB instance.
 
         Returns:
-            str: IP address of the AlloyDB instance.
+            dict: IP addresses of the AlloyDB instance.
         """
         logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
 
@@ -114,7 +114,10 @@ class AlloyDBClient:
         resp = await self._client.get(url, headers=headers, raise_for_status=True)
         resp_dict = await resp.json()
 
-        return resp_dict["ipAddress"]
+        return {
+            "PRIVATE": resp_dict.get("ipAddress"),
+            "PUBLIC": resp_dict.get("publicIpAddress"),
+        }
 
     async def _get_client_certificate(
         self,
