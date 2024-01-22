@@ -21,9 +21,11 @@ import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.instance import _parse_instance_uri
 from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import IPTypes
 from google.cloud.alloydb.connector.refresh import _is_valid
 from google.cloud.alloydb.connector.refresh import RefreshResult
 from google.cloud.alloydb.connector.utils import generate_keys
@@ -137,6 +139,54 @@ async def test_perform_refresh() -> None:
         "PUBLIC": "0.0.0.0",
     }
     assert refresh.expiration == client.instance.cert_expiry.replace(microsecond=0)
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.parametrize(
+    "ip_type, expected",
+    [
+        (
+            IPTypes.PRIVATE,
+            "127.0.0.1",
+        ),
+        (
+            IPTypes.PUBLIC,
+            "0.0.0.0",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_connection_info(ip_type: IPTypes, expected: str) -> None:
+    """Test that connection_info returns proper ip address."""
+    keys = asyncio.create_task(generate_keys())
+    client = FakeAlloyDBClient()
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+    )
+    ip_address, _ = await instance.connection_info(ip_type=ip_type)
+    assert ip_address == expected
+    # close instance
+    await instance.close()
+
+
+@pytest.mark.asyncio
+async def test_connection_info_IPTypeNotFoundError() -> None:
+    """Test that connection_info throws IPTypeNotFoundError"""
+    keys = asyncio.create_task(generate_keys())
+    client = FakeAlloyDBClient()
+    # set ip_addrs to have no public IP
+    client.instance.ip_addrs = {"PRIVATE": "127.0.01"}
+    instance = Instance(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+    )
+    # check RefreshError is thrown
+    with pytest.raises(IPTypeNotFoundError):
+        await instance.connection_info(ip_type=IPTypes.PUBLIC)
     # close instance
     await instance.close()
 
