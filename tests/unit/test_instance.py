@@ -178,7 +178,7 @@ async def test_connection_info_IPTypeNotFoundError() -> None:
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
     # set ip_addrs to have no public IP
-    client.instance.ip_addrs = {"PRIVATE": "127.0.01"}
+    client.instance.ip_addrs = {"PRIVATE": "10.0.0.1"}
     instance = Instance(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
