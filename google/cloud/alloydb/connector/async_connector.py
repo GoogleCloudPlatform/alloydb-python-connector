@@ -54,12 +54,14 @@ class AsyncConnector:
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
         enable_iam_auth: bool = False,
+        user_agent: Optional[str] = None,
     ) -> None:
         self._instances: Dict[str, Instance] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
         self._enable_iam_auth = enable_iam_auth
+        self._user_agent = user_agent
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -108,6 +110,7 @@ class AsyncConnector:
                 self._alloydb_api_endpoint,
                 self._quota_project,
                 self._credentials,
+                user_agent=self._user_agent,
                 driver=driver,
             )
 
