@@ -305,15 +305,17 @@ class Connector:
 
     def close(self) -> None:
         """Close Connector by stopping tasks and releasing resources."""
-        close_future = asyncio.run_coroutine_threadsafe(
-            self.close_async(), loop=self._loop
-        )
-        # Will attempt to gracefully shut down tasks for 3s
-        close_future.result(timeout=3)
+        if self._loop.is_running():
+            close_future = asyncio.run_coroutine_threadsafe(
+                self.close_async(), loop=self._loop
+            )
+            # Will attempt to gracefully shut down tasks for 3s
+            close_future.result(timeout=3)
         # if background thread exists for Connector, clean it up
-        if self._thread:
-            # stop event loop running in background thread
-            self._loop.call_soon_threadsafe(self._loop.stop)
+        if self._thread.is_alive():
+            if self._loop.is_running():
+                # stop event loop running in background thread
+                self._loop.call_soon_threadsafe(self._loop.stop)
             # wait for thread to finish closing (i.e. loop to stop)
             self._thread.join()
 
@@ -325,3 +327,7 @@ class Connector:
         )
         if self._client:
             await self._client.close()
+
+    def __del__(self) -> None:
+        """Close Connector as part of garbage collection"""
+        self.close()
