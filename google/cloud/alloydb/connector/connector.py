@@ -68,6 +68,7 @@ class Connector:
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: IPTypes = IPTypes.PRIVATE,
+        user_agent: Optional[str] = None,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -79,6 +80,7 @@ class Connector:
         self._alloydb_api_endpoint = alloydb_api_endpoint
         self._enable_iam_auth = enable_iam_auth
         self._ip_type = ip_type
+        self._user_agent = user_agent
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -142,6 +144,7 @@ class Connector:
                 self._alloydb_api_endpoint,
                 self._quota_project,
                 self._credentials,
+                user_agent=self._user_agent,
                 driver=driver,
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)

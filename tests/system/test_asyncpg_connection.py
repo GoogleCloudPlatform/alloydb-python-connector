@@ -17,7 +17,6 @@ from typing import Tuple
 
 # [START alloydb_sqlalchemy_connect_async_connector]
 import asyncpg
-import pytest
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
@@ -84,7 +83,6 @@ async def create_sqlalchemy_engine(
 # [END alloydb_sqlalchemy_connect_async_connector]
 
 
-@pytest.mark.asyncio
 async def test_connection_with_asyncpg() -> None:
     """Basic test to get time from database."""
     inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]

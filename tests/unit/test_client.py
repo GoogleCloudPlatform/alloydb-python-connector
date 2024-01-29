@@ -138,6 +138,26 @@ async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
     await client.close()
 
 
+@pytest.mark.asyncio
+async def test_AlloyDBClient_init_custom_user_agent(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check that custom user agents are included in HTTP requests.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com",
+        "my-quota-project",
+        credentials,
+        user_agent="custom-agent/v1.0.0 other-agent/v2.0.0",
+    )
+    assert (
+        client._client.headers["User-Agent"]
+        == f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0"
+    )
+    await client.close()
+
+
 @pytest.mark.parametrize(
     "driver",
     [None, "pg8000", "asyncpg"],

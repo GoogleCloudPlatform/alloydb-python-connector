@@ -31,6 +31,20 @@ API_VERSION: str = "v1beta"
 logger = logging.getLogger(name=__name__)
 
 
+def _format_user_agent(
+    driver: Optional[str],
+    custom_user_agent: Optional[str],
+) -> str:
+    """
+    Appends user-defined user agents to the base default agent.
+    """
+    agent = f"{USER_AGENT}+{driver}" if driver else USER_AGENT
+    if custom_user_agent:
+        agent = f"{agent} {custom_user_agent}"
+
+    return agent
+
+
 class AlloyDBClient:
     def __init__(
         self,
@@ -39,6 +53,7 @@ class AlloyDBClient:
         credentials: Credentials,
         client: Optional[aiohttp.ClientSession] = None,
         driver: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> None:
         """
         Establish the client to be used for AlloyDB Admin API requests.
@@ -58,7 +73,7 @@ class AlloyDBClient:
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
         """
-        user_agent = f"{USER_AGENT}+{driver}" if driver else USER_AGENT
+        user_agent = _format_user_agent(driver, user_agent)
         headers = {
             "x-goog-api-client": user_agent,
             "User-Agent": user_agent,
