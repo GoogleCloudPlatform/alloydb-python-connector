@@ -15,10 +15,12 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 import logging
 import re
 from typing import Tuple, TYPE_CHECKING
 
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh import _is_valid
@@ -37,6 +39,15 @@ logger = logging.getLogger(name=__name__)
 INSTANCE_URI_REGEX = re.compile(
     "projects/([^:]+(:[^:]+)?)/locations/([^:]+)/clusters/([^:]+)/instances/([^:]+)"
 )
+
+
+class IPTypes(Enum):
+    """
+    Enum for specifying IP type to connect to AlloyDB with.
+    """
+
+    PUBLIC: str = "PUBLIC"
+    PRIVATE: str = "PRIVATE"
 
 
 def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
@@ -214,16 +225,24 @@ class Instance:
         if not await _is_valid(self._current):
             self._current = self._next
 
-    async def connection_info(self) -> Tuple[str, ssl.SSLContext]:
+    async def connection_info(self, ip_type: IPTypes) -> Tuple[str, ssl.SSLContext]:
         """
         Return connection info for current refresh result.
 
+        Args:
+            ip_type (IpTypes): Type of AlloyDB instance IP to connect over.
         Returns:
             Tuple[str, ssl.SSLContext]: AlloyDB instance IP address
                 and configured TLS connection.
         """
         refresh: RefreshResult = await self._current
-        return refresh.instance_ip, refresh.context
+        ip_address = refresh.ip_addrs.get(ip_type.value)
+        if ip_address is None:
+            raise IPTypeNotFoundError(
+                "AlloyDB instance does not have an IP addresses matching "
+                f"type: '{ip_type.value}'"
+            )
+        return ip_address, refresh.context
 
     async def close(self) -> None:
         """

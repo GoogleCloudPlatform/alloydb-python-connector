@@ -62,6 +62,7 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert thread.is_alive() is False
 
 
+@pytest.mark.usefixtures("proxy_server")
 def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
     """
     Test that connector.connect returns connection object.

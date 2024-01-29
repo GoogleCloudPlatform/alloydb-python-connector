@@ -88,9 +88,11 @@ This package provides several functions for authorizing and encrypting
 connections. These functions are used with your database driver to connect to
 your AlloyDB instance.
 
-AlloyDB supports network connectivity through private, internal IP addresses only.
-This package must be run in an environment that is connected to the
-[VPC Network][vpc] that hosts your AlloyDB private IP address.
+AlloyDB supports network connectivity through public IP addresses and private,
+internal IP addresses. By default this package will attempt to connect over a
+private IP connection. When doing so, this package must be run in an
+environment that is connected to the [VPC Network][vpc] that hosts your
+AlloyDB private IP address.
 
 Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
 
@@ -365,6 +367,27 @@ connector.connect(
 [Automatic IAM database authentication]: https://cloud.google.com/alloydb/docs/manage-iam-authn
 [configure-iam-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn#enable
 [add-iam-user]: https://cloud.google.com/alloydb/docs/manage-iam-authn#create-user
+
+### Specifying IP Address Type
+
+The AlloyDB Python Connector by default will attempt to establish connections
+to your instance's private IP. To change this, such as connecting to AlloyDB
+over a public IP address, set the `ip_type` keyword argument when initializing
+a `Connector()` or when calling `connector.connect()`.
+
+Possible values for `ip_type` are `IPTypes.PRIVATE` (default value), and
+`IPTypes.PUBLIC`.
+Example:
+
+```python
+from google.cloud.alloydb.connector import Connector, IPTypes
+
+conn = connector.connect(
+    "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+    "pg8000",
+    ip_type=IPTypes.PUBLIC,  # use public IP
+)
+```
 
 ## Support policy
 

@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@ from datetime import datetime
 import os
 from typing import Tuple
 
-# [START alloydb_sqlalchemy_connect_connector]
+# [START alloydb_sqlalchemy_connect_connector_public_ip]
 import pg8000
 import sqlalchemy
 
 from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb.connector import IPTypes
 
 
 def create_sqlalchemy_engine(
@@ -69,6 +70,7 @@ def create_sqlalchemy_engine(
             user=user,
             password=password,
             db=db,
+            ip_type=IPTypes.PUBLIC,
         )
         return conn
 
@@ -77,11 +79,10 @@ def create_sqlalchemy_engine(
         "postgresql+pg8000://",
         creator=getconn,
     )
-    engine.dialect.description_encoding = None
     return engine, connector
 
 
-# [END alloydb_sqlalchemy_connect_connector]
+# [END alloydb_sqlalchemy_connect_connector_public_ip]
 
 
 def test_pg8000_time() -> None:

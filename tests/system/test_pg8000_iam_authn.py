@@ -16,6 +16,7 @@ from datetime import datetime
 import os
 from typing import Tuple
 
+# [START alloydb_sqlalchemy_connect_connector_iam_authn]
 import pg8000
 import sqlalchemy
 
@@ -73,8 +74,10 @@ def create_sqlalchemy_engine(
         "postgresql+pg8000://",
         creator=getconn,
     )
-    engine.dialect.description_encoding = None
     return engine, connector
+
+
+# [END alloydb_sqlalchemy_connect_connector_iam_authn]
 
 
 def test_pg8000_iam_authn_time() -> None:

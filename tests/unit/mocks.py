@@ -18,7 +18,7 @@ from datetime import timedelta
 from datetime import timezone
 import ssl
 import struct
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -109,7 +109,10 @@ class FakeInstance:
         region: str = "test-region",
         cluster: str = "test-cluster",
         name: str = "test-instance",
-        ip_address: str = "127.0.0.1",
+        ip_addrs: Dict = {
+            "PRIVATE": "127.0.0.1",
+            "PUBLIC": "0.0.0.0",
+        },
         server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
         cert_before: datetime = datetime.now(timezone.utc),
         cert_expiry: datetime = datetime.now(timezone.utc) + timedelta(hours=1),
@@ -118,7 +121,7 @@ class FakeInstance:
         self.region = region
         self.cluster = cluster
         self.name = name
-        self.ip_address = ip_address
+        self.ip_addrs = ip_addrs
         self.server_name = server_name
         self.cert_before = cert_before
         self.cert_expiry = cert_expiry
@@ -163,7 +166,7 @@ class FakeAlloyDBClient:
         self._user_agent = f"test-user-agent+{driver}"
 
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
-        return self.instance.ip_address
+        return self.instance.ip_addrs
 
     async def _get_client_certificate(
         self,
@@ -267,7 +270,7 @@ class FakeConnectionInfo:
         self._close_called = False
         self._force_refresh_called = False
 
-    def connection_info(self) -> Tuple[str, Any]:
+    def connection_info(self, ip_type: Any) -> Tuple[str, Any]:
         f = asyncio.Future()
         f.set_result(("10.0.0.1", None))
         return f

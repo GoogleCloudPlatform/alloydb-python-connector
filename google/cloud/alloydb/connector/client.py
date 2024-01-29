@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
 from google.auth.transport.requests import Request
@@ -96,7 +96,7 @@ class AlloyDBClient:
         region: str,
         cluster: str,
         name: str,
-    ) -> str:
+    ) -> Dict[str, Optional[str]]:
         """
         Fetch the metadata for a given AlloyDB instance.
 
@@ -112,7 +112,7 @@ class AlloyDBClient:
             name (str): The name of the AlloyDB instance.
 
         Returns:
-            str: IP address of the AlloyDB instance.
+            dict: IP addresses of the AlloyDB instance.
         """
         logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
 
@@ -129,7 +129,10 @@ class AlloyDBClient:
         resp = await self._client.get(url, headers=headers, raise_for_status=True)
         resp_dict = await resp.json()
 
-        return resp_dict["ipAddress"]
+        return {
+            "PRIVATE": resp_dict.get("ipAddress"),
+            "PUBLIC": resp_dict.get("publicIpAddress"),
+        }
 
     async def _get_client_certificate(
         self,

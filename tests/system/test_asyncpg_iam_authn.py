@@ -16,6 +16,7 @@ from datetime import datetime
 import os
 from typing import Tuple
 
+# [START alloydb_sqlalchemy_connect_async_connector_iam_authn]
 import asyncpg
 import sqlalchemy
 import sqlalchemy.ext.asyncio
@@ -76,6 +77,9 @@ async def create_sqlalchemy_engine(
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
     return engine, connector
+
+
+# [END alloydb_sqlalchemy_connect_async_connector_iam_authn]
 
 
 async def test_asyncpg_iam_authn_time() -> None:

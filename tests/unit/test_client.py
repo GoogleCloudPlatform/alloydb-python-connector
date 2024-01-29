@@ -26,7 +26,16 @@ from google.cloud.alloydb.connector.version import __version__ as version
 
 async def connectionInfo(request: Any) -> web.Response:
     response = {
-        "ipAddress": "127.0.0.1",
+        "ipAddress": "10.0.0.1",
+        "instanceUid": "123456789",
+    }
+    return web.Response(content_type="application/json", body=json.dumps(response))
+
+
+async def connectionInfoPublicIP(request: Any) -> web.Response:
+    response = {
+        "ipAddress": "10.0.0.1",
+        "publicIpAddress": "127.0.0.1",
         "instanceUid": "123456789",
     }
     return web.Response(content_type="application/json", body=json.dumps(response))
@@ -49,6 +58,8 @@ async def client(aiohttp_client: Any) -> Any:
     app = web.Application()
     metadata_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance/connectionInfo"
     app.router.add_get(metadata_uri, connectionInfo)
+    metadata_public_ip_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/public-instance/connectionInfo"
+    app.router.add_get(metadata_public_ip_uri, connectionInfoPublicIP)
     client_cert_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster:generateClientCertificate"
     app.router.add_post(client_cert_uri, generateClientCertificate)
     return await aiohttp_client(app)
@@ -60,13 +71,36 @@ async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
     Test _get_metadata returns successfully.
     """
     test_client = AlloyDBClient("", "", credentials, client)
-    ip_address = await test_client._get_metadata(
+    ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
         "test-cluster",
         "test-instance",
     )
-    assert ip_address == "127.0.0.1"
+    assert ip_addrs == {
+        "PRIVATE": "10.0.0.1",
+        "PUBLIC": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test__get_metadata_with_public_ip(
+    client: Any, credentials: FakeCredentials
+) -> None:
+    """
+    Test _get_metadata returns successfully with Public IP.
+    """
+    test_client = AlloyDBClient("", "", credentials, client)
+    ip_addrs = await test_client._get_metadata(
+        "test-project",
+        "test-region",
+        "test-cluster",
+        "public-instance",
+    )
+    assert ip_addrs == {
+        "PRIVATE": "10.0.0.1",
+        "PUBLIC": "127.0.0.1",
+    }
 
 
 @pytest.mark.asyncio
