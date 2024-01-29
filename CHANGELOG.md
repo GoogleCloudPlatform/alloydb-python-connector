@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.3.0...v0.4.0) (2024-01-29)
+
+
+### Features
+
+* add support for a custom user agent ([#233](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/233)) ([5c030c4](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5c030c43315d9178c9f4efe9305ce74f95c93c41))
+* add support for public IP connections ([#227](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/227)) ([3ed3d37](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3ed3d3792aa2cbc3b579b5d3cdcf180f3826b1d6))
+
+
+### Dependencies
+
+* Update dependency aiohttp to v3.9.2 ([#236](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/236)) ([4e15b6b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/4e15b6bcde7dae47e94238ae052d11d4a672b770))
+* Update dependency cryptography to v42 ([#228](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/228)) ([05cc530](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/05cc530cde1f5849ee7c85e4ebcd320724dc5fc3))
+* Update dependency google-auth to v2.27.0 ([#231](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/231)) ([78c58b2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/78c58b2c778e734af5a0bb1419f9e0678b68d83a))
+* Update dependency pytest-asyncio to v0.23.4 ([#235](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/235)) ([3d4ea01](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3d4ea01631e665dc21de93a5a146d7e76e5ce41a))
+
+
+### Documentation
+
+* add asyncpg sample usage ([#225](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/225)) ([af708cb](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/af708cbcd22265ca26ffd73cc7df2f858aaf82f1))
+
 ## [0.3.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.2.0...v0.3.0) (2024-01-17)
 
 
