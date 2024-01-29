@@ -102,3 +102,16 @@ def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
             exc_info.value.args[0]
             == "Driver 'bad_driver' is not a supported database driver."
         )
+
+
+def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> None:
+    """Test that Connector.close can be called multiple times."""
+    # open and close Connector object
+    connector = Connector(credentials=credentials)
+    # verify background thread exists
+    assert connector._thread
+    connector.close()
+    # check that connector thread is no longer running
+    assert connector._thread.is_alive() is False
+    # call connector.close a second time
+    connector.close()
