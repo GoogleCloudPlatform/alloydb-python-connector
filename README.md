@@ -382,11 +382,30 @@ Example:
 ```python
 from google.cloud.alloydb.connector import Connector, IPTypes
 
-conn = connector.connect(
+import sqlalchemy
+
+# initialize Connector object
+connector = Connector()
+
+# function to return the database connection
+def getconn():
+  return connector.connect(
     "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
     "pg8000",
+    user="my-user",
+    password="my-password",
+    db="my-db-name",
     ip_type=IPTypes.PUBLIC,  # use public IP
+  )
+
+# create connection pool
+pool = sqlalchemy.create_engine(
+    "postgresql+pg8000://",
+    creator=getconn,
 )
+
+# use connection pool...
+connector.close()
 ```
 
 ## Support policy
