@@ -7,9 +7,6 @@
 
 * Update dependency aiohttp to v3.9.3 ([#240](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/240)) ([3a87700](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3a877000252006b0e10bc96fd00938daa6160725))
 * Update dependency cryptography to v42.0.2 ([#242](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/242)) ([39396ee](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/39396eee6ab5a6c8616448fc318f50fdf981db3e))
-* Update dependency pytest-asyncio to v0.23.5 ([#246](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/246)) ([8c55f54](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8c55f549cf09f5ef4102cf89863661c843081c13))
-* Update dependency SQLAlchemy to v2.0.26 ([#248](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/248)) ([f06e84a](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f06e84a091104c60d53786bf35b8ae5255bc8b26))
-* Update dependency SQLAlchemy to v2.0.27 ([#249](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/249)) ([a80dc43](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/a80dc43c1c47f604980943a3596e0dd9adfaaf62))
 
 ## [0.4.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.3.0...v0.4.0) (2024-01-29)
 
