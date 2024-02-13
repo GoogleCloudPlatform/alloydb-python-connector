@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.4.0...v0.4.1) (2024-02-13)
+
+
+### Dependencies
+
+* Update dependency aiohttp to v3.9.3 ([#240](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/240)) ([3a87700](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/3a877000252006b0e10bc96fd00938daa6160725))
+* Update dependency cryptography to v42.0.2 ([#242](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/242)) ([39396ee](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/39396eee6ab5a6c8616448fc318f50fdf981db3e))
+
 ## [0.4.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.3.0...v0.4.0) (2024-01-29)
 
 
