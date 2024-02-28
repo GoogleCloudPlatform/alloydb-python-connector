@@ -183,9 +183,10 @@ Connector as a context manager:
 from google.cloud.alloydb.connector import Connector
 import sqlalchemy
 
-# build connection
-def getconn():
-    with Connector() as connector:
+# helper function to return SQLAlchemy connection pool
+def init_connection_pool(connector: Connector) -> sqlalchemy.engine.Engine:
+    # function used to generate database connection
+    def getconn():
         conn = connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
             "pg8000",
@@ -193,33 +194,38 @@ def getconn():
             password="my-password",
             db="my-db-name"
         )
-    return conn
+        return conn
 
-# create connection pool
-pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=getconn,
-)
+    # create connection pool
+    pool = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=getconn,
+    )
+    return pool
 
-# insert statement
-insert_stmt = sqlalchemy.text(
-    "INSERT INTO my_table (id, title) VALUES (:id, :title)",
-)
-
-# interact with AlloyDB database using connection pool
-with pool.connect() as db_conn:
-    # insert into database
-    db_conn.execute(insert_stmt, parameters={"id": "book1", "title": "Book One"})
-
-    # commit transaction (SQLAlchemy v2.X.X is commit as you go)
-    db_conn.commit()
-
-    # query database
-    result = db_conn.execute(sqlalchemy.text("SELECT * from my_table")).fetchall()
-
-    # Do something with the results
-    for row in result:
-        print(row)
+# initialize Connector as context manager
+with Connector() as connector:
+    # initialize connection pool
+    pool = init_connection_pool(connector)
+    # insert statement
+    insert_stmt = sqlalchemy.text(
+        "INSERT INTO my_table (id, title) VALUES (:id, :title)",
+    )
+    
+    # interact with AlloyDB database using connection pool
+    with pool.connect() as db_conn:
+        # insert into database
+        db_conn.execute(insert_stmt, parameters={"id": "book1", "title": "Book One"})
+    
+        # commit transaction (SQLAlchemy v2.X.X is commit as you go)
+        db_conn.commit()
+    
+        # query database
+        result = db_conn.execute(sqlalchemy.text("SELECT * from my_table")).fetchall()
+    
+        # Do something with the results
+        for row in result:
+            print(row)
 ```
 
 ### Async Driver Usage

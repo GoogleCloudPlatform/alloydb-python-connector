@@ -22,7 +22,7 @@ description = "A Python client library for connecting securely to your Google Cl
 release_status = "Development Status :: 4 - Beta"
 dependencies = [
     "aiohttp",
-    "cryptography>=38.0.3",
+    "cryptography>=42.0.0",
     "requests",
     "google-auth",
     "protobuf",
@@ -75,7 +75,7 @@ setuptools.setup(
     packages=packages,
     install_requires=dependencies,
     extras_require={
-        "pg8000": ["pg8000>=1.30.4"],
+        "pg8000": ["pg8000>=1.30.5"],
         "asyncpg": ["asyncpg>=0.29.0"],
     },
     python_requires=">=3.8",
