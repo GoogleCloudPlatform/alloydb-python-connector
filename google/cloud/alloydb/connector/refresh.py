@@ -96,7 +96,7 @@ class RefreshResult:
         ca_cert, cert_chain = certs
         # get expiration from client certificate
         cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
-        self.expiration = cert_obj.not_valid_after.replace(tzinfo=timezone.utc)
+        self.expiration = cert_obj.not_valid_after_utc
 
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
