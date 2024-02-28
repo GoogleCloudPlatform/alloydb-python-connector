@@ -22,7 +22,7 @@ description = "A Python client library for connecting securely to your Google Cl
 release_status = "Development Status :: 4 - Beta"
 dependencies = [
     "aiohttp",
-    "cryptography>=38.0.3",
+    "cryptography>=42.0.0",
     "requests",
     "google-auth",
     "protobuf",
