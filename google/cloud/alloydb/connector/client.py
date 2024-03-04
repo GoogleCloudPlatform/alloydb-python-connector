@@ -56,7 +56,7 @@ class AlloyDBClient:
         user_agent: Optional[str] = None,
     ) -> None:
         """
-        Establish the client to be used for AlloyDB Admin API requests.
+        Establish the client to be used for AlloyDB API requests.
 
         Args:
             alloydb_api_endpoint (str): Base URL to use when calling
@@ -69,7 +69,7 @@ class AlloyDBClient:
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
             client (aiohttp.ClientSession): Async client used to make requests to
-                AlloyDB Admin APIs.
+                AlloyDB APIs.
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
         """
@@ -100,7 +100,7 @@ class AlloyDBClient:
         """
         Fetch the metadata for a given AlloyDB instance.
 
-        Call the AlloyDB Admin APIs connectInfo method to retrieve the
+        Call the AlloyDB APIs connectInfo method to retrieve the
         information about an AlloyDB instance that is used to create secure
         connections.
 
@@ -144,7 +144,7 @@ class AlloyDBClient:
         """
         Fetch a client certificate for the given AlloyDB cluster.
 
-        Call the AlloyDB Admin API's generateClientCertificate
+        Call the AlloyDB API's generateClientCertificate
         method to create a signed TLS certificate that is authorized to connect via the
         AlloyDB instance's serverside proxy. The cert is valid for twenty-four hours.
 

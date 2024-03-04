@@ -71,14 +71,14 @@ class Instance:
     """
     Manages the information used to connect to the AlloyDB instance.
 
-    Periodically calls the AlloyDB Admin API, automatically refreshing the
+    Periodically calls the AlloyDB API, automatically refreshing the
     required information approximately 4 minutes before the previous
     certificate expires (every ~56 minutes).
 
     Args:
         instance_uri (str): The instance URI of the AlloyDB instance.
             ex. projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>
-        client (AlloyDBClient): Client used to make requests to AlloyDB Admin APIs.
+        client (AlloyDBClient): Client used to make requests to AlloyDB APIs.
         keys (Tuple[rsa.RSAPrivateKey, str]): Private and Public key pair.
     """
 
