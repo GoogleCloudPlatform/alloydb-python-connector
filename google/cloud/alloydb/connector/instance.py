@@ -49,6 +49,13 @@ class IPTypes(Enum):
     PUBLIC: str = "PUBLIC"
     PRIVATE: str = "PRIVATE"
 
+    @classmethod
+    def _missing_(cls, value: object) -> None:
+        raise ValueError(
+            f"Incorrect value for ip_type, got '{value}'. Want one of: "
+            f"{', '.join([repr(m.value) for m in cls])}."
+        )
+
 
 def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
     # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"

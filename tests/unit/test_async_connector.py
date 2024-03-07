@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from typing import Union
 
 from mock import patch
 from mocks import FakeAlloyDBClient
@@ -21,6 +22,7 @@ from mocks import FakeCredentials
 import pytest
 
 from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb.connector import IPTypes
 
 ALLOYDB_API_ENDPOINT = "https://alloydb.googleapis.com"
 
@@ -38,6 +40,58 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     assert connector._credentials == credentials
     assert connector._enable_iam_auth is False
     await connector.close()
+
+
+@pytest.mark.parametrize(
+    "ip_type, expected",
+    [
+        (
+            "private",
+            IPTypes.PRIVATE,
+        ),
+        (
+            "PRIVATE",
+            IPTypes.PRIVATE,
+        ),
+        (
+            IPTypes.PRIVATE,
+            IPTypes.PRIVATE,
+        ),
+        (
+            "public",
+            IPTypes.PUBLIC,
+        ),
+        (
+            "PUBLIC",
+            IPTypes.PUBLIC,
+        ),
+        (
+            IPTypes.PUBLIC,
+            IPTypes.PUBLIC,
+        ),
+    ],
+)
+async def test_AsyncConnector_init_ip_type(
+    ip_type: Union[str, IPTypes], expected: IPTypes, credentials: FakeCredentials
+) -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector
+    properly sets ip_type.
+    """
+    connector = AsyncConnector(credentials=credentials, ip_type=ip_type)
+    assert connector._ip_type == expected
+    connector.close()
+
+
+async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> None:
+    """Test that AsyncConnector errors due to bad ip_type str."""
+    bad_ip_type = "BAD-IP-TYPE"
+    with pytest.raises(ValueError) as exc_info:
+        AsyncConnector(ip_type=bad_ip_type, credentials=credentials)
+    assert (
+        exc_info.value.args[0]
+        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+    )
 
 
 @pytest.mark.asyncio
@@ -202,3 +256,25 @@ def test_synchronous_init(credentials: FakeCredentials) -> None:
     """
     connector = AsyncConnector(credentials)
     assert connector._keys is None
+
+
+async def test_async_connect_bad_ip_type(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """Test that AyncConnector.connect errors due to bad ip_type str."""
+    async with AsyncConnector(credentials=credentials) as connector:
+        connector._client = fake_client
+        bad_ip_type = "BAD-IP-TYPE"
+        with pytest.raises(ValueError) as exc_info:
+            await connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+                ip_type=bad_ip_type,
+            )
+        assert (
+            exc_info.value.args[0]
+            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+        )

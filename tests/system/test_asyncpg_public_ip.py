@@ -22,7 +22,6 @@ import sqlalchemy
 import sqlalchemy.ext.asyncio
 
 from google.cloud.alloydb.connector import AsyncConnector
-from google.cloud.alloydb.connector import IPTypes
 
 
 async def create_sqlalchemy_engine(
@@ -70,7 +69,7 @@ async def create_sqlalchemy_engine(
             user=user,
             password=password,
             db=db,
-            ip_type=IPTypes.PUBLIC,
+            ip_type="PUBLIC",
         )
         return conn
 

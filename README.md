@@ -381,12 +381,11 @@ to your instance's private IP. To change this, such as connecting to AlloyDB
 over a public IP address, set the `ip_type` keyword argument when initializing
 a `Connector()` or when calling `connector.connect()`.
 
-Possible values for `ip_type` are `IPTypes.PRIVATE` (default value), and
-`IPTypes.PUBLIC`.
+Possible values for `ip_type` are `"PRIVATE"` (default value), and `"PUBLIC"`.
 Example:
 
 ```python
-from google.cloud.alloydb.connector import Connector, IPTypes
+from google.cloud.alloydb.connector import Connector
 
 import sqlalchemy
 
@@ -401,7 +400,7 @@ def getconn():
     user="my-user",
     password="my-password",
     db="my-db-name",
-    ip_type=IPTypes.PUBLIC,  # use public IP
+    ip_type="PUBLIC",  # use public IP
   )
 
 # create connection pool
