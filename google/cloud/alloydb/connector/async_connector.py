@@ -67,7 +67,7 @@ class AsyncConnector:
         self._enable_iam_auth = enable_iam_auth
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
-            ip_type = IPTypes(ip_type)
+            ip_type = IPTypes(ip_type.upper())
         self._ip_type = ip_type
         self._user_agent = user_agent
         # initialize credentials
@@ -150,7 +150,7 @@ class AsyncConnector:
         ip_type: str | IPTypes = kwargs.pop("ip_type", self._ip_type)
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
-            ip_type = IPTypes(ip_type)
+            ip_type = IPTypes(ip_type.upper())
         ip_address, context = await instance.connection_info(ip_type)
 
         # callable to be used for auto IAM authn
