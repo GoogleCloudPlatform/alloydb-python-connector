@@ -36,6 +36,17 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     connector.close()
 
 
+def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
+    """Test that Connector errors due to bad ip_type str."""
+    bad_ip_type = "bad-ip-type"
+    with pytest.raises(ValueError) as exc_info:
+        Connector(ip_type=bad_ip_type, credentials=credentials)
+    assert (
+        exc_info.value.args[0]
+        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+    )
+
+
 def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Connector
@@ -82,6 +93,28 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
             )
         # check connection is returned
         assert connection is True
+
+
+def test_connect_bad_ip_type(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """Test that Connector.connect errors due to bad ip_type str."""
+    with Connector(credentials=credentials) as connector:
+        connector._client = fake_client
+        bad_ip_type = "bad-ip-type"
+        with pytest.raises(ValueError) as exc_info:
+            connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+                ip_type=bad_ip_type,
+            )
+        assert (
+            exc_info.value.args[0]
+            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+        )
 
 
 def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:

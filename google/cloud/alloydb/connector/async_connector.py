@@ -47,8 +47,8 @@ class AsyncConnector:
         alloydb_api_endpoint (str): Base URL to use when calling
             the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
-        ip_type (IPTypes): Default IP type for all AlloyDB connections.
-            Defaults to IPTypes.PRIVATE for private IP connections.
+        ip_type (str | IPTypes): Default IP type for all AlloyDB connections.
+            Defaults to IPTypes.PRIVATE ("PRIVATE") for private IP connections.
     """
 
     def __init__(
@@ -57,7 +57,7 @@ class AsyncConnector:
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
         enable_iam_auth: bool = False,
-        ip_type: IPTypes = IPTypes.PRIVATE,
+        ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
     ) -> None:
         self._instances: Dict[str, Instance] = {}
@@ -65,6 +65,9 @@ class AsyncConnector:
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
         self._enable_iam_auth = enable_iam_auth
+        # if ip_type is str, convert to IPTypes enum
+        if isinstance(ip_type, str):
+            ip_type = IPTypes(ip_type)
         self._ip_type = ip_type
         self._user_agent = user_agent
         # initialize credentials
@@ -144,7 +147,10 @@ class AsyncConnector:
         kwargs.pop("port", None)
 
         # get connection info for AlloyDB instance
-        ip_type: IPTypes = kwargs.pop("ip_type", self._ip_type)
+        ip_type: str | IPTypes = kwargs.pop("ip_type", self._ip_type)
+        # if ip_type is str, convert to IPTypes enum
+        if isinstance(ip_type, str):
+            ip_type = IPTypes(ip_type)
         ip_address, context = await instance.connection_info(ip_type)
 
         # callable to be used for auto IAM authn

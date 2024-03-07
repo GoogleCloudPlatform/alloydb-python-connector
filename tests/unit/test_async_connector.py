@@ -40,6 +40,17 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     await connector.close()
 
 
+async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> None:
+    """Test that AsyncConnector errors due to bad ip_type str."""
+    bad_ip_type = "bad-ip-type"
+    with pytest.raises(ValueError) as exc_info:
+        AsyncConnector(ip_type=bad_ip_type, credentials=credentials)
+    assert (
+        exc_info.value.args[0]
+        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+    )
+
+
 @pytest.mark.asyncio
 async def test_AsyncConnector_context_manager(
     credentials: FakeCredentials,
@@ -202,3 +213,25 @@ def test_synchronous_init(credentials: FakeCredentials) -> None:
     """
     connector = AsyncConnector(credentials)
     assert connector._keys is None
+
+
+async def test_async_connect_bad_ip_type(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """Test that AyncConnector.connect errors due to bad ip_type str."""
+    async with AsyncConnector(credentials=credentials) as connector:
+        connector._client = fake_client
+        bad_ip_type = "bad-ip-type"
+        with pytest.raises(ValueError) as exc_info:
+            await connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+                ip_type=bad_ip_type,
+            )
+        assert (
+            exc_info.value.args[0]
+            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+        )

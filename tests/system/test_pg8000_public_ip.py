@@ -21,7 +21,6 @@ import pg8000
 import sqlalchemy
 
 from google.cloud.alloydb.connector import Connector
-from google.cloud.alloydb.connector import IPTypes
 
 
 def create_sqlalchemy_engine(
@@ -70,7 +69,7 @@ def create_sqlalchemy_engine(
             user=user,
             password=password,
             db=db,
-            ip_type=IPTypes.PUBLIC,
+            ip_type="PUBLIC",
         )
         return conn
 
