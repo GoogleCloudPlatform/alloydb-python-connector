@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://cloud.google.com/alloydb/docs/connect-language-connectors#python">
-        <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/alloydb-python-connector/header-image/docs/images/alloydb-python-connector.png" alt="alloydb-python-connector image">
+        <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/alloydb-python-connector/main/docs/images/alloydb-python-connector.png" alt="alloydb-python-connector image">
     </a>
 </p>
 
