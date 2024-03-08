@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://cloud.google.com/alloydb/docs/connect-language-connectors#python">
+    <a href="https://cloud.google.com/alloydb/docs/connect-language-connectors#python-pg8000">
         <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/alloydb-python-connector/main/docs/images/alloydb-python-connector.png" alt="alloydb-python-connector image">
     </a>
 </p>
