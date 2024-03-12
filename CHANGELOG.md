@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.0.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.4.1...v1.0.0) (2024-03-12)
+
+
+### Features
+
+* support `ip_type` as str ([#267](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/267)) ([b7b1d99](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/b7b1d99216c68cead46be9a9a271a6258969b60f))
+
+
+### Dependencies
+
+* Update dependency cryptography to v42.0.4 [SECURITY] ([#257](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/257)) ([f34aa64](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f34aa64b607652d38ea14929b93e92c904d4fe80))
+* Update dependency cryptography to v42.0.5 ([#253](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/253)) ([cbecb8c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cbecb8c9adf200e0c56de1690e4687f60dcac6ca))
+* Update dependency google-auth to v2.28.1 ([#251](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/251)) ([2ff8708](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2ff87088aef8a13379ac87526baa4901beb4f727))
+* Update dependency google-auth to v2.28.2 ([#270](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/270)) ([7376a08](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/7376a08feb307723cb9a18371f8a0565fc3abbfd))
+* Update dependency pg8000 to v1.30.5 ([#259](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/259)) ([db60ca3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/db60ca313fa54c2edca47e78c68dd6b11489f7b1))
+* Update dependency protobuf to v4.25.3 ([#252](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/252)) ([7c8f6a1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/7c8f6a16d2c8ff7f83f8d262799923d16d7576c7))
+
+
+### Documentation
+
+* add header image to README ([#268](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/268)) ([9a9bd6c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9a9bd6cdb37d731a3607094d287201ba787697d8))
+* Use AlloyDB API for consistency with the official documentation. ([#264](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/264)) ([9782f6e](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9782f6e327b6b4c2d717aab8800bc0dc6fcf6125))
+
+
+### Miscellaneous Chores
+
+* set release to 1.0.0 ([#275](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/275)) ([a38c747](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/a38c7474397eea5b8fcd618905e2db7ac3a8020a))
+
 ## [0.4.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.4.0...v0.4.1) (2024-02-13)
 
 
