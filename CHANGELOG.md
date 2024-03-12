@@ -10,9 +10,7 @@
 
 ### Dependencies
 
-* Update dependency cryptography to v42.0.4 [SECURITY] ([#257](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/257)) ([f34aa64](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/f34aa64b607652d38ea14929b93e92c904d4fe80))
 * Update dependency cryptography to v42.0.5 ([#253](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/253)) ([cbecb8c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/cbecb8c9adf200e0c56de1690e4687f60dcac6ca))
-* Update dependency google-auth to v2.28.1 ([#251](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/251)) ([2ff8708](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2ff87088aef8a13379ac87526baa4901beb4f727))
 * Update dependency google-auth to v2.28.2 ([#270](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/270)) ([7376a08](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/7376a08feb307723cb9a18371f8a0565fc3abbfd))
 * Update dependency pg8000 to v1.30.5 ([#259](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/259)) ([db60ca3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/db60ca313fa54c2edca47e78c68dd6b11489f7b1))
 * Update dependency protobuf to v4.25.3 ([#252](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/252)) ([7c8f6a1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/7c8f6a16d2c8ff7f83f8d262799923d16d7576c7))
