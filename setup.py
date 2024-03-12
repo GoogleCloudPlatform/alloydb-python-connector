@@ -19,7 +19,7 @@ import setuptools
 name = "google-cloud-alloydb-connector"
 description = "A Python client library for connecting securely to your Google Cloud AlloyDB instances."
 
-release_status = "Development Status :: 4 - Beta"
+release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
     "aiohttp",
     "cryptography>=42.0.0",
