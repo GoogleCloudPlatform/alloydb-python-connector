@@ -39,7 +39,7 @@ def _format_user_agent(
     Appends user-defined user agents to the base default agent.
     """
     agent = f"{USER_AGENT}+{driver}" if driver else USER_AGENT
-    if custom_user_agent:
+    if custom_user_agent and isinstance(custom_user_agent, str):
         agent = f"{agent} {custom_user_agent}"
 
     return agent
