@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.0.0...v1.0.1) (2024-03-27)
+
+
+### Dependencies
+
+* Update dependency google-auth to v2.29.0 ([#281](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/281)) ([473f4ab](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/473f4abbe8e7524c56bd530f13294283a6b4cbcf))
+* Update dependency pytest-asyncio to v0.23.6 ([#279](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/279)) ([4682e85](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/4682e858f87dabdc49410490846ef8e11fad8749))
+* Update dependency SQLAlchemy to v2.0.29 ([#285](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/285)) ([8209ba2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8209ba259092aac45f2bb90d2f699ec26826b370))
+
 ## [1.0.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.4.1...v1.0.0) (2024-03-12)
 
 
