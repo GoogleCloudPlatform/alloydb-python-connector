@@ -45,7 +45,7 @@ async def connectionInfoPsc(request: Any) -> web.Response:
     response = {
         "ipAddress": None,
         "publicIpAddress": None,
-        "psc_dns_name": "x.y.alloydb.goog",
+        "pscDnsName": "x.y.alloydb.goog",
         "instanceUid": "123456789",
     }
     return web.Response(content_type="application/json", body=json.dumps(response))
