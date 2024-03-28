@@ -95,7 +95,8 @@ connections. These functions are used with your database driver to connect to
 your AlloyDB instance.
 
 AlloyDB supports network connectivity through public IP addresses and private,
-internal IP addresses. By default this package will attempt to connect over a
+internal IP addresses, as well as [Private Service Connect][psc] (PSC). 
+By default this package will attempt to connect over a
 private IP connection. When doing so, this package must be run in an
 environment that is connected to the [VPC Network][vpc] that hosts your
 AlloyDB private IP address.
@@ -104,6 +105,7 @@ Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more det
 
 [vpc]: https://cloud.google.com/vpc/docs/vpc
 [alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
+[psc]: https://cloud.google.com/vpc/docs/private-service-connect
 
 ### Synchronous Driver Usage
 
@@ -384,10 +386,13 @@ connector.connect(
 
 The AlloyDB Python Connector by default will attempt to establish connections
 to your instance's private IP. To change this, such as connecting to AlloyDB
-over a public IP address, set the `ip_type` keyword argument when initializing
-a `Connector()` or when calling `connector.connect()`.
+over a public IP address or Private Service Connect (PSC), set the `ip_type`
+keyword argument when initializing a `Connector()` or when calling 
+`connector.connect()`.
 
-Possible values for `ip_type` are `"PRIVATE"` (default value), and `"PUBLIC"`.
+Possible values for `ip_type` are `"PRIVATE"` (default value), `"PUBLIC"`, 
+and `"PSC"`.
+
 Example:
 
 ```python

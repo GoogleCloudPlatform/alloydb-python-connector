@@ -137,6 +137,7 @@ async def test_perform_refresh() -> None:
     assert refresh.ip_addrs == {
         "PRIVATE": "127.0.0.1",
         "PUBLIC": "0.0.0.0",
+        "PSC": "x.y.alloydb.goog",
     }
     assert refresh.expiration == client.instance.cert_expiry.replace(microsecond=0)
     # close instance
@@ -153,6 +154,10 @@ async def test_perform_refresh() -> None:
         (
             IPTypes.PUBLIC,
             "0.0.0.0",
+        ),
+        (
+            IPTypes.PSC,
+            "x.y.alloydb.goog",
         ),
     ],
 )
