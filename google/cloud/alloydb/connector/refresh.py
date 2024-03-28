@@ -86,8 +86,6 @@ class RefreshResult:
         self.ip_addrs = ip_addrs
         # create TLS context
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        # update ssl.PROTOCOL_TLS_CLIENT default
-        self.context.check_hostname = False
         # force TLSv1.3
         self.context.minimum_version = ssl.TLSVersion.TLSv1_3
         # add request_ssl attribute to ssl.SSLContext, required for pg8000 driver

@@ -16,6 +16,7 @@ import asyncio
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+import ipaddress
 import ssl
 import struct
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -96,6 +97,15 @@ def generate_cert(
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
         .not_valid_after(expiration)
+    ).add_extension(
+        x509.SubjectAlternativeName(
+            [
+                x509.DNSName("localhost"),
+                x509.DNSName("127.0.0.1"),
+                x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            ]
+        ),
+        critical=False,
     )
     return cert, key
 

@@ -80,7 +80,7 @@ async def test_AsyncConnector_init_ip_type(
     """
     connector = AsyncConnector(credentials=credentials, ip_type=ip_type)
     assert connector._ip_type == expected
-    connector.close()
+    await connector.close()
 
 
 async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> None:
