@@ -96,7 +96,7 @@ def generate_cert(
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
         .not_valid_after(expiration)
-    )
+    ).add_extension(x509.SubjectAlternativeName([x509.DNSName("127.0.0.1")]))
     return cert, key
 
 
@@ -113,7 +113,7 @@ class FakeInstance:
             "PRIVATE": "127.0.0.1",
             "PUBLIC": "0.0.0.0",
         },
-        server_name: str = "127.0.0.1",
+        server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
         cert_before: datetime = datetime.now(timezone.utc),
         cert_expiry: datetime = datetime.now(timezone.utc) + timedelta(hours=1),
     ) -> None:
