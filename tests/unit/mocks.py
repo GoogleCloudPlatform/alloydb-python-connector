@@ -96,7 +96,10 @@ def generate_cert(
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
         .not_valid_after(expiration)
-    ).add_extension(x509.SubjectAlternativeName([x509.DNSName("127.0.0.1")]))
+    ).add_extension(
+        x509.SubjectAlternativeName([x509.DNSName("127.0.0.1")]),
+        critical=False,
+    )
     return cert, key
 
 
