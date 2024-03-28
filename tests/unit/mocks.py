@@ -113,7 +113,7 @@ class FakeInstance:
             "PRIVATE": "127.0.0.1",
             "PUBLIC": "0.0.0.0",
         },
-        server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
+        server_name: str = "127.0.0.1",
         cert_before: datetime = datetime.now(timezone.utc),
         cert_expiry: datetime = datetime.now(timezone.utc) + timedelta(hours=1),
     ) -> None:
