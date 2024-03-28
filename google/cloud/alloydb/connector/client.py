@@ -132,6 +132,7 @@ class AlloyDBClient:
         return {
             "PRIVATE": resp_dict.get("ipAddress"),
             "PUBLIC": resp_dict.get("publicIpAddress"),
+            "PSC": resp_dict.get("psc_dns_name"),
         }
 
     async def _get_client_certificate(
