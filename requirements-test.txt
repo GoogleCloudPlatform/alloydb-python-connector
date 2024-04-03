@@ -1,6 +1,6 @@
 asyncpg==0.29.0
 mock==5.1.0
-pg8000==1.30.5
+pg8000==1.31.1
 psycopg2-binary==2.9.9
 pytest==7.4.4
 pytest-asyncio==0.23.6
