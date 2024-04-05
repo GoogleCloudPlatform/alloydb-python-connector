@@ -69,6 +69,18 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
             IPTypes.PUBLIC,
             IPTypes.PUBLIC,
         ),
+        (
+            "psc",
+            IPTypes.PSC,
+        ),
+        (
+            "PSC",
+            IPTypes.PSC,
+        ),
+        (
+            IPTypes.PSC,
+            IPTypes.PSC,
+        ),
     ],
 )
 async def test_AsyncConnector_init_ip_type(
@@ -90,7 +102,7 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
         AsyncConnector(ip_type=bad_ip_type, credentials=credentials)
     assert (
         exc_info.value.args[0]
-        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
     )
 
 
@@ -276,5 +288,5 @@ async def test_async_connect_bad_ip_type(
             )
         assert (
             exc_info.value.args[0]
-            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
         )
