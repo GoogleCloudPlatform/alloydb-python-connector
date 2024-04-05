@@ -15,7 +15,6 @@
 import os
 from typing import Tuple
 
-# [START alloydb_sqlalchemy_connect_async_connector_psc]
 import asyncpg
 import pytest
 import sqlalchemy
@@ -80,9 +79,6 @@ async def create_sqlalchemy_engine(
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
     return engine, connector
-
-
-# [END alloydb_sqlalchemy_connect_async_connector_psc]
 
 
 @pytest.mark.asyncio

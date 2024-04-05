@@ -16,7 +16,6 @@ from datetime import datetime
 import os
 from typing import Tuple
 
-# [START alloydb_sqlalchemy_connect_connector_psc]
 import pg8000
 import sqlalchemy
 
@@ -79,9 +78,6 @@ def create_sqlalchemy_engine(
         creator=getconn,
     )
     return engine, connector
-
-
-# [END alloydb_sqlalchemy_connect_connector_psc]
 
 
 def test_pg8000_time() -> None:
