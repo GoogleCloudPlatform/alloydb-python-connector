@@ -86,7 +86,8 @@ class RefreshResult:
         self.ip_addrs = ip_addrs
         # create TLS context
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        # update ssl.PROTOCOL_TLS_CLIENT default
+        # TODO: Set check_hostname to True to verify the identity in the
+        # certificate once PSC DNS is populated in all existing clusters.
         self.context.check_hostname = False
         # force TLSv1.3
         self.context.minimum_version = ssl.TLSVersion.TLSv1_3

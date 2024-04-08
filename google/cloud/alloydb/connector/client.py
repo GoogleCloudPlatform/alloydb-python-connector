@@ -129,9 +129,15 @@ class AlloyDBClient:
         resp = await self._client.get(url, headers=headers, raise_for_status=True)
         resp_dict = await resp.json()
 
+        # Remove trailing period from PSC DNS name.
+        psc_dns = resp_dict.get("pscDnsName")
+        if psc_dns:
+            psc_dns = psc_dns.rstrip(".")
+
         return {
             "PRIVATE": resp_dict.get("ipAddress"),
             "PUBLIC": resp_dict.get("publicIpAddress"),
+            "PSC": psc_dns,
         }
 
     async def _get_client_certificate(

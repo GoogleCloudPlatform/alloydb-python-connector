@@ -16,6 +16,7 @@ import asyncio
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+import ipaddress
 import ssl
 import struct
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -60,7 +61,7 @@ class FakeCredentials:
 
 
 def generate_cert(
-    common_name: str, expires_in: int = 60
+    common_name: str, expires_in: int = 60, server_cert: bool = False
 ) -> Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
     """
     Generate a private key and cert object to be used in testing.
@@ -68,6 +69,7 @@ def generate_cert(
     Args:
         common_name (str): The Common Name for the certificate.
         expires_in (int): Time in minutes until expiry of certificate.
+        server_cert (bool): Whether it is a server certificate.
 
     Returns:
         Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
@@ -97,6 +99,17 @@ def generate_cert(
         .not_valid_before(now)
         .not_valid_after(expiration)
     )
+    if server_cert:
+        cert = cert.add_extension(
+            x509.SubjectAlternativeName(
+                general_names=[
+                    x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+                    x509.IPAddress(ipaddress.ip_address("10.0.0.1")),
+                    x509.DNSName("x.y.alloydb.goog."),
+                ]
+            ),
+            critical=False,
+        )
     return cert, key
 
 
@@ -112,6 +125,7 @@ class FakeInstance:
         ip_addrs: Dict = {
             "PRIVATE": "127.0.0.1",
             "PUBLIC": "0.0.0.0",
+            "PSC": "x.y.alloydb.goog",
         },
         server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
         cert_before: datetime = datetime.now(timezone.utc),
@@ -137,7 +151,9 @@ class FakeInstance:
             self.root_key, hashes.SHA256()
         )
         # build server cert
-        self.server_cert, self.server_key = generate_cert(self.server_name)
+        self.server_cert, self.server_key = generate_cert(
+            self.server_name, server_cert=True
+        )
         # create server cert signed by root cert
         self.server_cert = self.server_cert.sign(self.root_key, hashes.SHA256())
 
