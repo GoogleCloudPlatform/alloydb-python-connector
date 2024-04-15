@@ -26,7 +26,7 @@
     },
     {
       "groupName": "python-nonmajor",
-      "matchCategories": ["python"],
+      "matchLanguages": ["python"],
       "matchUpdateTypes": ["minor", "patch"],
     },
   ],
