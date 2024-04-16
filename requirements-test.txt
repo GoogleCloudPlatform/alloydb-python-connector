@@ -4,6 +4,6 @@ pg8000==1.31.1
 psycopg2-binary==2.9.9
 pytest==8.1.1
 pytest-asyncio==0.23.6
-pytest-cov==4.1.0
+pytest-cov==5.0.0
 pytest-aiohttp==1.0.5
 SQLAlchemy==2.0.29
