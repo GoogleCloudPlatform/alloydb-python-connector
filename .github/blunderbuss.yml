@@ -13,8 +13,9 @@
 # limitations under the License.
 
 assign_issues:
-  - jackwotherspoon
-
+  - enocom
+  - nancynh
 
 assign_prs:
-  - jackwotherspoon
+  - enocom
+  - nancynh
