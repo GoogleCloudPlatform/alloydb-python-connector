@@ -333,7 +333,3 @@ class Connector:
         )
         if self._client:
             await self._client.close()
-
-    def __del__(self) -> None:
-        """Close Connector as part of garbage collection"""
-        self.close()
