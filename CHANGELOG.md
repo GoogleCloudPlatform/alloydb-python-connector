@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.0...v1.1.1) (2024-05-14)
+
+
+### Dependencies
+
+* update dependency aiohttp to v3.9.5 ([#303](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/303)) ([213adbe](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/213adbebb38da9c3d77493ae50640ee71c21cfd1))
+
 ## [1.1.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.0.0...v1.1.0) (2024-04-16)
 
 
