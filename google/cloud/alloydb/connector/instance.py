@@ -20,6 +20,9 @@ import logging
 import re
 from typing import Tuple, TYPE_CHECKING
 
+from google.auth.credentials import TokenState
+from google.auth.transport import requests
+
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
@@ -130,6 +133,11 @@ class Instance:
         try:
             await self._refresh_rate_limiter.acquire()
             priv_key, pub_key = await self._keys
+
+            # before making AlloyDB API calls, refresh creds if required
+            if not self._client._credentials.token_state == TokenState.FRESH:
+                self._client._credentials.refresh(requests.Request())
+
             # fetch metadata
             metadata_task = asyncio.create_task(
                 self._client._get_metadata(
