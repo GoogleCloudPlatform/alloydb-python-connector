@@ -18,7 +18,6 @@ import logging
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
-from google.auth.transport.requests import Request
 
 from google.cloud.alloydb.connector.version import __version__ as version
 
@@ -116,10 +115,6 @@ class AlloyDBClient:
         """
         logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
 
-        if not self._credentials.valid:
-            request = Request()
-            self._credentials.refresh(request)
-
         headers = {
             "Authorization": f"Bearer {self._credentials.token}",
         }
@@ -166,10 +161,6 @@ class AlloyDBClient:
                 and certificate chain for the AlloyDB instance.
         """
         logger.debug(f"['{project}/{region}/{cluster}']: Requesting client certificate")
-
-        if not self._credentials.valid:
-            request = Request()
-            self._credentials.refresh(request)
 
         headers = {
             "Authorization": f"Bearer {self._credentials.token}",

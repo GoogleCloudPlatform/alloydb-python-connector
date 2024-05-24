@@ -19,13 +19,15 @@ from datetime import timezone
 import ipaddress
 import ssl
 import struct
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from google.auth.credentials import _helpers
+from google.auth.credentials import TokenState
 
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
@@ -35,7 +37,7 @@ class FakeCredentials:
         self.token: Optional[str] = None
         self.expiry: Optional[datetime] = None
 
-    def refresh(self, request: Callable) -> None:
+    def refresh(self, _: Callable) -> None:
         """Refreshes the access token."""
         self.token = "12345"
         self.expiry = datetime.now(timezone.utc) + timedelta(minutes=60)
@@ -51,13 +53,33 @@ class FakeCredentials:
         return False if not self.expiry else True
 
     @property
-    def valid(self) -> bool:
-        """Checks the validity of the credentials.
-
-        This is True if the credentials have a token and the token
-        is not expired.
+    def token_state(
+        self,
+    ) -> Literal[TokenState.FRESH, TokenState.STALE, TokenState.INVALID]:
         """
-        return self.token is not None and not self.expired
+        Tracks the state of a token.
+        FRESH: The token is valid. It is not expired or close to expired, or the token has no expiry.
+        STALE: The token is close to expired, and should be refreshed. The token can be used normally.
+        INVALID: The token is expired or invalid. The token cannot be used for a normal operation.
+        """
+        if self.token is None:
+            return TokenState.INVALID
+
+        # Credentials that can't expire are always treated as fresh.
+        if self.expiry is None:
+            return TokenState.FRESH
+
+        expired = datetime.now(timezone.utc) >= self.expiry
+        if expired:
+            return TokenState.INVALID
+
+        is_stale = datetime.now(timezone.utc) >= (
+            self.expiry - _helpers.REFRESH_THRESHOLD
+        )
+        if is_stale:
+            return TokenState.STALE
+
+        return TokenState.FRESH
 
 
 def generate_cert(
@@ -180,6 +202,7 @@ class FakeAlloyDBClient:
         self.instance = FakeInstance() if instance is None else instance
         self.closed = False
         self._user_agent = f"test-user-agent+{driver}"
+        self._credentials = FakeCredentials()
 
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
         return self.instance.ip_addrs
