@@ -74,7 +74,7 @@ class Connector:
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
-        self._instances: Dict[str, RefreshAheadCache] = {}
+        self._cache: Dict[str, RefreshAheadCache] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
