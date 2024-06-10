@@ -26,8 +26,8 @@ from google.auth import default
 from google.auth.credentials import with_scopes_if_required
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.utils import generate_keys
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb

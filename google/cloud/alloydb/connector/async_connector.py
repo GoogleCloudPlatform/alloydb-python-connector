@@ -24,8 +24,8 @@ import google.auth.transport.requests
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
