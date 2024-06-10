@@ -24,8 +24,8 @@ import google.auth.transport.requests
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.instance import Instance
 from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class AsyncConnector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
     ) -> None:
-        self._instances: Dict[str, Instance] = {}
+        self._instances: Dict[str, RefreshAheadCache] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -128,7 +128,7 @@ class AsyncConnector:
         if instance_uri in self._instances:
             instance = self._instances[instance_uri]
         else:
-            instance = Instance(instance_uri, self._client, self._keys)
+            instance = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._instances[instance_uri] = instance
 
         connect_func = {
@@ -186,7 +186,7 @@ class AsyncConnector:
         await self.close()
 
     async def close(self) -> None:
-        """Helper function to cancel Instances' tasks
+        """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(
             *[instance.close() for instance in self._instances.values()]
