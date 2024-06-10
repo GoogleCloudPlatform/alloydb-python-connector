@@ -78,7 +78,7 @@ def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
     )
 
 
-class Instance:
+class RefreshAheadCache:
     """
     Manages the information used to connect to the AlloyDB instance.
 

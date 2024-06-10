@@ -24,7 +24,7 @@ import pytest
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.instance import _parse_instance_uri
-from google.cloud.alloydb.connector.instance import Instance
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.instance import IPTypes
 from google.cloud.alloydb.connector.refresh import _is_valid
 from google.cloud.alloydb.connector.refresh import RefreshResult
@@ -68,59 +68,59 @@ def test_parse_bad_instance_uri() -> None:
 
 
 @pytest.mark.asyncio
-async def test_Instance_init() -> None:
+async def test_RefreshAheadCache_init() -> None:
     """
-    Test to check whether the __init__ method of Instance
+    Test to check whether the __init__ method of RefreshAheadCache
     can tell if the instance URI that's passed in is formatted correctly.
     """
     keys = asyncio.create_task(generate_keys())
     async with aiohttp.ClientSession() as client:
-        instance = Instance(
+        cache = RefreshAheadCache(
             "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
             client,
             keys,
         )
         assert (
-            instance._project == "test-project"
-            and instance._region == "test-region"
-            and instance._cluster == "test-cluster"
-            and instance._name == "test-instance"
+            cache._project == "test-project"
+            and cache._region == "test-region"
+            and cache._cluster == "test-cluster"
+            and cache._name == "test-instance"
         )
 
 
 @pytest.mark.asyncio
-async def test_Instance_init_invalid_instant_uri() -> None:
+async def test_RefreshAheadCache_init_invalid_instant_uri() -> None:
     """
-    Test to check whether the __init__ method of Instance
+    Test to check whether the __init__ method of RefreshAheadCache
     will throw error for invalid instance URI.
     """
     keys = asyncio.create_task(generate_keys())
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ValueError):
-            Instance("invalid/instance/uri/", client, keys)
+            RefreshAheadCache("invalid/instance/uri/", client, keys)
 
 
 @pytest.mark.asyncio
-async def test_Instance_close() -> None:
+async def test_RefreshAheadCache_close() -> None:
     """
-    Test that Instance's close method
+    Test that RefreshAheadCache's close method
     cancels tasks gracefully.
     """
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # make sure tasks aren't cancelled
-    assert instance._current.cancelled() is False
-    assert instance._next.cancelled() is False
+    assert cache._current.cancelled() is False
+    assert cache._next.cancelled() is False
     # run close() to cancel tasks
-    await instance.close()
+    await cache.close()
     # verify tasks are cancelled
-    assert (instance._current.done() or instance._current.cancelled()) is True
-    assert instance._next.cancelled() is True
+    assert (cache._current.done() or cache._current.cancelled()) is True
+    assert cache._next.cancelled() is True
 
 
 @pytest.mark.asyncio
@@ -128,12 +128,12 @@ async def test_perform_refresh() -> None:
     """Test that _perform refresh returns valid RefreshResult"""
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
-    refresh = await instance._perform_refresh()
+    refresh = await cache._perform_refresh()
     assert refresh.ip_addrs == {
         "PRIVATE": "127.0.0.1",
         "PUBLIC": "0.0.0.0",
@@ -141,7 +141,7 @@ async def test_perform_refresh() -> None:
     }
     assert refresh.expiration == client.instance.cert_expiry.replace(microsecond=0)
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.parametrize(
@@ -166,15 +166,15 @@ async def test_connection_info(ip_type: IPTypes, expected: str) -> None:
     """Test that connection_info returns proper ip address."""
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
-    ip_address, _ = await instance.connection_info(ip_type=ip_type)
+    ip_address, _ = await cache.connection_info(ip_type=ip_type)
     assert ip_address == expected
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.asyncio
@@ -184,16 +184,16 @@ async def test_connection_info_IPTypeNotFoundError() -> None:
     client = FakeAlloyDBClient()
     # set ip_addrs to have no public IP
     client.instance.ip_addrs = {"PRIVATE": "10.0.0.1"}
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # check RefreshError is thrown
     with pytest.raises(IPTypeNotFoundError):
-        await instance.connection_info(ip_type=IPTypes.PUBLIC)
+        await cache.connection_info(ip_type=IPTypes.PUBLIC)
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.asyncio
@@ -204,23 +204,23 @@ async def test_schedule_refresh_replaces_result() -> None:
     """
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # check current refresh is valid
-    assert await _is_valid(instance._current) is True
-    current_refresh = instance._current
+    assert await _is_valid(cache._current) is True
+    current_refresh = cache._current
     # schedule new refresh
-    await instance._schedule_refresh(0)
-    new_refresh = instance._current
+    await cache._schedule_refresh(0)
+    new_refresh = cache._current
     # verify current has been replaced with new refresh
     assert current_refresh != new_refresh
     # check new refresh is valid
     assert await _is_valid(new_refresh) is True
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.asyncio
@@ -231,25 +231,25 @@ async def test_schedule_refresh_wont_replace_valid_result_with_invalid() -> None
     """
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # check current refresh is valid
-    assert await _is_valid(instance._current) is True
-    current_refresh = instance._current
+    assert await _is_valid(cache._current) is True
+    current_refresh = cache._current
     # set certificate to be expired
     client.instance.cert_before = datetime.now() - timedelta(minutes=20)
     client.instance.cert_expiry = datetime.now() - timedelta(minutes=10)
     # schedule new refresh
-    new_refresh = instance._schedule_refresh(0)
+    new_refresh = cache._schedule_refresh(0)
     # check new refresh is invalid
     assert await _is_valid(new_refresh) is False
     # check current was not replaced
-    assert current_refresh == instance._current
+    assert current_refresh == cache._current
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.asyncio
@@ -263,16 +263,16 @@ async def test_schedule_refresh_expired_cert() -> None:
     # set certificate to be expired
     client.instance.cert_before = datetime.now() - timedelta(minutes=20)
     client.instance.cert_expiry = datetime.now() - timedelta(minutes=10)
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # check RefreshError is thrown
     with pytest.raises(RefreshError):
-        await instance._current
+        await cache._current
     # close instance
-    await instance.close()
+    await cache.close()
 
 
 @pytest.mark.asyncio
@@ -282,23 +282,23 @@ async def test_force_refresh_cancels_pending_refresh() -> None:
     """
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
-    instance = Instance(
+    cache = RefreshAheadCache(
         "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
         client,
         keys,
     )
     # make sure initial refresh is finished
-    await instance._current
+    await cache._current
     # since the pending refresh isn't for another ~56 min, the refresh_in_progress event
     # shouldn't be set
-    pending_refresh = instance._next
-    assert instance._refresh_in_progress.is_set() is False
-    await instance.force_refresh()
+    pending_refresh = cache._next
+    assert cache._refresh_in_progress.is_set() is False
+    await cache.force_refresh()
     # pending_refresh has to be awaited for it to raised as cancelled
     with pytest.raises(asyncio.CancelledError):
         assert await pending_refresh
     # verify pending_refresh has now been cancelled
     assert pending_refresh.cancelled() is True
-    assert isinstance(await instance._current, RefreshResult)
+    assert isinstance(await cache._current, RefreshResult)
     # close instance
-    await instance.close()
+    await cache.close()
