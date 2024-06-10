@@ -156,7 +156,7 @@ class Connector:
             cache = self._cache[instance_uri]
         else:
             cache = RefreshAheadCache(instance_uri, self._client, self._keys)
-            self._instances[instance_uri] = cache
+            self._cache[instance_uri] = cache
 
         connect_func = {
             "pg8000": pg8000.connect,
