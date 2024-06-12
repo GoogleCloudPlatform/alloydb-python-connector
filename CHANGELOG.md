@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.1...v1.1.2) (2024-06-12)
+
+
+### Bug Fixes
+
+* update dependencies to latest ([#327](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/327)) ([fac87f0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/fac87f0dc249a27510a43936bf7669bdd74b3322))
+
 ## [1.1.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.0...v1.1.1) (2024-05-14)
 
 
