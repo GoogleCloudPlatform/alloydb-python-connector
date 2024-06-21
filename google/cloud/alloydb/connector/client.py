@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
