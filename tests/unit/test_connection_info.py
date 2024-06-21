@@ -23,42 +23,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from mocks import FakeInstance
 
-from google.cloud.alloydb.connector.refresh import _seconds_until_refresh
-from google.cloud.alloydb.connector.refresh import RefreshResult
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 
 
-def test_seconds_until_refresh_over_1_hour() -> None:
+def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:
     """
-    Test _seconds_until_refresh returns proper time in seconds.
-    If expiration is over 1 hour, should return duration/2.
-    """
-    now = datetime.now()
-    assert _seconds_until_refresh(now + timedelta(minutes=62), now) == 31 * 60
-
-
-def test_seconds_until_refresh_under_1_hour_over_4_mins() -> None:
-    """
-    Test _seconds_until_refresh returns proper time in seconds.
-    If expiration is under 1 hour and over 4 minutes,
-    should return duration-refresh_buffer (refresh_buffer = 4 minutes).
-    """
-    now = datetime.now(timezone.utc)
-    assert _seconds_until_refresh(now + timedelta(minutes=5), now) == 60
-
-
-def test_seconds_until_refresh_under_4_mins() -> None:
-    """
-    Test _seconds_until_refresh returns proper time in seconds.
-    If expiration is under 4 minutes, should return 0.
-    """
-    assert (
-        _seconds_until_refresh(datetime.now(timezone.utc) + timedelta(minutes=3)) == 0
-    )
-
-
-def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
-    """
-    Test to check whether the __init__ method of RefreshResult
+    Test to check whether the __init__ method of ConnectionInfo
     can correctly initialize TLS context.
     """
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -79,7 +49,6 @@ def test_RefreshResult_init_(fake_instance: FakeInstance) -> None:
         "UTF-8"
     )
     certs = (ca_cert, [client_cert, intermediate_cert, root_cert])
-    refresh = RefreshResult(fake_instance.ip_addrs, key, certs)
+    refresh = ConnectionInfo(fake_instance.ip_addrs, key, certs)
     # verify TLS requirements
     assert refresh.context.minimum_version == ssl.TLSVersion.TLSv1_3
-    assert refresh.context.request_ssl is False
