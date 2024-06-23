@@ -14,9 +14,6 @@
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime
-from datetime import timezone
 import logging
 import ssl
 from tempfile import TemporaryDirectory
@@ -31,39 +28,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(name=__name__)
 
-# _refresh_buffer is the amount of time before a refresh's result expires
-# that a new refresh operation begins.
-_refresh_buffer: int = 4 * 60  # 4 minutes
 
-
-def _seconds_until_refresh(
-    expiration: datetime, now: datetime = datetime.now(timezone.utc)
-) -> int:
-    """
-    Calculates the duration to wait before starting the next refresh.
-    Usually the duration will be half of the time until certificate
-    expiration.
-
-    Args:
-        expiration (datetime.datetime): Time of certificate expiration.
-        now (datetime.datetime): Current time (UTC)
-    Returns:
-        int: Time in seconds to wait before performing next refresh.
-    """
-
-    duration = int((expiration - now).total_seconds())
-
-    # if certificate duration is less than 1 hour
-    if duration < 3600:
-        # something is wrong with certificate, refresh now
-        if duration < _refresh_buffer:
-            return 0
-        # otherwise wait until 4 minutes before expiration for next refresh
-        return duration - _refresh_buffer
-    return duration // 2
-
-
-class RefreshResult:
+class ConnectionInfo:
     """
     Manages the result of a refresh operation.
 
@@ -91,8 +57,6 @@ class RefreshResult:
         self.context.check_hostname = False
         # force TLSv1.3
         self.context.minimum_version = ssl.TLSVersion.TLSv1_3
-        # add request_ssl attribute to ssl.SSLContext, required for pg8000 driver
-        self.context.request_ssl = False  # type: ignore
         # unpack certs
         ca_cert, cert_chain = certs
         # get expiration from client certificate
@@ -108,15 +72,3 @@ class RefreshResult:
             )
             self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
             self.context.load_verify_locations(cafile=ca_filename)
-
-
-async def _is_valid(task: asyncio.Task) -> bool:
-    try:
-        result = await task
-        # valid if current time is before cert expiration
-        if datetime.now(timezone.utc) < result.expiration:
-            return True
-    except Exception:
-        # suppress any errors from task
-        logger.debug("Current refresh result is invalid.")
-    return False

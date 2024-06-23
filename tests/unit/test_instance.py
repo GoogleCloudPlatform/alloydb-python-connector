@@ -21,13 +21,13 @@ import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.instance import _parse_instance_uri
 from google.cloud.alloydb.connector.instance import IPTypes
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
-from google.cloud.alloydb.connector.refresh import _is_valid
-from google.cloud.alloydb.connector.refresh import RefreshResult
+from google.cloud.alloydb.connector.refresh_utils import _is_valid
 from google.cloud.alloydb.connector.utils import generate_keys
 
 
@@ -125,7 +125,7 @@ async def test_RefreshAheadCache_close() -> None:
 
 @pytest.mark.asyncio
 async def test_perform_refresh() -> None:
-    """Test that _perform refresh returns valid RefreshResult"""
+    """Test that _perform refresh returns valid ConnectionInfo"""
     keys = asyncio.create_task(generate_keys())
     client = FakeAlloyDBClient()
     cache = RefreshAheadCache(
@@ -299,6 +299,6 @@ async def test_force_refresh_cancels_pending_refresh() -> None:
         assert await pending_refresh
     # verify pending_refresh has now been cancelled
     assert pending_refresh.cancelled() is True
-    assert isinstance(await cache._current, RefreshResult)
+    assert isinstance(await cache._current, ConnectionInfo)
     # close instance
     await cache.close()

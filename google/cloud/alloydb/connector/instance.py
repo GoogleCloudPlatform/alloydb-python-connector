@@ -23,12 +23,12 @@ from typing import Tuple, TYPE_CHECKING
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
 
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
-from google.cloud.alloydb.connector.refresh import _is_valid
-from google.cloud.alloydb.connector.refresh import _seconds_until_refresh
-from google.cloud.alloydb.connector.refresh import RefreshResult
+from google.cloud.alloydb.connector.refresh_utils import _is_valid
+from google.cloud.alloydb.connector.refresh_utils import _seconds_until_refresh
 
 if TYPE_CHECKING:
     import ssl
@@ -117,7 +117,7 @@ class RefreshAheadCache:
         self._current: asyncio.Task = self._schedule_refresh(0)
         self._next: asyncio.Task = self._current
 
-    async def _perform_refresh(self) -> RefreshResult:
+    async def _perform_refresh(self) -> ConnectionInfo:
         """
         Perform a refresh operation on an AlloyDB instance.
 
@@ -125,7 +125,7 @@ class RefreshAheadCache:
         required to connect securely to the AlloyDB instance.
 
         Returns:
-            RefreshResult: Result of the refresh operation.
+            ConnectionInfo: Result of the refresh operation.
         """
         self._refresh_in_progress.set()
         logger.debug(f"['{self._instance_uri}']: Entered _perform_refresh")
@@ -168,7 +168,7 @@ class RefreshAheadCache:
         finally:
             self._refresh_in_progress.clear()
 
-        return RefreshResult(ip_addr, priv_key, certs)
+        return ConnectionInfo(ip_addr, priv_key, certs)
 
     def _schedule_refresh(self, delay: int) -> asyncio.Task:
         """
@@ -178,12 +178,12 @@ class RefreshAheadCache:
             delay (int): Time in seconds to sleep before performing refresh.
 
         Returns:
-            asyncio.Task[RefreshResult]: A task representing the scheduled
+            asyncio.Task[ConnectionInfo]: A task representing the scheduled
                 refresh operation.
         """
         return asyncio.create_task(self._refresh_operation(delay))
 
-    async def _refresh_operation(self, delay: int) -> RefreshResult:
+    async def _refresh_operation(self, delay: int) -> ConnectionInfo:
         """
         A coroutine that sleeps for the specified amount of time before
         running _perform_refresh.
@@ -192,7 +192,7 @@ class RefreshAheadCache:
             delay (int): Time in seconds to sleep before performing refresh.
 
         Returns:
-            RefreshResult: Refresh result for an AlloyDB instance.
+            ConnectionInfo: Refresh result for an AlloyDB instance.
         """
         refresh_task: asyncio.Task
         try:
@@ -251,7 +251,7 @@ class RefreshAheadCache:
             Tuple[str, ssl.SSLContext]: AlloyDB instance IP address
                 and configured TLS connection.
         """
-        refresh: RefreshResult = await self._current
+        refresh: ConnectionInfo = await self._current
         ip_address = refresh.ip_addrs.get(ip_type.value)
         if ip_address is None:
             raise IPTypeNotFoundError(
