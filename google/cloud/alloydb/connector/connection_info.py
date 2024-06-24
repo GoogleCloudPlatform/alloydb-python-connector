@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from cryptography.hazmat.primitives.asymmetric import rsa
 
-    from google.cloud.alloydb.connector.instance import IPTypes
+    from google.cloud.alloydb.connector.enums import IPTypes
 
 logger = logging.getLogger(name=__name__)
 

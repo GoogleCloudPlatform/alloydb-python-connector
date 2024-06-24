@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import asyncio
-from enum import Enum
 import logging
 import re
 from typing import Tuple, TYPE_CHECKING
@@ -36,23 +35,6 @@ logger = logging.getLogger(name=__name__)
 INSTANCE_URI_REGEX = re.compile(
     "projects/([^:]+(:[^:]+)?)/locations/([^:]+)/clusters/([^:]+)/instances/([^:]+)"
 )
-
-
-class IPTypes(Enum):
-    """
-    Enum for specifying IP type to connect to AlloyDB with.
-    """
-
-    PUBLIC: str = "PUBLIC"
-    PRIVATE: str = "PRIVATE"
-    PSC: str = "PSC"
-
-    @classmethod
-    def _missing_(cls, value: object) -> None:
-        raise ValueError(
-            f"Incorrect value for ip_type, got '{value}'. Want one of: "
-            f"{', '.join([repr(m.value) for m in cls])}."
-        )
 
 
 def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
