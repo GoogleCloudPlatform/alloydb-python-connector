@@ -24,7 +24,7 @@ from google.cloud.alloydb.connector import Connector
 
 
 def create_sqlalchemy_engine(
-    inst_uri: str, user: str, db: str, refresh_strategy="background"
+    inst_uri: str, user: str, db: str, refresh_strategy: str = "background"
 ) -> Tuple[sqlalchemy.engine.Engine, Connector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
