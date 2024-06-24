@@ -25,9 +25,7 @@ from google.cloud.alloydb.connector import AsyncConnector
 
 
 async def create_sqlalchemy_engine(
-    inst_uri: str,
-    user: str,
-    db: str,
+    inst_uri: str, user: str, db: str, refresh_strategy: str = "background"
 ) -> Tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
@@ -36,9 +34,9 @@ async def create_sqlalchemy_engine(
     A sample invocation looks like:
 
         pool, connector = await create_sqlalchemy_engine(
-                inst_uri,
-                user,
-                db,
+            inst_uri,
+            user,
+            db,
         )
         async with pool.connect() as conn:
             time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
@@ -55,10 +53,14 @@ async def create_sqlalchemy_engine(
         user (str):
             The formatted IAM database username.
             e.g., my-email@test.com, service-account@project-id.iam
-        db_name (str):
+        db (str):
             The name of the database, e.g., mydb
+        refresh_strategy (Optional[str]):
+            Refresh strategy for the AlloyDB Connector. Can be one of "lazy"
+            or "background". For serverless environments use "lazy" to avoid
+            errors resulting from CPU being throttled.
     """
-    connector = AsyncConnector()
+    connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
     async def getconn() -> asyncpg.Connection:
         conn: asyncpg.Connection = await connector.connect(
@@ -89,6 +91,22 @@ async def test_asyncpg_iam_authn_time() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     pool, connector = await create_sqlalchemy_engine(inst_uri, user, db)
+    async with pool.connect() as conn:
+        time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
+        curr_time = time[0]
+        assert type(curr_time) is datetime
+    await connector.close()
+    # cleanup AsyncEngine
+    await pool.dispose()
+
+
+async def test_asyncpg_iam_authn_lazy() -> None:
+    """Basic test to get time from database."""
+    inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
+    user = os.environ["ALLOYDB_IAM_USER"]
+    db = os.environ["ALLOYDB_DB"]
+
+    pool, connector = await create_sqlalchemy_engine(inst_uri, user, db, "lazy")
     async with pool.connect() as conn:
         time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
         curr_time = time[0]

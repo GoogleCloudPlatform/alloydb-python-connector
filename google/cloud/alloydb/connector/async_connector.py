@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from types import TracebackType
-from typing import Any, Dict, Optional, Type, TYPE_CHECKING
+from typing import Any, Dict, Optional, Type, TYPE_CHECKING, Union
 
 import google.auth
 from google.auth.credentials import with_scopes_if_required
@@ -25,7 +25,9 @@ import google.auth.transport.requests
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.enums import IPTypes
+from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
+from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -49,6 +51,11 @@ class AsyncConnector:
         enable_iam_auth (bool): Enables automatic IAM database authentication.
         ip_type (str | IPTypes): Default IP type for all AlloyDB connections.
             Defaults to IPTypes.PRIVATE ("PRIVATE") for private IP connections.
+        refresh_strategy (str | RefreshStrategy): The default refresh strategy
+            used to refresh SSL/TLS cert and instance metadata. Can be one
+            of the following: RefreshStrategy.LAZY ("LAZY") or
+            RefreshStrategy.BACKGROUND ("BACKGROUND").
+            Default: RefreshStrategy.BACKGROUND
     """
 
     def __init__(
@@ -59,8 +66,9 @@ class AsyncConnector:
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
+        refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
     ) -> None:
-        self._cache: Dict[str, RefreshAheadCache] = {}
+        self._cache: Dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -69,6 +77,10 @@ class AsyncConnector:
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
         self._ip_type = ip_type
+        # if refresh_strategy is str, convert to RefreshStrategy enum
+        if isinstance(refresh_strategy, str):
+            refresh_strategy = RefreshStrategy(refresh_strategy.upper())
+        self._refresh_strategy = refresh_strategy
         self._user_agent = user_agent
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
@@ -128,7 +140,10 @@ class AsyncConnector:
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
         else:
-            cache = RefreshAheadCache(instance_uri, self._client, self._keys)
+            if self._refresh_strategy == RefreshStrategy.LAZY:
+                cache = LazyRefreshCache(instance_uri, self._client, self._keys)
+            else:
+                cache = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._cache[instance_uri] = cache
 
         connect_func = {

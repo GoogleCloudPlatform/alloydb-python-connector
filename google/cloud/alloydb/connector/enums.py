@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from enum import Enum
 
 
@@ -28,5 +30,21 @@ class IPTypes(Enum):
     def _missing_(cls, value: object) -> None:
         raise ValueError(
             f"Incorrect value for ip_type, got '{value}'. Want one of: "
+            f"{', '.join([repr(m.value) for m in cls])}."
+        )
+
+
+class RefreshStrategy(Enum):
+    """
+    Enum for specifying refresh strategy to connect to AlloyDB with.
+    """
+
+    LAZY: str = "LAZY"
+    BACKGROUND: str = "BACKGROUND"
+
+    @classmethod
+    def _missing_(cls, value: object) -> None:
+        raise ValueError(
+            f"Incorrect value for refresh_strategy, got '{value}'. Want one of: "
             f"{', '.join([repr(m.value) for m in cls])}."
         )
