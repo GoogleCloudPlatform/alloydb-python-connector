@@ -19,14 +19,18 @@ from datetime import timezone
 import ipaddress
 import ssl
 import struct
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from google.auth.credentials import _helpers
+from google.auth.credentials import TokenState
+from google.auth.transport import requests
 
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 
@@ -35,7 +39,7 @@ class FakeCredentials:
         self.token: Optional[str] = None
         self.expiry: Optional[datetime] = None
 
-    def refresh(self, request: Callable) -> None:
+    def refresh(self, _: Callable) -> None:
         """Refreshes the access token."""
         self.token = "12345"
         self.expiry = datetime.now(timezone.utc) + timedelta(minutes=60)
@@ -51,17 +55,37 @@ class FakeCredentials:
         return False if not self.expiry else True
 
     @property
-    def valid(self) -> bool:
-        """Checks the validity of the credentials.
-
-        This is True if the credentials have a token and the token
-        is not expired.
+    def token_state(
+        self,
+    ) -> Literal[TokenState.FRESH, TokenState.STALE, TokenState.INVALID]:
         """
-        return self.token is not None and not self.expired
+        Tracks the state of a token.
+        FRESH: The token is valid. It is not expired or close to expired, or the token has no expiry.
+        STALE: The token is close to expired, and should be refreshed. The token can be used normally.
+        INVALID: The token is expired or invalid. The token cannot be used for a normal operation.
+        """
+        if self.token is None:
+            return TokenState.INVALID
+
+        # Credentials that can't expire are always treated as fresh.
+        if self.expiry is None:
+            return TokenState.FRESH
+
+        expired = datetime.now(timezone.utc) >= self.expiry
+        if expired:
+            return TokenState.INVALID
+
+        is_stale = datetime.now(timezone.utc) >= (
+            self.expiry - _helpers.REFRESH_THRESHOLD
+        )
+        if is_stale:
+            return TokenState.STALE
+
+        return TokenState.FRESH
 
 
 def generate_cert(
-    common_name: str, expires_in: int = 60
+    common_name: str, expires_in: int = 60, server_cert: bool = False
 ) -> Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
     """
     Generate a private key and cert object to be used in testing.
@@ -69,6 +93,7 @@ def generate_cert(
     Args:
         common_name (str): The Common Name for the certificate.
         expires_in (int): Time in minutes until expiry of certificate.
+        server_cert (bool): Whether it is a server certificate.
 
     Returns:
         Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
@@ -107,6 +132,17 @@ def generate_cert(
         ),
         critical=False,
     )
+    if server_cert:
+        cert = cert.add_extension(
+            x509.SubjectAlternativeName(
+                general_names=[
+                    x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+                    x509.IPAddress(ipaddress.ip_address("10.0.0.1")),
+                    x509.DNSName("x.y.alloydb.goog."),
+                ]
+            ),
+            critical=False,
+        )
     return cert, key
 
 
@@ -122,6 +158,7 @@ class FakeInstance:
         ip_addrs: Dict = {
             "PRIVATE": "127.0.0.1",
             "PUBLIC": "0.0.0.0",
+            "PSC": "x.y.alloydb.goog",
         },
         server_name: str = "00000000-0000-0000-0000-000000000000.server.alloydb",
         cert_before: datetime = datetime.now(timezone.utc),
@@ -147,7 +184,9 @@ class FakeInstance:
             self.root_key, hashes.SHA256()
         )
         # build server cert
-        self.server_cert, self.server_key = generate_cert(self.server_name)
+        self.server_cert, self.server_key = generate_cert(
+            self.server_name, server_cert=True
+        )
         # create server cert signed by root cert
         self.server_cert = self.server_cert.sign(self.root_key, hashes.SHA256())
 
@@ -174,6 +213,7 @@ class FakeAlloyDBClient:
         self.instance = FakeInstance() if instance is None else instance
         self.closed = False
         self._user_agent = f"test-user-agent+{driver}"
+        self._credentials = FakeCredentials()
 
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
         return self.instance.ip_addrs
@@ -206,6 +246,55 @@ class FakeAlloyDBClient:
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
         return (server_cert, [client_cert, intermediate_cert, root_cert])
+
+    async def get_connection_info(
+        self,
+        project: str,
+        region: str,
+        cluster: str,
+        name: str,
+        keys: asyncio.Future,
+    ) -> ConnectionInfo:
+        priv_key, pub_key = await keys
+
+        # before making AlloyDB API calls, refresh creds if required
+        if not self._credentials.token_state == TokenState.FRESH:
+            self._credentials.refresh(requests.Request())
+
+        # fetch metadata
+        metadata_task = asyncio.create_task(
+            self._get_metadata(
+                project,
+                region,
+                cluster,
+                name,
+            )
+        )
+        # generate client and CA certs
+        certs_task = asyncio.create_task(
+            self._get_client_certificate(
+                project,
+                region,
+                cluster,
+                pub_key,
+            )
+        )
+
+        ip_addrs, certs = await asyncio.gather(metadata_task, certs_task)
+
+        # unpack certs
+        ca_cert, cert_chain = certs
+        # get expiration from client certificate
+        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
+        expiration = cert_obj.not_valid_after_utc
+
+        return ConnectionInfo(
+            cert_chain,
+            ca_cert,
+            priv_key,
+            ip_addrs,
+            expiration,
+        )
 
     async def close(self) -> None:
         self.closed = True
@@ -280,10 +369,18 @@ class FakeConnectionInfo:
         self._close_called = False
         self._force_refresh_called = False
 
-    def connection_info(self, ip_type: Any) -> Tuple[str, Any]:
+    def connect_info(self) -> Any:
         f = asyncio.Future()
-        f.set_result(("10.0.0.1", None))
+        f.set_result(self)
         return f
+
+    def get_preferred_ip(self, ip_type: Any) -> Tuple[str, Any]:
+        f = asyncio.Future()
+        f.set_result("10.0.0.1")
+        return f
+
+    def create_ssl_context(self) -> None:
+        return None
 
     async def force_refresh(self) -> None:
         self._force_refresh_called = True

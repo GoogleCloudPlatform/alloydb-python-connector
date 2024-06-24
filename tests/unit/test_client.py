@@ -41,6 +41,16 @@ async def connectionInfoPublicIP(request: Any) -> web.Response:
     return web.Response(content_type="application/json", body=json.dumps(response))
 
 
+async def connectionInfoPsc(request: Any) -> web.Response:
+    response = {
+        "ipAddress": None,
+        "publicIpAddress": None,
+        "pscDnsName": "x.y.alloydb.goog",
+        "instanceUid": "123456789",
+    }
+    return web.Response(content_type="application/json", body=json.dumps(response))
+
+
 async def generateClientCertificate(request: Any) -> web.Response:
     response = {
         "caCert": "This is the CA cert",
@@ -60,6 +70,8 @@ async def client(aiohttp_client: Any) -> Any:
     app.router.add_get(metadata_uri, connectionInfo)
     metadata_public_ip_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/public-instance/connectionInfo"
     app.router.add_get(metadata_public_ip_uri, connectionInfoPublicIP)
+    metadata_psc_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/psc-instance/connectionInfo"
+    app.router.add_get(metadata_psc_uri, connectionInfoPsc)
     client_cert_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster:generateClientCertificate"
     app.router.add_post(client_cert_uri, generateClientCertificate)
     return await aiohttp_client(app)
@@ -80,6 +92,7 @@ async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
     assert ip_addrs == {
         "PRIVATE": "10.0.0.1",
         "PUBLIC": None,
+        "PSC": None,
     }
 
 
@@ -100,6 +113,28 @@ async def test__get_metadata_with_public_ip(
     assert ip_addrs == {
         "PRIVATE": "10.0.0.1",
         "PUBLIC": "127.0.0.1",
+        "PSC": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test__get_metadata_with_psc(
+    client: Any, credentials: FakeCredentials
+) -> None:
+    """
+    Test _get_metadata returns successfully with PSC DNS name.
+    """
+    test_client = AlloyDBClient("", "", credentials, client)
+    ip_addrs = await test_client._get_metadata(
+        "test-project",
+        "test-region",
+        "test-cluster",
+        "psc-instance",
+    )
+    assert ip_addrs == {
+        "PRIVATE": None,
+        "PUBLIC": None,
+        "PSC": "x.y.alloydb.goog",
     }
 
 

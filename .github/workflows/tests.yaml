@@ -61,13 +61,13 @@ jobs:
             }
 
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -76,7 +76,7 @@ jobs:
 
       - id: 'auth'
         name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
         with:
           workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
           service_account: ${{ secrets.SERVICE_ACCOUNT }}
@@ -139,13 +139,13 @@ jobs:
             }
 
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -154,7 +154,7 @@ jobs:
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa # v2.1.3
         with:
           workload_identity_provider: ${{ secrets.PROVIDER_NAME }}
           service_account: ${{ secrets.SERVICE_ACCOUNT }}
@@ -162,13 +162,14 @@ jobs:
 
       - id: 'secrets'
         name: Get secrets
-        uses: google-github-actions/get-secretmanager-secrets@61067887622dee4939d68e379b4264a57534fdf6 # v2.1.0
+        uses: google-github-actions/get-secretmanager-secrets@dc4a1392bad0fd60aee00bb2097e30ef07a1caae # v2.1.3
         with:
           secrets: |-
             ALLOYDB_INSTANCE_URI:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_INSTANCE_URI
             ALLOYDB_CLUSTER_PASS:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_CLUSTER_PASS
             ALLOYDB_IAM_USER:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_PYTHON_IAM_USER
             ALLOYDB_INSTANCE_IP:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_INSTANCE_IP
+            ALLOYDB_PSC_INSTANCE_URI:${{ secrets.GOOGLE_CLOUD_PROJECT }}/ALLOYDB_PSC_INSTANCE_URI
 
       - name: Run tests
         env:
@@ -178,6 +179,7 @@ jobs:
           ALLOYDB_IAM_USER: '${{ steps.secrets.outputs.ALLOYDB_IAM_USER }}'
           ALLOYDB_INSTANCE_IP: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_IP }}'
           ALLOYDB_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_URI }}'
+          ALLOYDB_PSC_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_PSC_INSTANCE_URI }}'
         run: nox -s system-${{ matrix.python-version }}
       
       - name: FlakyBot (Linux)

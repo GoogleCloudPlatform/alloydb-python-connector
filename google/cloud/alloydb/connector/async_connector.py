@@ -24,8 +24,8 @@ import google.auth.transport.requests
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.instance import Instance
 from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ class AsyncConnector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
     ) -> None:
-        self._instances: Dict[str, Instance] = {}
+        self._cache: Dict[str, RefreshAheadCache] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -125,11 +125,11 @@ class AsyncConnector:
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
 
         # use existing connection info if possible
-        if instance_uri in self._instances:
-            instance = self._instances[instance_uri]
+        if instance_uri in self._cache:
+            cache = self._cache[instance_uri]
         else:
-            instance = Instance(instance_uri, self._client, self._keys)
-            self._instances[instance_uri] = instance
+            cache = RefreshAheadCache(instance_uri, self._client, self._keys)
+            self._cache[instance_uri] = cache
 
         connect_func = {
             "asyncpg": asyncpg.connect,
@@ -151,7 +151,8 @@ class AsyncConnector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
-        ip_address, context = await instance.connection_info(ip_type)
+        conn_info = await cache.connect_info()
+        ip_address = conn_info.get_preferred_ip(ip_type)
 
         # callable to be used for auto IAM authn
         def get_authentication_token() -> str:
@@ -166,10 +167,10 @@ class AsyncConnector:
         if enable_iam_auth:
             kwargs["password"] = get_authentication_token
         try:
-            return await connector(ip_address, context, **kwargs)
+            return await connector(ip_address, conn_info.create_ssl_context(), **kwargs)
         except Exception:
             # we attempt a force refresh, then throw the error
-            await instance.force_refresh()
+            await cache.force_refresh()
             raise
 
     async def __aenter__(self) -> Any:
@@ -186,10 +187,8 @@ class AsyncConnector:
         await self.close()
 
     async def close(self) -> None:
-        """Helper function to cancel Instances' tasks
+        """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
-        await asyncio.gather(
-            *[instance.close() for instance in self._instances.values()]
-        )
+        await asyncio.gather(*[cache.close() for cache in self._cache.values()])
         if self._client:
             await self._client.close()

@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.1.2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.1...v1.1.2) (2024-06-12)
+
+
+### Bug Fixes
+
+* update dependencies to latest ([#327](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/327)) ([fac87f0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/fac87f0dc249a27510a43936bf7669bdd74b3322))
+
+## [1.1.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.0...v1.1.1) (2024-05-14)
+
+
+### Dependencies
+
+* update dependency aiohttp to v3.9.5 ([#303](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/303)) ([213adbe](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/213adbebb38da9c3d77493ae50640ee71c21cfd1))
+
+## [1.1.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.0.0...v1.1.0) (2024-04-16)
+
+
+### Features
+
+* add support for PSC ([#291](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/291)) ([9698431](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9698431993cbca1d63fe61090f44ec977bff4f8d))
+
+
+### Dependencies
+
+* update dependency aiohttp to v3.9.4 ([#299](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/299)) ([c3971bd](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c3971bd62b2390583378b6f976d31c1fcfdb39e7))
+* Update dependency google-auth to v2.29.0 ([#281](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/281)) ([473f4ab](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/473f4abbe8e7524c56bd530f13294283a6b4cbcf))
+* Update dependency pg8000 to v1.31.1 ([#292](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/292)) ([d845ac3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/d845ac3ffe539f05fb058fec1ff175a08aa888a0))
+
 ## [1.0.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v0.4.1...v1.0.0) (2024-03-12)
 
 

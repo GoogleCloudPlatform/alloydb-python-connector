@@ -48,23 +48,23 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         repository: ${{ github.event.pull_request.head.repo.full_name }}
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@05963f47d870e2cb19a537396c1f668a348c7d8f # v3.24.8
+      uses: github/codeql-action/init@530d4feaa9c62aaab2d250371e2061eb7a172363 # v3.25.9
       with:
         languages: ${{ matrix.language }}
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
     # If this step fails, then you should remove it and run the build manually
     - name: Autobuild
-      uses: github/codeql-action/autobuild@05963f47d870e2cb19a537396c1f668a348c7d8f # v3.24.8
+      uses: github/codeql-action/autobuild@530d4feaa9c62aaab2d250371e2061eb7a172363 # v3.25.9
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@05963f47d870e2cb19a537396c1f668a348c7d8f # v3.24.8
+      uses: github/codeql-action/analyze@530d4feaa9c62aaab2d250371e2061eb7a172363 # v3.25.9
       with:
         category: "/language:${{matrix.language}}"

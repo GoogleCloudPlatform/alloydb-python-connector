@@ -26,8 +26,8 @@ from google.auth import default
 from google.auth.credentials import with_scopes_if_required
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.instance import Instance
 from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.utils import generate_keys
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
@@ -74,7 +74,7 @@ class Connector:
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
-        self._instances: Dict[str, Instance] = {}
+        self._cache: Dict[str, RefreshAheadCache] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -152,11 +152,11 @@ class Connector:
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible
-        if instance_uri in self._instances:
-            instance = self._instances[instance_uri]
+        if instance_uri in self._cache:
+            cache = self._cache[instance_uri]
         else:
-            instance = Instance(instance_uri, self._client, self._keys)
-            self._instances[instance_uri] = instance
+            cache = RefreshAheadCache(instance_uri, self._client, self._keys)
+            self._cache[instance_uri] = cache
 
         connect_func = {
             "pg8000": pg8000.connect,
@@ -178,19 +178,24 @@ class Connector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
-        ip_address, context = await instance.connection_info(ip_type)
+        conn_info = await cache.connect_info()
+        ip_address = conn_info.get_preferred_ip(ip_type)
 
         # synchronous drivers are blocking and run using executor
         try:
             metadata_partial = partial(
-                self.metadata_exchange, ip_address, context, enable_iam_auth, driver
+                self.metadata_exchange,
+                ip_address,
+                conn_info.create_ssl_context(),
+                enable_iam_auth,
+                driver,
             )
             sock = await self._loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
-            await instance.force_refresh()
+            await cache.force_refresh()
             raise
 
     def metadata_exchange(
@@ -326,14 +331,8 @@ class Connector:
             self._thread.join()
 
     async def close_async(self) -> None:
-        """Helper function to cancel Instances' tasks
+        """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
-        await asyncio.gather(
-            *[instance.close() for instance in self._instances.values()]
-        )
+        await asyncio.gather(*[cache.close() for cache in self._cache.values()])
         if self._client:
             await self._client.close()
-
-    def __del__(self) -> None:
-        """Close Connector as part of garbage collection"""
-        self.close()

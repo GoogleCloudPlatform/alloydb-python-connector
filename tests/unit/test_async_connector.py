@@ -69,6 +69,18 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
             IPTypes.PUBLIC,
             IPTypes.PUBLIC,
         ),
+        (
+            "psc",
+            IPTypes.PSC,
+        ),
+        (
+            "PSC",
+            IPTypes.PSC,
+        ),
+        (
+            IPTypes.PSC,
+            IPTypes.PSC,
+        ),
     ],
 )
 async def test_AsyncConnector_init_ip_type(
@@ -90,7 +102,7 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
         AsyncConnector(ip_type=bad_ip_type, credentials=credentials)
     assert (
         exc_info.value.args[0]
-        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+        == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
     )
 
 
@@ -166,9 +178,9 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
 
         # Prepare cached connection info to avoid the need for two calls
         fake = FakeConnectionInfo()
-        connector._instances[TEST_INSTANCE_NAME] = fake
+        connector._cache[TEST_INSTANCE_NAME] = fake
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as exc_info:
             await connector.connect(
                 TEST_INSTANCE_NAME,
                 "asyncpg",
@@ -177,7 +189,11 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
                 db="test-db",
             )
 
+        # assert custom error message for unsupported driver is present
+        assert exc_info.value.args[0] == "connection failed"
         assert fake._force_refresh_called is True
+
+        await connector.close()
 
 
 @pytest.mark.asyncio
@@ -190,7 +206,7 @@ async def test_close_stops_instance(credentials: FakeCredentials) -> None:
     connector._client = FakeAlloyDBClient()
     # Simulate connection
     fake = FakeConnectionInfo()
-    connector._instances[TEST_INSTANCE_NAME] = fake
+    connector._cache[TEST_INSTANCE_NAME] = fake
 
     await connector.close()
 
@@ -276,5 +292,5 @@ async def test_async_connect_bad_ip_type(
             )
         assert (
             exc_info.value.args[0]
-            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE'."
+            == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
         )
