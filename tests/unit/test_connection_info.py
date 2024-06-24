@@ -114,6 +114,6 @@ async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError() -> None:
         {},
         datetime.now(timezone.utc),
     )
-    # check RefreshError is thrown
+    # check error is thrown
     with pytest.raises(IPTypeNotFoundError):
         conn_info.get_preferred_ip(ip_type=IPTypes.PUBLIC)
