@@ -73,7 +73,7 @@ def test_ConnectionInfo_caches_sslcontext() -> None:
     assert info.context is None
     # cache a 'context'
     info.context = "context"
-    # caling create_ssl_context should no-op with an existing 'context'
+    # calling create_ssl_context should no-op with an existing 'context'
     info.create_ssl_context()
     assert info.context == "context"
 
