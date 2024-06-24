@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -22,15 +21,12 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from mocks import FakeAlloyDBClient
 from mocks import FakeInstance
 import pytest
 
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import IPTypes
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
-from google.cloud.alloydb.connector.utils import generate_keys
 
 
 def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:
@@ -97,34 +93,27 @@ def test_ConnectionInfo_caches_sslcontext() -> None:
 )
 async def test_ConnectionInfo_get_preferred_ip(ip_type: IPTypes, expected: str) -> None:
     """Test that ConnectionInfo.get_preferred_ip returns proper ip address."""
-    keys = asyncio.create_task(generate_keys())
-    client = FakeAlloyDBClient()
-    cache = RefreshAheadCache(
-        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-        client,
-        keys,
+    ip_addrs = {
+        "PRIVATE": "127.0.0.1",
+        "PUBLIC": "0.0.0.0",
+        "PSC": "x.y.alloydb.goog",
+    }
+    conn_info = ConnectionInfo(
+        ["cert"], "cert", "key", ip_addrs, datetime.now(timezone.utc)
     )
-    conn_info = await cache.connect_info()
     ip_address = conn_info.get_preferred_ip(ip_type)
     assert ip_address == expected
-    # close instance
-    await cache.close()
 
 
 async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError() -> None:
     """Test that ConnectionInfo.get_preferred_ip throws IPTypeNotFoundError"""
-    keys = asyncio.create_task(generate_keys())
-    client = FakeAlloyDBClient()
-    # set ip_addrs to have no public IP
-    client.instance.ip_addrs = {"PRIVATE": "10.0.0.1"}
-    cache = RefreshAheadCache(
-        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-        client,
-        keys,
+    conn_info = ConnectionInfo(
+        ["cert"],
+        "cert",
+        "key",
+        {},
+        datetime.now(timezone.utc),
     )
-    conn_info = await cache.connect_info()
     # check RefreshError is thrown
     with pytest.raises(IPTypeNotFoundError):
         conn_info.get_preferred_ip(ip_type=IPTypes.PUBLIC)
-    # close instance
-    await cache.close()
