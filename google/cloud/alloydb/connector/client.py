@@ -14,11 +14,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import aiohttp
+from cryptography import x509
+from google.auth.credentials import TokenState
+from google.auth.transport import requests
 
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.version import __version__ as version
 
 if TYPE_CHECKING:
@@ -180,6 +185,70 @@ class AlloyDBClient:
         resp_dict = await resp.json()
 
         return (resp_dict["caCert"], resp_dict["pemCertificateChain"])
+
+    async def get_connection_info(
+        self,
+        project: str,
+        region: str,
+        cluster: str,
+        name: str,
+        keys: asyncio.Future,
+    ) -> ConnectionInfo:
+        """Immediately performs a full refresh operation using the AlloyDB API.
+
+        Args:
+            project (str): The name of the project the AlloyDB instance is
+                located in.
+            region (str): The region the AlloyDB instance is located in.
+            cluster (str): The cluster the AlloyDB instance is located in.
+            name (str): Name of the AlloyDB instance.
+            keys (asyncio.Future): A future to the client's public-private key
+                pair.
+
+        Returns:
+            ConnectionInfo: All the information required to connect securely to
+                the AlloyDB instance.
+        """
+        priv_key, pub_key = await keys
+
+        # before making AlloyDB API calls, refresh creds if required
+        if not self._credentials.token_state == TokenState.FRESH:
+            self._credentials.refresh(requests.Request())
+
+        # fetch metadata
+        metadata_task = asyncio.create_task(
+            self._get_metadata(
+                project,
+                region,
+                cluster,
+                name,
+            )
+        )
+        # generate client and CA certs
+        certs_task = asyncio.create_task(
+            self._get_client_certificate(
+                project,
+                region,
+                cluster,
+                pub_key,
+            )
+        )
+
+        ip_addrs, certs = await asyncio.gather(metadata_task, certs_task)
+
+        # unpack certs
+        ca_cert, cert_chain = certs
+        # get expiration from client certificate
+        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
+        expiration = cert_obj.not_valid_after_utc
+
+        return ConnectionInfo(
+            cert_chain,
+            ca_cert,
+            priv_key,
+            ip_addrs,
+            expiration,
+        )
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""

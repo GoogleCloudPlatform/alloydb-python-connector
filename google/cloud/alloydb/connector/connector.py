@@ -178,12 +178,17 @@ class Connector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
-        ip_address, context = await cache.connection_info(ip_type)
+        conn_info = await cache.connect_info()
+        ip_address = conn_info.get_preferred_ip(ip_type)
 
         # synchronous drivers are blocking and run using executor
         try:
             metadata_partial = partial(
-                self.metadata_exchange, ip_address, context, enable_iam_auth, driver
+                self.metadata_exchange,
+                ip_address,
+                conn_info.create_ssl_context(),
+                enable_iam_auth,
+                driver,
             )
             sock = await self._loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)

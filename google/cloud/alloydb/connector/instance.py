@@ -20,19 +20,13 @@ import logging
 import re
 from typing import Tuple, TYPE_CHECKING
 
-from google.auth.credentials import TokenState
-from google.auth.transport import requests
-
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
-from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.exceptions import RefreshError
 from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydb.connector.refresh_utils import _is_valid
 from google.cloud.alloydb.connector.refresh_utils import _seconds_until_refresh
 
 if TYPE_CHECKING:
-    import ssl
-
     from cryptography.hazmat.primitives.asymmetric import rsa
 
     from google.cloud.alloydb.connector.client import AlloyDBClient
@@ -132,32 +126,13 @@ class RefreshAheadCache:
 
         try:
             await self._refresh_rate_limiter.acquire()
-            priv_key, pub_key = await self._keys
-
-            # before making AlloyDB API calls, refresh creds if required
-            if not self._client._credentials.token_state == TokenState.FRESH:
-                self._client._credentials.refresh(requests.Request())
-
-            # fetch metadata
-            metadata_task = asyncio.create_task(
-                self._client._get_metadata(
-                    self._project,
-                    self._region,
-                    self._cluster,
-                    self._name,
-                )
+            connection_info = await self._client.get_connection_info(
+                self._project,
+                self._region,
+                self._cluster,
+                self._name,
+                self._keys,
             )
-            # generate client and CA certs
-            certs_task = asyncio.create_task(
-                self._client._get_client_certificate(
-                    self._project,
-                    self._region,
-                    self._cluster,
-                    pub_key,
-                )
-            )
-
-            ip_addr, certs = await asyncio.gather(metadata_task, certs_task)
 
         except Exception:
             logger.debug(
@@ -167,8 +142,7 @@ class RefreshAheadCache:
 
         finally:
             self._refresh_in_progress.clear()
-
-        return ConnectionInfo(ip_addr, priv_key, certs)
+        return connection_info
 
     def _schedule_refresh(self, delay: int) -> asyncio.Task:
         """
@@ -241,24 +215,11 @@ class RefreshAheadCache:
         if not await _is_valid(self._current):
             self._current = self._next
 
-    async def connection_info(self, ip_type: IPTypes) -> Tuple[str, ssl.SSLContext]:
+    async def connect_info(self) -> ConnectionInfo:
+        """Retrieves ConnectionInfo instance for establishing a secure
+        connection to the AlloyDB instance.
         """
-        Return connection info for current refresh result.
-
-        Args:
-            ip_type (IpTypes): Type of AlloyDB instance IP to connect over.
-        Returns:
-            Tuple[str, ssl.SSLContext]: AlloyDB instance IP address
-                and configured TLS connection.
-        """
-        refresh: ConnectionInfo = await self._current
-        ip_address = refresh.ip_addrs.get(ip_type.value)
-        if ip_address is None:
-            raise IPTypeNotFoundError(
-                "AlloyDB instance does not have an IP addresses matching "
-                f"type: '{ip_type.value}'"
-            )
-        return ip_address, refresh.context
+        return await self._current
 
     async def close(self) -> None:
         """
