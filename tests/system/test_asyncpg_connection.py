@@ -28,6 +28,7 @@ async def create_sqlalchemy_engine(
     user: str,
     password: str,
     db: str,
+    refresh_strategy: str = "background",
 ) -> Tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
@@ -36,10 +37,10 @@ async def create_sqlalchemy_engine(
     A sample invocation looks like:
 
         engine, connector = await create_sqlalchemy_engine(
-                inst_uri,
-                user,
-                password,
-                db,
+            inst_uri,
+            user,
+            password,
+            db,
         )
         async with engine.connect() as conn:
             time = await conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
@@ -56,10 +57,14 @@ async def create_sqlalchemy_engine(
             The database user name, e.g., postgres
         password (str):
             The database user's password, e.g., secret-password
-        db_name (str):
+        db (str):
             The name of the database, e.g., mydb
+        refresh_strategy (Optional[str]):
+            Refresh strategy for the AlloyDB Connector. Can be one of "lazy"
+            or "background". For serverless environments use "lazy" to avoid
+            errors resulting from CPU being throttled.
     """
-    connector = AsyncConnector()
+    connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
     async def getconn() -> asyncpg.Connection:
         conn: asyncpg.Connection = await connector.connect(
@@ -91,6 +96,24 @@ async def test_connection_with_asyncpg() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     pool, connector = await create_sqlalchemy_engine(inst_uri, user, password, db)
+
+    async with pool.connect() as conn:
+        res = (await conn.execute(sqlalchemy.text("SELECT 1"))).fetchone()
+        assert res[0] == 1
+
+    await connector.close()
+
+
+async def test_lazy_connection_with_asyncpg() -> None:
+    """Basic test to get time from database."""
+    inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
+    user = os.environ["ALLOYDB_USER"]
+    password = os.environ["ALLOYDB_PASS"]
+    db = os.environ["ALLOYDB_DB"]
+
+    pool, connector = await create_sqlalchemy_engine(
+        inst_uri, user, password, db, "lazy"
+    )
 
     async with pool.connect() as conn:
         res = (await conn.execute(sqlalchemy.text("SELECT 1"))).fetchone()
