@@ -14,61 +14,76 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 import ssl
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
-from cryptography import x509
-
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.utils import _write_to_file
 
 if TYPE_CHECKING:
+    import datetime
+
     from cryptography.hazmat.primitives.asymmetric import rsa
+
+    from google.cloud.alloydb.connector.instance import IPTypes
 
 logger = logging.getLogger(name=__name__)
 
 
+@dataclass
 class ConnectionInfo:
-    """
-    Manages the result of a refresh operation.
+    """Contains all necessary information to connect securely to the
+    server-side Proxy running on an AlloyDB instance."""
 
-    Holds the certificates and IP address of an AlloyDB instance.
-    Builds the TLS context required to connect to AlloyDB database.
+    cert_chain: List[str]
+    ca_cert: str
+    key: rsa.RSAPrivateKey
+    ip_addrs: Dict[str, Optional[str]]
+    expiration: datetime.datetime
+    context: Optional[ssl.SSLContext] = None
 
-    Args:
-        ip_addrs (Dict[str, str]): The IP addresses of the AlloyDB instance.
-        key (rsa.RSAPrivateKey): Private key for the client connection.
-        certs (Tuple[str, List(str)]): Client cert and CA certs for establishing
-            the chain of trust used in building the TLS context.
-    """
+    def create_ssl_context(self) -> ssl.SSLContext:
+        """Constructs a SSL/TLS context for the given connection info.
 
-    def __init__(
-        self,
-        ip_addrs: Dict[str, Optional[str]],
-        key: rsa.RSAPrivateKey,
-        certs: Tuple[str, List[str]],
-    ) -> None:
-        self.ip_addrs = ip_addrs
+        Cache the SSL context to ensure we don't read from disk repeatedly when
+        configuring a secure connection.
+        """
+        # if SSL context is cached, use it
+        if self.context is not None:
+            return self.context
+
         # create TLS context
-        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         # TODO: Set check_hostname to True to verify the identity in the
         # certificate once PSC DNS is populated in all existing clusters.
-        self.context.check_hostname = False
+        context.check_hostname = False
         # force TLSv1.3
-        self.context.minimum_version = ssl.TLSVersion.TLSv1_3
-        # unpack certs
-        ca_cert, cert_chain = certs
-        # get expiration from client certificate
-        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
-        self.expiration = cert_obj.not_valid_after_utc
+        context.minimum_version = ssl.TLSVersion.TLSv1_3
 
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
         # need to be written to files in order to be loaded by the SSLContext
         with TemporaryDirectory() as tmpdir:
             ca_filename, cert_chain_filename, key_filename = _write_to_file(
-                tmpdir, ca_cert, cert_chain, key
+                tmpdir, self.ca_cert, self.cert_chain, self.key
             )
-            self.context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
-            self.context.load_verify_locations(cafile=ca_filename)
+            context.load_cert_chain(cert_chain_filename, keyfile=key_filename)
+            context.load_verify_locations(cafile=ca_filename)
+        # set class attribute to cache context for subsequent calls
+        self.context = context
+        return context
+
+    def get_preferred_ip(self, ip_type: IPTypes) -> str:
+        """Returns the first IP address for the instance, according to the preference
+        supplied by ip_type. If no IP addressess with the given preference are found,
+        an error is raised."""
+        ip_address = self.ip_addrs.get(ip_type.value)
+        if ip_address is None:
+            raise IPTypeNotFoundError(
+                "AlloyDB instance does not have an IP addresses matching "
+                f"type: '{ip_type.value}'"
+            )
+        return ip_address

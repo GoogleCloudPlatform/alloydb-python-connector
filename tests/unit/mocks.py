@@ -28,7 +28,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from google.auth.credentials import _helpers
 from google.auth.credentials import TokenState
+from google.auth.transport import requests
 
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 
@@ -236,6 +238,55 @@ class FakeAlloyDBClient:
         ).decode("UTF-8")
         return (server_cert, [client_cert, intermediate_cert, root_cert])
 
+    async def get_connection_info(
+        self,
+        project: str,
+        region: str,
+        cluster: str,
+        name: str,
+        keys: asyncio.Future,
+    ) -> ConnectionInfo:
+        priv_key, pub_key = await keys
+
+        # before making AlloyDB API calls, refresh creds if required
+        if not self._credentials.token_state == TokenState.FRESH:
+            self._credentials.refresh(requests.Request())
+
+        # fetch metadata
+        metadata_task = asyncio.create_task(
+            self._get_metadata(
+                project,
+                region,
+                cluster,
+                name,
+            )
+        )
+        # generate client and CA certs
+        certs_task = asyncio.create_task(
+            self._get_client_certificate(
+                project,
+                region,
+                cluster,
+                pub_key,
+            )
+        )
+
+        ip_addrs, certs = await asyncio.gather(metadata_task, certs_task)
+
+        # unpack certs
+        ca_cert, cert_chain = certs
+        # get expiration from client certificate
+        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
+        expiration = cert_obj.not_valid_after_utc
+
+        return ConnectionInfo(
+            cert_chain,
+            ca_cert,
+            priv_key,
+            ip_addrs,
+            expiration,
+        )
+
     async def close(self) -> None:
         self.closed = True
 
@@ -309,10 +360,18 @@ class FakeConnectionInfo:
         self._close_called = False
         self._force_refresh_called = False
 
-    def connection_info(self, ip_type: Any) -> Tuple[str, Any]:
+    def connect_info(self) -> Any:
         f = asyncio.Future()
-        f.set_result(("10.0.0.1", None))
+        f.set_result(self)
         return f
+
+    def get_preferred_ip(self, ip_type: Any) -> Tuple[str, Any]:
+        f = asyncio.Future()
+        f.set_result("10.0.0.1")
+        return f
+
+    def create_ssl_context(self) -> None:
+        return None
 
     async def force_refresh(self) -> None:
         self._force_refresh_called = True

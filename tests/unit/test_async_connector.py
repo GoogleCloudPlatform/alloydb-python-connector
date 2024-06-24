@@ -92,7 +92,7 @@ async def test_AsyncConnector_init_ip_type(
     """
     connector = AsyncConnector(credentials=credentials, ip_type=ip_type)
     assert connector._ip_type == expected
-    connector.close()
+    await connector.close()
 
 
 async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> None:
@@ -178,9 +178,9 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
 
         # Prepare cached connection info to avoid the need for two calls
         fake = FakeConnectionInfo()
-        connector._instances[TEST_INSTANCE_NAME] = fake
+        connector._cache[TEST_INSTANCE_NAME] = fake
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as exc_info:
             await connector.connect(
                 TEST_INSTANCE_NAME,
                 "asyncpg",
@@ -189,7 +189,11 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
                 db="test-db",
             )
 
+        # assert custom error message for unsupported driver is present
+        assert exc_info.value.args[0] == "connection failed"
         assert fake._force_refresh_called is True
+
+        await connector.close()
 
 
 @pytest.mark.asyncio
@@ -202,7 +206,7 @@ async def test_close_stops_instance(credentials: FakeCredentials) -> None:
     connector._client = FakeAlloyDBClient()
     # Simulate connection
     fake = FakeConnectionInfo()
-    connector._instances[TEST_INSTANCE_NAME] = fake
+    connector._cache[TEST_INSTANCE_NAME] = fake
 
     await connector.close()
 
