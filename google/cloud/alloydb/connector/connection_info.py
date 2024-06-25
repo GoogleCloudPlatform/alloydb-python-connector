@@ -57,9 +57,6 @@ class ConnectionInfo:
 
         # create TLS context
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        # TODO: Set check_hostname to True to verify the identity in the
-        # certificate once PSC DNS is populated in all existing clusters.
-        context.check_hostname = False
         # force TLSv1.3
         context.minimum_version = ssl.TLSVersion.TLSv1_3
 
