@@ -13,7 +13,14 @@
 # limitations under the License.
 from google.cloud.alloydb.connector.async_connector import AsyncConnector
 from google.cloud.alloydb.connector.connector import Connector
-from google.cloud.alloydb.connector.instance import IPTypes
+from google.cloud.alloydb.connector.enums import IPTypes
+from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.version import __version__
 
-__all__ = ["__version__", "Connector", "AsyncConnector", "IPTypes"]
+__all__ = [
+    "__version__",
+    "Connector",
+    "AsyncConnector",
+    "IPTypes",
+    "RefreshStrategy",
+]

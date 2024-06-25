@@ -296,7 +296,6 @@ async def main():
 For more details on additional arguments with an `asyncpg.Connection`, please
 visit the [official documentation][asyncpg-docs].
 
-
 [asyncpg-docs]: https://magicstack.github.io/asyncpg/current/api/index.html
 
 ### Async Context Manager
@@ -382,15 +381,30 @@ connector.connect(
 [configure-iam-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn#enable
 [add-iam-user]: https://cloud.google.com/alloydb/docs/manage-iam-authn#create-user
 
+### Configuring a Lazy Refresh (Cloud Run, Cloud Functions etc.)
+
+The Connector's `refresh_strategy` argument can be set to `"lazy"` to configure
+the Python Connector to retrieve connection info lazily and as-needed.
+Otherwise, a background refresh cycle runs to retrive the connection info
+periodically. This setting is useful in environments where the CPU may be
+throttled outside of a request context, e.g., Cloud Run, Cloud Functions, etc.
+
+To set the refresh strategy, set the `refresh_strategy` keyword argument when
+initializing a `Connector`:
+
+```python
+connector = Connector(refresh_strategy="lazy")
+```
+
 ### Specifying IP Address Type
 
 The AlloyDB Python Connector by default will attempt to establish connections
 to your instance's private IP. To change this, such as connecting to AlloyDB
 over a public IP address or Private Service Connect (PSC), set the `ip_type`
-keyword argument when initializing a `Connector()` or when calling 
+keyword argument when initializing a `Connector()` or when calling
 `connector.connect()`.
 
-Possible values for `ip_type` are `"PRIVATE"` (default value), `"PUBLIC"`, 
+Possible values for `ip_type` are `"PRIVATE"` (default value), `"PUBLIC"`,
 and `"PSC"`.
 
 Example:

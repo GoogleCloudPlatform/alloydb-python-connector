@@ -24,9 +24,7 @@ from google.cloud.alloydb.connector import Connector
 
 
 def create_sqlalchemy_engine(
-    inst_uri: str,
-    user: str,
-    db: str,
+    inst_uri: str, user: str, db: str, refresh_strategy: str = "background"
 ) -> Tuple[sqlalchemy.engine.Engine, Connector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
@@ -35,9 +33,9 @@ def create_sqlalchemy_engine(
     A sample invocation looks like:
 
         engine, connector = create_sqlalchemy_engine(
-                inst_uri,
-                user,
-                db,
+            inst_uri,
+            user,
+            db,
         )
         with engine.connect() as conn:
             time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
@@ -54,10 +52,14 @@ def create_sqlalchemy_engine(
         user (str):
             The formatted IAM database username.
             e.g., my-email@test.com, service-account@project-id.iam
-        db_name (str):
+        db (str):
             The name of the database, e.g., mydb
+        refresh_strategy (Optional[str]):
+            Refresh strategy for the AlloyDB Connector. Can be one of "lazy"
+            or "background". For serverless environments use "lazy" to avoid
+            errors resulting from CPU being throttled.
     """
-    connector = Connector()
+    connector = Connector(refresh_strategy=refresh_strategy)
 
     def getconn() -> pg8000.dbapi.Connection:
         conn: pg8000.dbapi.Connection = connector.connect(
@@ -87,6 +89,21 @@ def test_pg8000_iam_authn_time() -> None:
     db = os.environ["ALLOYDB_DB"]
 
     engine, connector = create_sqlalchemy_engine(inst_uri, user, db)
+    with engine.connect() as conn:
+        time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        conn.commit()
+        curr_time = time[0]
+        assert type(curr_time) is datetime
+    connector.close()
+
+
+def test_pg8000_iam_authn_lazy() -> None:
+    """Basic test to get time from database."""
+    inst_uri = os.environ["ALLOYDB_INSTANCE_URI"]
+    user = os.environ["ALLOYDB_IAM_USER"]
+    db = os.environ["ALLOYDB_DB"]
+
+    engine, connector = create_sqlalchemy_engine(inst_uri, user, db, "lazy")
     with engine.connect() as conn:
         time = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
         conn.commit()
