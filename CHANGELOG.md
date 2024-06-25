@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.2...v1.2.0) (2024-06-25)
+
+
+### Features
+
+* add support for lazy refresh strategy ([#337](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/337)) ([fbf0179](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/fbf017933dfa0297cd57eff31b9061135d9637f2))
+
 ## [1.1.2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.1...v1.1.2) (2024-06-12)
 
 
