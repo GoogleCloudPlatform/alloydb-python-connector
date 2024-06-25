@@ -251,7 +251,7 @@ class Connector:
         # Create socket and wrap with SSL/TLS context
         sock = ctx.wrap_socket(
             socket.create_connection((ip_address, SERVER_PROXY_PORT)),
-            server_hostname=ip_address,
+            server_hostname=ip_address + ".",
         )
         # set auth type for metadata exchange
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
