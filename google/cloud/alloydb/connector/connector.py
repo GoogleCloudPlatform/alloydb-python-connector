@@ -250,7 +250,7 @@ class Connector:
         """
         # Create socket and wrap with SSL/TLS context
         sock = ctx.wrap_socket(
-            socket.create_connection((ip_address, SERVER_PROXY_PORT)),
+            socket.create_connection((ip_address.removesuffix("."), SERVER_PROXY_PORT)),
             server_hostname=ip_address,
         )
         # set auth type for metadata exchange
