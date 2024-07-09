@@ -1,5 +1,5 @@
 aiohttp==3.9.5
 cryptography==42.0.8
-google-auth==2.30.0
+google-auth==2.32.0
 requests==2.32.3
 protobuf==4.25.3
