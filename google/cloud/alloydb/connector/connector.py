@@ -15,6 +15,8 @@
 from __future__ import annotations
 
 import asyncio
+from google.auth.credentials import TokenState
+from google.auth.transport import requests
 from functools import partial
 import socket
 import struct
@@ -257,6 +259,10 @@ class Connector:
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
         if enable_iam_auth:
             auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
+
+        # Ensure token is fresh
+        if self._credentials.token_state != TokenState.FRESH:
+            self._credentials.refresh(requests.Request())
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
