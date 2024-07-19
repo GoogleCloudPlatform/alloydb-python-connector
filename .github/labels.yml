@@ -72,10 +72,6 @@
   color: ededed
   description: Release please has completed a release for this.
 
-- name: 'tests: run'
-  color: 3DED97
-  description: Label to trigger Github Action tests.
-
 - name: 'flakybot: flaky'
   color: 86d9d7
   description: Tells the Flaky Bot not to close or comment on this issue.
