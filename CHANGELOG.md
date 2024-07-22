@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.2.0...v1.2.1) (2024-07-22)
+
+
+### Bug Fixes
+
+* refresh token prior to metadata exchange ([#351](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/351)) ([1ab11e6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1ab11e68f5575d8d2195e2a78f595d779284fa8d)), closes [#346](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/346)
+
 ## [1.2.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.1.2...v1.2.0) (2024-06-25)
 
 
