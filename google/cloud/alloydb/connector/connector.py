@@ -23,7 +23,9 @@ from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING, Union
 
 from google.auth import default
+from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
+from google.auth.transport import requests
 
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.enums import IPTypes
@@ -257,6 +259,10 @@ class Connector:
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
         if enable_iam_auth:
             auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
+
+        # Ensure the credentials are in fact valid before proceeding.
+        if not self._credentials.token_state == TokenState.FRESH:
+            self._credentials.refresh(requests.Request())
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
