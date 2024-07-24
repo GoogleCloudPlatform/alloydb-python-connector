@@ -438,6 +438,28 @@ pool = sqlalchemy.create_engine(
 connector.close()
 ```
 
+### Debug Logging
+
+The AlloyDB Python Connector uses the standard [Python logging module][python-logging]
+for debug logging support.
+
+Add the below code to your application to enable debug logging with the AlloyDB
+Python Connector:
+
+```python
+import logging
+
+logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s")
+logger = logging.getLogger(name="google.cloud.alloydb.connector")
+logger.setLevel(logging.DEBUG)
+```
+
+For more details on configuring logging, please refer to the
+[Python logging docs][configure-logging].
+
+[python-logging]: https://docs.python.org/3/library/logging.html
+[configure-logging]: https://docs.python.org/3/howto/logging.html#configuring-logging
+
 ## Support policy
 
 ### Major version lifecycle

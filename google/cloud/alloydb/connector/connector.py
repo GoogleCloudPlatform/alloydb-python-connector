@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
+import logging
 import socket
 import struct
 from threading import Thread
@@ -40,6 +41,8 @@ if TYPE_CHECKING:
     import ssl
 
     from google.auth.credentials import Credentials
+
+logger = logging.getLogger(name=__name__)
 
 # the port the AlloyDB server-side proxy receives connections on
 SERVER_PROXY_PORT = 5433
@@ -170,10 +173,18 @@ class Connector:
             cache = self._cache[instance_uri]
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
+                logger.debug(
+                    f"['{instance_uri}']: Refresh strategy is set to lazy refresh"
+                )
                 cache = LazyRefreshCache(instance_uri, self._client, self._keys)
             else:
+                logger.debug(
+                    f"['{instance_uri}']: Refresh strategy is set to background"
+                    " refresh"
+                )
                 cache = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._cache[instance_uri] = cache
+            logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
         connect_func = {
             "pg8000": pg8000.connect,
@@ -197,6 +208,7 @@ class Connector:
             ip_type = IPTypes(ip_type.upper())
         conn_info = await cache.connect_info()
         ip_address = conn_info.get_preferred_ip(ip_type)
+        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # synchronous drivers are blocking and run using executor
         try:

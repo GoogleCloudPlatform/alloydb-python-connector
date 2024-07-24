@@ -118,8 +118,6 @@ class AlloyDBClient:
         Returns:
             dict: IP addresses of the AlloyDB instance.
         """
-        logger.debug(f"['{project}/{region}/{cluster}/{name}']: Requesting metadata")
-
         headers = {
             "Authorization": f"Bearer {self._credentials.token}",
         }
@@ -165,8 +163,6 @@ class AlloyDBClient:
             Tuple[str, list[str]]: Tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
-        logger.debug(f"['{project}/{region}/{cluster}']: Requesting client certificate")
-
         headers = {
             "Authorization": f"Bearer {self._credentials.token}",
         }
@@ -252,4 +248,6 @@ class AlloyDBClient:
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""
+        logger.debug("Waiting for connector's http client to close")
         await self._client.close()
+        logger.debug("Closed connector's http client")

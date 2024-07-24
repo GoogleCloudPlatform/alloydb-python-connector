@@ -15,6 +15,9 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 import logging
 import re
 from typing import Tuple, TYPE_CHECKING
@@ -104,7 +107,9 @@ class RefreshAheadCache:
             ConnectionInfo: Result of the refresh operation.
         """
         self._refresh_in_progress.set()
-        logger.debug(f"['{self._instance_uri}']: Entered _perform_refresh")
+        logger.debug(
+            f"['{self._instance_uri}']: Connection info refresh operation started"
+        )
 
         try:
             await self._refresh_rate_limiter.acquire()
@@ -115,10 +120,19 @@ class RefreshAheadCache:
                 self._name,
                 self._keys,
             )
-
-        except Exception:
             logger.debug(
-                f"['{self._instance_uri}']: Error occurred during _perform_refresh."
+                f"['{self._instance_uri}']: Connection info refresh operation"
+                " complete"
+            )
+            logger.debug(
+                f"['{self._instance_uri}']: Current certificate expiration = "
+                f"{connection_info.expiration.isoformat()}"
+            )
+
+        except Exception as e:
+            logger.debug(
+                f"['{self._instance_uri}']: Connection info refresh operation"
+                f" failed: {str(e)}"
             )
             raise
 
@@ -153,7 +167,6 @@ class RefreshAheadCache:
         refresh_task: asyncio.Task
         try:
             if delay > 0:
-                logger.debug(f"['{self._instance_uri}']: Entering sleep")
                 await asyncio.sleep(delay)
             refresh_task = asyncio.create_task(self._perform_refresh())
             refresh_result = await refresh_task
@@ -162,6 +175,11 @@ class RefreshAheadCache:
                 raise RefreshError(
                     f"['{self._instance_uri}']: Invalid refresh operation. Certficate appears to be expired."
                 )
+        except asyncio.CancelledError:
+            logger.debug(
+                f"['{self._instance_uri}']: Scheduled refresh operation cancelled"
+            )
+            raise
         # bad refresh attempt
         except Exception:
             logger.info(
@@ -180,6 +198,12 @@ class RefreshAheadCache:
         self._current = refresh_task
         # calculate refresh delay based on certificate expiration
         delay = _seconds_until_refresh(refresh_result.expiration)
+        logger.debug(
+            f"['{self._instance_uri}']: Connection info refresh operation"
+            " scheduled for "
+            f"{(datetime.now(timezone.utc) + timedelta(seconds=delay)).isoformat(timespec='seconds')} "
+            f"(now + {timedelta(seconds=delay)})"
+        )
         self._next = self._schedule_refresh(delay)
 
         return refresh_result
@@ -207,9 +231,11 @@ class RefreshAheadCache:
         """
         Cancel refresh tasks.
         """
-        logger.debug(f"['{self._instance_uri}']: Waiting for _current to be cancelled")
+        logger.debug(
+            f"['{self._instance_uri}']: Canceling connection info refresh"
+            " operation tasks"
+        )
         self._current.cancel()
-        logger.debug(f"['{self._instance_uri}']: Waiting for _next to be cancelled")
         self._next.cancel()
         # gracefully wait for tasks to cancel
         tasks = asyncio.gather(self._current, self._next, return_exceptions=True)
