@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from types import TracebackType
 from typing import Any, Dict, Optional, Type, TYPE_CHECKING, Union
 
@@ -32,6 +33,8 @@ from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
+
+logger = logging.getLogger(name=__name__)
 
 
 class AsyncConnector:
@@ -141,10 +144,18 @@ class AsyncConnector:
             cache = self._cache[instance_uri]
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
+                logger.debug(
+                    f"['{instance_uri}']: Refresh strategy is set to lazy refresh"
+                )
                 cache = LazyRefreshCache(instance_uri, self._client, self._keys)
             else:
+                logger.debug(
+                    f"['{instance_uri}']: Refresh strategy is set to background"
+                    " refresh"
+                )
                 cache = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._cache[instance_uri] = cache
+            logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
         connect_func = {
             "asyncpg": asyncpg.connect,
@@ -168,6 +179,7 @@ class AsyncConnector:
             ip_type = IPTypes(ip_type.upper())
         conn_info = await cache.connect_info()
         ip_address = conn_info.get_preferred_ip(ip_type)
+        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # callable to be used for auto IAM authn
         def get_authentication_token() -> str:
