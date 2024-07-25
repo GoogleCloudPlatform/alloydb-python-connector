@@ -26,9 +26,7 @@ logger = logging.getLogger(name=__name__)
 _refresh_buffer: int = 4 * 60  # 4 minutes
 
 
-def _seconds_until_refresh(
-    expiration: datetime, now: datetime = datetime.now(timezone.utc)
-) -> int:
+def _seconds_until_refresh(expiration: datetime) -> int:
     """
     Calculates the duration to wait before starting the next refresh.
     Usually the duration will be half of the time until certificate
@@ -36,12 +34,11 @@ def _seconds_until_refresh(
 
     Args:
         expiration (datetime.datetime): Time of certificate expiration.
-        now (datetime.datetime): Current time (UTC)
     Returns:
         int: Time in seconds to wait before performing next refresh.
     """
 
-    duration = int((expiration - now).total_seconds())
+    duration = int((expiration - datetime.now(timezone.utc)).total_seconds())
 
     # if certificate duration is less than 1 hour
     if duration < 3600:
