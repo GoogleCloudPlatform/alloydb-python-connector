@@ -16,6 +16,8 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 
+import pytest
+
 from google.cloud.alloydb.connector.refresh_utils import _seconds_until_refresh
 
 
@@ -24,8 +26,14 @@ def test_seconds_until_refresh_over_1_hour() -> None:
     Test _seconds_until_refresh returns proper time in seconds.
     If expiration is over 1 hour, should return duration/2.
     """
-    now = datetime.now()
-    assert _seconds_until_refresh(now + timedelta(minutes=62), now) == 31 * 60
+    # using pytest.approx since sometimes can be off by a second
+    assert (
+        pytest.approx(
+            _seconds_until_refresh(datetime.now(timezone.utc) + timedelta(minutes=62)),
+            1,
+        )
+        == 31 * 60
+    )
 
 
 def test_seconds_until_refresh_under_1_hour_over_4_mins() -> None:
@@ -34,8 +42,14 @@ def test_seconds_until_refresh_under_1_hour_over_4_mins() -> None:
     If expiration is under 1 hour and over 4 minutes,
     should return duration-refresh_buffer (refresh_buffer = 4 minutes).
     """
-    now = datetime.now(timezone.utc)
-    assert _seconds_until_refresh(now + timedelta(minutes=5), now) == 60
+    # using pytest.approx since sometimes can be off by a second
+    assert (
+        pytest.approx(
+            _seconds_until_refresh(datetime.now(timezone.utc) + timedelta(minutes=5)),
+            1,
+        )
+        == 60
+    )
 
 
 def test_seconds_until_refresh_under_4_mins() -> None:

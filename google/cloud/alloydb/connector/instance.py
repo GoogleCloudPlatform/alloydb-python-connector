@@ -197,9 +197,7 @@ class RefreshAheadCache:
         # if valid refresh, replace current with valid refresh result and schedule next refresh
         self._current = refresh_task
         # calculate refresh delay based on certificate expiration
-        delay = _seconds_until_refresh(
-            refresh_result.expiration, datetime.now(timezone.utc)
-        )
+        delay = _seconds_until_refresh(refresh_result.expiration)
         logger.debug(
             f"['{self._instance_uri}']: Connection info refresh operation"
             " scheduled for "
