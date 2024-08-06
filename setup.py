@@ -21,6 +21,7 @@ description = "A Python client library for connecting securely to your Google Cl
 
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
+    "aiofiles",
     "aiohttp",
     "cryptography>=42.0.0",
     "requests",

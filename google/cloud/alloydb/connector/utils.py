@@ -16,11 +16,12 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
+import aiofiles
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 
-def _write_to_file(
+async def _write_to_file(
     dir_path: str, ca_cert: str, cert_chain: List[str], key: rsa.RSAPrivateKey
 ) -> Tuple[str, str, str]:
     """
@@ -37,12 +38,12 @@ def _write_to_file(
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    with open(ca_filename, "w+") as ca_out:
-        ca_out.write(ca_cert)
-    with open(cert_chain_filename, "w+") as chain_out:
-        chain_out.write("".join(cert_chain))
-    with open(key_filename, "wb") as priv_out:
-        priv_out.write(key_bytes)
+    async with aiofiles.open(ca_filename, "w+") as ca_out:
+        await ca_out.write(ca_cert)
+    async with aiofiles.open(cert_chain_filename, "w+") as chain_out:
+        await chain_out.write("".join(cert_chain))
+    async with aiofiles.open(key_filename, "wb") as priv_out:
+        await priv_out.write(key_bytes)
 
     return (ca_filename, cert_chain_filename, key_filename)
 
