@@ -370,7 +370,7 @@ class FakeConnectionInfo:
         f.set_result("10.0.0.1")
         return f
 
-    def create_ssl_context(self) -> None:
+    async def create_ssl_context(self) -> None:
         return None
 
     async def force_refresh(self) -> None:

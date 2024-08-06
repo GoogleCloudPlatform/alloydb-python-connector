@@ -29,7 +29,7 @@ from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 
 
-def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:
+async def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:
     """
     Test to check whether the __init__ method of ConnectionInfo
     can correctly initialize TLS context.
@@ -58,19 +58,19 @@ def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:
         fake_instance.ip_addrs,
         datetime.now(timezone.utc) + timedelta(minutes=10),
     )
-    context = conn_info.create_ssl_context()
+    context = await conn_info.create_ssl_context()
     # verify TLS requirements
     assert context.minimum_version == ssl.TLSVersion.TLSv1_3
 
 
-def test_ConnectionInfo_caches_sslcontext() -> None:
+async def test_ConnectionInfo_caches_sslcontext() -> None:
     info = ConnectionInfo(["cert"], "cert", "key".encode(), {}, datetime.now())
     # context should default to None
     assert info.context is None
     # cache a 'context'
     info.context = "context"
     # calling create_ssl_context should no-op with an existing 'context'
-    info.create_ssl_context()
+    await info.create_ssl_context()
     assert info.context == "context"
 
 

@@ -194,7 +194,9 @@ class AsyncConnector:
         if enable_iam_auth:
             kwargs["password"] = get_authentication_token
         try:
-            return await connector(ip_address, conn_info.create_ssl_context(), **kwargs)
+            return await connector(
+                ip_address, await conn_info.create_ssl_context(), **kwargs
+            )
         except Exception:
             # we attempt a force refresh, then throw the error
             await cache.force_refresh()

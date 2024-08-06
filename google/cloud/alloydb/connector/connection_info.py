@@ -17,8 +17,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import ssl
-from tempfile import TemporaryDirectory
 from typing import Dict, List, Optional, TYPE_CHECKING
+
+from aiofiles.tempfile import TemporaryDirectory
 
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.utils import _write_to_file
@@ -45,7 +46,7 @@ class ConnectionInfo:
     expiration: datetime.datetime
     context: Optional[ssl.SSLContext] = None
 
-    def create_ssl_context(self) -> ssl.SSLContext:
+    async def create_ssl_context(self) -> ssl.SSLContext:
         """Constructs a SSL/TLS context for the given connection info.
 
         Cache the SSL context to ensure we don't read from disk repeatedly when
@@ -66,8 +67,8 @@ class ConnectionInfo:
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
         # need to be written to files in order to be loaded by the SSLContext
-        with TemporaryDirectory() as tmpdir:
-            ca_filename, cert_chain_filename, key_filename = _write_to_file(
+        async with TemporaryDirectory() as tmpdir:
+            ca_filename, cert_chain_filename, key_filename = await _write_to_file(
                 tmpdir, self.ca_cert, self.cert_chain, self.key
             )
             context.load_cert_chain(cert_chain_filename, keyfile=key_filename)

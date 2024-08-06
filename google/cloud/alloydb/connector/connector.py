@@ -215,7 +215,7 @@ class Connector:
             metadata_partial = partial(
                 self.metadata_exchange,
                 ip_address,
-                conn_info.create_ssl_context(),
+                await conn_info.create_ssl_context(),
                 enable_iam_auth,
                 driver,
             )

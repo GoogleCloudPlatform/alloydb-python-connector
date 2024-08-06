@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import socket
 import ssl
-from tempfile import TemporaryDirectory
 from threading import Thread
 from typing import Generator
 
+from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
 from mocks import FakeInstance
@@ -42,7 +43,7 @@ def fake_client(fake_instance: FakeInstance) -> FakeAlloyDBClient:
     return FakeAlloyDBClient(fake_instance)
 
 
-def start_proxy_server(instance: FakeInstance) -> None:
+async def start_proxy_server(instance: FakeInstance) -> None:
     """Run local proxy server capable of performing metadata exchange"""
     ip_address = "127.0.0.1"
     port = 5433
@@ -55,8 +56,8 @@ def start_proxy_server(instance: FakeInstance) -> None:
         # tmpdir and its contents are automatically deleted after the CA cert
         # and cert chain are loaded into the SSLcontext. The values
         # need to be written to files in order to be loaded by the SSLContext
-        with TemporaryDirectory() as tmpdir:
-            _, cert_chain_filename, key_filename = _write_to_file(
+        async with TemporaryDirectory() as tmpdir:
+            _, cert_chain_filename, key_filename = await _write_to_file(
                 tmpdir, server, [server, root], instance.server_key
             )
             context.load_cert_chain(cert_chain_filename, key_filename)
@@ -76,7 +77,15 @@ def start_proxy_server(instance: FakeInstance) -> None:
 @pytest.fixture(scope="session")
 def proxy_server(fake_instance: FakeInstance) -> Generator:
     """Run local proxy server capable of performing metadata exchange"""
-    thread = Thread(target=start_proxy_server, args=(fake_instance,), daemon=True)
+    thread = Thread(
+        target=asyncio.run,
+        args=(
+            start_proxy_server(
+                fake_instance,
+            ),
+        ),
+        daemon=True,
+    )
     thread.start()
     yield thread
     thread.join()
