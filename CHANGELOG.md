@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.3.0...v1.4.0) (2024-08-14)
+
+
+### Features
+
+* use non-blocking disk read/writes ([#360](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/360)) ([ba434e7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/ba434e7a3792edec3509bb265d6e131e4316406b))
+
 ## [1.3.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.2.1...v1.3.0) (2024-07-25)
 
 ### Features
