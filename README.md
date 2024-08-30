@@ -140,6 +140,9 @@ def getconn():
         user="my-user",
         password="my-password",
         db="my-db-name"
+        # NOTE: this assumes private IP by default.
+        # Add the following keyword arg to use public IP:
+        # ip_type="PUBLIC"
     )
     return conn
 
@@ -263,6 +266,9 @@ async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
             user="my-user",
             password="my-password",
             db="my-db-name"
+            # NOTE: this assumes private IP by default.
+            # Add the following keyword arg to use public IP:
+            # ip_type="PUBLIC"
             # ... additional database driver args
         )
         return conn
