@@ -26,3 +26,18 @@ information on using pull requests.
 
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google/conduct/).
+
+## Testing
+
+NOTE: Be sure to run the following commands in the same VPC as the AlloyDB instance
+
+1. Setup local environment to work with virtualenv and nox if you haven't already, e.g.
+    ```
+    python3 -m venv venv
+    source ./venv/bin/activate
+    pip install nox
+    ```
+1. Set the environment variables. You can see an example of the environment variables needed by running `cat .envrc.example`
+1. Run `gcloud auth application-default login`
+1. Command to run the unit tests: `nox -s unit-<PYTHON VERSION>`
+1. Command to run the integration tests: `nox -s system-<PYTHON VERSION>`
