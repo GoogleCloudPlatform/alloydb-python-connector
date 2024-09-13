@@ -47,6 +47,8 @@ async def connect(
         raise ImportError(
             'Unable to import module "asyncpg." Please install and try again.'
         )
+    # no good way to set the server_name for asyncpg, so only use verify-ca
+    ctx.check_hostname = False
     user = kwargs.pop("user")
     db = kwargs.pop("db")
     passwd = kwargs.pop("password")
