@@ -57,7 +57,7 @@ async def connect(
         user=user,
         database=db,
         password=passwd,
-        host=ip_address,
+        host=ip_address.rstrip("."),
         port=SERVER_PROXY_PORT,
         ssl=ctx,
         direct_tls=True,
