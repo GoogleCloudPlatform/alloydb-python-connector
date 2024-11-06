@@ -37,10 +37,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        # TODO: Change to macos-latest when Python 3.9 is depcrecated. We're
-        #       using macos-12 here, because psycopg 2.9.10 package on
-        #       Python 3.9 is only for macos-12.
-        os: [macos-12, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         python-version: ["3.9", "3.13"]
       fail-fast: false
     steps:
