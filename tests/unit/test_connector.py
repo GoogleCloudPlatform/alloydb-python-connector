@@ -19,10 +19,13 @@ from typing import Union
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
+from mocks import FakeInstance
+from aiohttp import ClientResponseError
 import pytest
 
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
 
 def test_Connector_init(credentials: FakeCredentials) -> None:
@@ -203,3 +206,54 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     assert connector._thread.is_alive() is False
     # call connector.close a second time
     connector.close()
+
+
+@pytest.mark.asyncio
+async def test_Connector_remove_cached_bad_instance(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """When a Connector attempts to retrieve connection info for a
+    non-existent instance, it should delete the instance from
+    the cache and ensure no background refresh happens (which would be
+    wasted cycles).
+    """
+    instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
+    with Connector(credentials) as connector:
+        connector._client = FakeAlloyDBClient(instance = FakeInstance(name = "bad-test-instance"))
+        # patch db connection creation
+        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
+            mock_connect.return_value = True
+            cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
+            connector._cache[instance_uri] = cache
+            with pytest.raises(ClientResponseError):
+                await connector.connect_async(instance_uri, "pg8000")
+            assert instance_uri not in connector._cache
+
+
+# def test_Connector_remove_cached_no_ip_type(
+#     fake_credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+# ) -> None:
+#     """When a Connector attempts to connect and preferred IP type is not present,
+#     it should delete the instance from the cache and ensure no background refresh
+#     happens (which would be wasted cycles).
+#     """
+#     # set instance to only have public IP
+#     fake_client.instance.ip_addrs = {"PRIMARY": "127.0.0.1"}
+#     async with Connector(
+#         credentials=fake_credentials, loop=asyncio.get_running_loop()
+#     ) as connector:
+#         conn_name = "test-project:test-region:test-instance"
+#         # populate cache
+#         cache = RefreshAheadCache(conn_name, fake_client_sync, connector._keys)
+#         connector._cache[conn_name] = cache
+#         # test instance does not have Private IP, thus should invalidate cache
+#         with pytest.raises(CloudSQLIPTypeError):
+#             await connector.connect_async(
+#                 conn_name,
+#                 "pg8000",
+#                 user="my-user",
+#                 password="my-pass",
+#                 ip_type="private",
+#             )
+#         # check that cache has been removed from dict
+#         assert conn_name not in connector._cache

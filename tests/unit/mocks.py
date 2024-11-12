@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from aiohttp import ClientResponseError
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -206,7 +207,14 @@ class FakeAlloyDBClient:
         self._user_agent = f"test-user-agent+{driver}"
         self._credentials = FakeCredentials()
 
+        i = FakeInstance()
+        # The instances that currently exist and the client can send API requests to.
+        self.existing_instances = [f"projects/{i.project}/locations/{i.region}/clusters/{i.cluster}/instances/{i.name}"]
+
     async def _get_metadata(self, *args: Any, **kwargs: Any) -> str:
+        instance_uri = f"projects/{self.instance.project}/locations/{self.instance.region}/clusters/{self.instance.cluster}/instances/{self.instance.name}"
+        if instance_uri not in self.existing_instances:
+            raise ClientResponseError(None, 404)
         return self.instance.ip_addrs
 
     async def _get_client_certificate(
@@ -216,6 +224,9 @@ class FakeAlloyDBClient:
         cluster: str,
         pub_key: str,
     ) -> Tuple[str, List[str]]:
+        instance_uri = f"projects/{self.instance.project}/locations/{self.instance.region}/clusters/{self.instance.cluster}/instances/{self.instance.name}"
+        if instance_uri not in self.existing_instances:
+            raise ClientResponseError(None, 404)
         root_cert, intermediate_cert, server_cert = self.instance.get_pem_certs()
         # encode public key to bytes
         pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
