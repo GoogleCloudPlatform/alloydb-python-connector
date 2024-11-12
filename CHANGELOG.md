@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.4.0...v1.5.0) (2024-11-12)
+
+
+### Features
+
+* add support for Python 3.13 ([#383](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/383)) ([22ef77c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/22ef77c939fe279d749b17a3aded2df3dd565dc6))
+* drop support for Python 3.8 ([#386](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/386)) ([41ae4e3](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/41ae4e3e7fc409749b1379e316be6d3b4996cf1a))
+
+
+### Documentation
+
+* add steps for testing the connector ([#372](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/372)) ([2035a11](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2035a11274293f4c51be53e8ea7de126fcebf757))
+* make IP type defaults clear in README ([#369](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/369)) ([1d8a9a6](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1d8a9a686a8917e2d74652718fbeb25716dbfe75)), closes [#368](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/368)
+
 ## [1.4.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.3.0...v1.4.0) (2024-08-14)
 
 
