@@ -208,10 +208,7 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     connector.close()
 
 
-@pytest.mark.asyncio
-async def test_Connector_remove_cached_bad_instance(
-    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
-) -> None:
+async def test_Connector_remove_cached_bad_instance(credentials: FakeCredentials) -> None:
     """When a Connector attempts to retrieve connection info for a
     non-existent instance, it should delete the instance from
     the cache and ensure no background refresh happens (which would be
@@ -220,14 +217,11 @@ async def test_Connector_remove_cached_bad_instance(
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
         connector._client = FakeAlloyDBClient(instance = FakeInstance(name = "bad-test-instance"))
-        # patch db connection creation
-        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
-            mock_connect.return_value = True
-            cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
-            connector._cache[instance_uri] = cache
-            with pytest.raises(ClientResponseError):
-                await connector.connect_async(instance_uri, "pg8000")
-            assert instance_uri not in connector._cache
+        cache = RefreshAheadCache(instance_uri, connector._client, connector._keys)
+        connector._cache[instance_uri] = cache
+        with pytest.raises(ClientResponseError):
+            await connector.connect_async(instance_uri, "pg8000")
+        assert instance_uri not in connector._cache
 
 
 # def test_Connector_remove_cached_no_ip_type(
