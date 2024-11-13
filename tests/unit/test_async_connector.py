@@ -15,18 +15,18 @@
 import asyncio
 from typing import Union
 
+from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 from mocks import FakeInstance
-from aiohttp import ClientResponseError
 import pytest
 
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
 ALLOYDB_API_ENDPOINT = "https://alloydb.googleapis.com"
 

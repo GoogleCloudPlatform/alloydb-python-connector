@@ -16,11 +16,11 @@ import asyncio
 from threading import Thread
 from typing import Union
 
+from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
 from mocks import FakeInstance
-from aiohttp import ClientResponseError
 import pytest
 
 from google.cloud.alloydb.connector import Connector
