@@ -344,9 +344,7 @@ class Connector:
         """Stops all background refreshes and deletes the connection
         info cache from the map of caches.
         """
-        logger.debug(
-            f"['{instance_uri}']: Removing connection info from cache"
-        )
+        logger.debug(f"['{instance_uri}']: Removing connection info from cache")
         # remove cache from stored caches and close it
         cache = self._cache.pop(instance_uri)
         await cache.close()
