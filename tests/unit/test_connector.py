@@ -23,9 +23,9 @@ from mocks import FakeCredentials
 from mocks import FakeInstance
 import pytest
 
-from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.utils import generate_keys
