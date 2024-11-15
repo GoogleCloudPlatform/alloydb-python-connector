@@ -23,6 +23,7 @@ from mocks import FakeCredentials
 from mocks import FakeInstance
 import pytest
 
+from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
@@ -310,9 +311,7 @@ async def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     async with AsyncConnector(credentials=credentials) as connector:
-        connector._client = FakeAlloyDBClient(
-            instance=FakeInstance(name="bad-test-instance")
-        )
+        connector._client = AlloyDBClient("http://test-endpoint.googleapis.com", "", credentials, None, "pg8000")
         cache = RefreshAheadCache(instance_uri, connector._client, connector._keys)
         connector._cache[instance_uri] = cache
         with pytest.raises(ClientResponseError):

@@ -181,8 +181,8 @@ class AsyncConnector:
             conn_info = await cache.connect_info()
             ip_address = conn_info.get_preferred_ip(ip_type)
         except Exception:
-            # with an error from AlloyDB Admin API call or IP type, invalidate
-            # the cache and re-raise the error
+            # with an error from AlloyDB API call or IP type, invalidate the
+            # cache and re-raise the error
             await self._remove_cached(instance_uri)
             raise
         logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")

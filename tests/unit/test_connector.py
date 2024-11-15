@@ -23,6 +23,7 @@ from mocks import FakeCredentials
 from mocks import FakeInstance
 import pytest
 
+from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
@@ -210,9 +211,7 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     connector.close()
 
 
-async def test_Connector_remove_cached_bad_instance(
-    credentials: FakeCredentials,
-) -> None:
+async def test_Connector_remove_cached_bad_instance(credentials: FakeCredentials) -> None:
     """When a Connector attempts to retrieve connection info for a
     non-existent instance, it should delete the instance from
     the cache and ensure no background refresh happens (which would be
@@ -220,8 +219,10 @@ async def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
-        connector._client = FakeAlloyDBClient(
-            instance=FakeInstance(name="bad-test-instance")
+        connector._client = AlloyDBClient("http://test-endpoint.googleapis.com", "", credentials, None, "pg8000")
+        connector._keys = asyncio.wrap_future(
+            asyncio.run_coroutine_threadsafe(generate_keys(), asyncio.get_event_loop()),
+            loop=asyncio.get_event_loop(),
         )
         cache = RefreshAheadCache(instance_uri, connector._client, connector._keys)
         connector._cache[instance_uri] = cache
@@ -230,9 +231,7 @@ async def test_Connector_remove_cached_bad_instance(
         assert instance_uri not in connector._cache
 
 
-async def test_Connector_remove_cached_no_ip_type(
-    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
-) -> None:
+async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) -> None:
     """When a Connector attempts to connect and preferred IP type is not present,
     it should delete the instance from the cache and ensure no background refresh
     happens (which would be wasted cycles).
