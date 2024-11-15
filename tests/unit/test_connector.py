@@ -211,7 +211,9 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     connector.close()
 
 
-async def test_Connector_remove_cached_bad_instance(credentials: FakeCredentials) -> None:
+async def test_Connector_remove_cached_bad_instance(
+    credentials: FakeCredentials,
+) -> None:
     """When a Connector attempts to retrieve connection info for a
     non-existent instance, it should delete the instance from
     the cache and ensure no background refresh happens (which would be
