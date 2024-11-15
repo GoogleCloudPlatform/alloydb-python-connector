@@ -220,8 +220,8 @@ async def test_Connector_remove_cached_bad_instance(
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
         connector._keys = asyncio.wrap_future(
-            asyncio.run_coroutine_threadsafe(generate_keys(), asyncio.get_event_loop()),
-            loop=asyncio.get_event_loop(),
+            asyncio.run_coroutine_threadsafe(generate_keys(), asyncio.get_running_loop()),
+            loop=asyncio.get_running_loop(),
         )
         with pytest.raises(ClientResponseError):
             await connector.connect_async(instance_uri, "pg8000")
@@ -240,8 +240,8 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
     with Connector(credentials=credentials) as connector:
         connector._client = fake_client
         connector._keys = asyncio.wrap_future(
-            asyncio.run_coroutine_threadsafe(generate_keys(), asyncio.get_event_loop()),
-            loop=asyncio.get_event_loop(),
+            asyncio.run_coroutine_threadsafe(generate_keys(), asyncio.get_running_loop()),
+            loop=asyncio.get_running_loop(),
         )
         cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
         connector._cache[instance_uri] = cache
