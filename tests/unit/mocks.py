@@ -21,8 +21,6 @@ import ssl
 import struct
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
-from aiohttp import ClientResponseError
-from aiohttp import RequestInfo
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
