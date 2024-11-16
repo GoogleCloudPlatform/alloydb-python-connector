@@ -15,6 +15,7 @@
 import asyncio
 from typing import Union
 
+from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
@@ -23,6 +24,8 @@ import pytest
 
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
 ALLOYDB_API_ENDPOINT = "https://alloydb.googleapis.com"
 
@@ -294,3 +297,39 @@ async def test_async_connect_bad_ip_type(
             exc_info.value.args[0]
             == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
         )
+
+
+async def test_Connector_remove_cached_bad_instance(
+    credentials: FakeCredentials,
+) -> None:
+    """When a Connector attempts to retrieve connection info for a
+    non-existent instance, it should delete the instance from
+    the cache and ensure no background refresh happens (which would be
+    wasted cycles).
+    """
+    instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
+    async with AsyncConnector(credentials=credentials) as connector:
+        with pytest.raises(ClientResponseError):
+            await connector.connect(instance_uri, "asyncpg")
+        assert instance_uri not in connector._cache
+
+
+async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) -> None:
+    """When a Connector attempts to connect and preferred IP type is not present,
+    it should delete the instance from the cache and ensure no background refresh
+    happens (which would be wasted cycles).
+    """
+    instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance"
+    # set instance to only have Public IP
+    fake_client = FakeAlloyDBClient()
+    fake_client.instance.ip_addrs = {"PUBLIC": "127.0.0.1"}
+    async with AsyncConnector(credentials=credentials) as connector:
+        connector._client = fake_client
+        # populate cache
+        cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
+        connector._cache[instance_uri] = cache
+        # test instance does not have Private IP, thus should invalidate cache
+        with pytest.raises(IPTypeNotFoundError):
+            await connector.connect(instance_uri, "asyncpg", ip_type="private")
+        # check that cache has been removed from dict
+        assert instance_uri not in connector._cache

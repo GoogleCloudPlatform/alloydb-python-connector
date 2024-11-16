@@ -206,8 +206,14 @@ class Connector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
-        conn_info = await cache.connect_info()
-        ip_address = conn_info.get_preferred_ip(ip_type)
+        try:
+            conn_info = await cache.connect_info()
+            ip_address = conn_info.get_preferred_ip(ip_type)
+        except Exception:
+            # with an error from AlloyDB API call or IP type, invalidate the
+            # cache and re-raise the error
+            await self._remove_cached(instance_uri)
+            raise
         logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # synchronous drivers are blocking and run using executor
@@ -333,6 +339,15 @@ class Connector:
             )
 
         return sock
+
+    async def _remove_cached(self, instance_uri: str) -> None:
+        """Stops all background refreshes and deletes the connection
+        info cache from the map of caches.
+        """
+        logger.debug(f"['{instance_uri}']: Removing connection info from cache")
+        # remove cache from stored caches and close it
+        cache = self._cache.pop(instance_uri)
+        await cache.close()
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""

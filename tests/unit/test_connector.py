@@ -16,6 +16,7 @@ import asyncio
 from threading import Thread
 from typing import Union
 
+from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -23,6 +24,9 @@ import pytest
 
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
+from google.cloud.alloydb.connector.utils import generate_keys
 
 
 def test_Connector_init(credentials: FakeCredentials) -> None:
@@ -203,3 +207,50 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     assert connector._thread.is_alive() is False
     # call connector.close a second time
     connector.close()
+
+
+async def test_Connector_remove_cached_bad_instance(
+    credentials: FakeCredentials,
+) -> None:
+    """When a Connector attempts to retrieve connection info for a
+    non-existent instance, it should delete the instance from
+    the cache and ensure no background refresh happens (which would be
+    wasted cycles).
+    """
+    instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
+    with Connector(credentials) as connector:
+        connector._keys = asyncio.wrap_future(
+            asyncio.run_coroutine_threadsafe(
+                generate_keys(), asyncio.get_running_loop()
+            ),
+            loop=asyncio.get_running_loop(),
+        )
+        with pytest.raises(ClientResponseError):
+            await connector.connect_async(instance_uri, "pg8000")
+        assert instance_uri not in connector._cache
+
+
+async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) -> None:
+    """When a Connector attempts to connect and preferred IP type is not present,
+    it should delete the instance from the cache and ensure no background refresh
+    happens (which would be wasted cycles).
+    """
+    instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance"
+    # set instance to only have Public IP
+    fake_client = FakeAlloyDBClient()
+    fake_client.instance.ip_addrs = {"PUBLIC": "127.0.0.1"}
+    with Connector(credentials=credentials) as connector:
+        connector._client = fake_client
+        connector._keys = asyncio.wrap_future(
+            asyncio.run_coroutine_threadsafe(
+                generate_keys(), asyncio.get_running_loop()
+            ),
+            loop=asyncio.get_running_loop(),
+        )
+        cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
+        connector._cache[instance_uri] = cache
+        # test instance does not have Private IP, thus should invalidate cache
+        with pytest.raises(IPTypeNotFoundError):
+            await connector.connect_async(instance_uri, "pg8000", ip_type="private")
+        # check that cache has been removed from dict
+        assert instance_uri not in connector._cache
