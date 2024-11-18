@@ -209,7 +209,7 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     connector.close()
 
 
-async def test_Connector_remove_cached_bad_instance(
+def test_Connector_remove_cached_bad_instance(
     credentials: FakeCredentials,
 ) -> None:
     """When a Connector attempts to retrieve connection info for a
@@ -219,14 +219,8 @@ async def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
-        connector._keys = asyncio.wrap_future(
-            asyncio.run_coroutine_threadsafe(
-                generate_keys(), asyncio.get_running_loop()
-            ),
-            loop=asyncio.get_running_loop(),
-        )
         with pytest.raises(ClientResponseError):
-            await connector.connect_async(instance_uri, "pg8000")
+            connector.connect(instance_uri, "pg8000")
         assert instance_uri not in connector._cache
 
 
