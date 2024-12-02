@@ -124,8 +124,20 @@ class AlloyDBClient:
 
         url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}/connectionInfo"
 
-        resp = await self._client.get(url, headers=headers, raise_for_status=True)
-        resp_dict = await resp.json()
+        resp = await self._client.get(url, headers=headers)
+        # try to get response json for better error message
+        try:
+            resp_dict = await resp.json()
+            if resp.status >= 400:
+                # if detailed error message is in json response, use as error message
+                message = resp_dict.get("error", {}).get("message")
+                if message:
+                    resp.reason = message
+        # skip, raise_for_status will catch all errors in finally block
+        except Exception:
+            pass
+        finally:
+            resp.raise_for_status()
 
         # Remove trailing period from PSC DNS name.
         psc_dns = resp_dict.get("pscDnsName")
@@ -175,10 +187,20 @@ class AlloyDBClient:
             "useMetadataExchange": self._use_metadata,
         }
 
-        resp = await self._client.post(
-            url, headers=headers, json=data, raise_for_status=True
-        )
-        resp_dict = await resp.json()
+        resp = await self._client.post(url, headers=headers, json=data)
+        # try to get response json for better error message
+        try:
+            resp_dict = await resp.json()
+            if resp.status >= 400:
+                # if detailed error message is in json response, use as error message
+                message = resp_dict.get("error", {}).get("message")
+                if message:
+                    resp.reason = message
+        # skip, raise_for_status will catch all errors in finally block
+        except Exception:
+            pass
+        finally:
+            resp.raise_for_status()
 
         return (resp_dict["caCert"], resp_dict["pemCertificateChain"])
 

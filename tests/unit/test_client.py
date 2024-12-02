@@ -15,7 +15,8 @@
 import json
 from typing import Any, Optional
 
-from aiohttp import web
+from aiohttp import ClientResponseError, web
+from aioresponses import aioresponses
 from mocks import FakeCredentials
 import pytest
 
@@ -138,6 +139,76 @@ async def test__get_metadata_with_psc(
     }
 
 
+async def test__get_metadata_error(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that AlloyDB API error messages are raised for _get_metadata.
+    """
+    # mock AlloyDB API calls with exceptions
+    client = AlloyDBClient(
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        quota_project=None,
+        credentials=credentials,
+    )
+    get_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster/instances/my-instance/connectionInfo"
+    resp_body = {
+        "error": {
+            "code": 403,
+            "message": "AlloyDB API has not been used in project 123456789 before or it is disabled",
+        }
+    }
+    with aioresponses() as mocked:
+        mocked.get(
+            get_url,
+            status=403,
+            payload=resp_body,
+            repeat=True,
+        )
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client._get_metadata("my-project", "my-region", "my-cluster", "my-instance")
+        exc = exc_info.value
+        assert exc.status == 403
+        assert (
+            exc.message
+            == "AlloyDB API has not been used in project 123456789 before or it is disabled"
+        )
+    await client.close()
+
+
+async def test__get_metadata_error_parsing_json(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that AlloyDB API error messages are raised for _get_metadata when
+    response JSON fails to be parsed.
+    """
+    # mock AlloyDB API calls with exceptions
+    client = AlloyDBClient(
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        quota_project=None,
+        credentials=credentials,
+    )
+    get_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster/instances/my-instance/connectionInfo"
+    resp_body = ["error"] # invalid json
+    with aioresponses() as mocked:
+        mocked.get(
+            get_url,
+            status=403,
+            payload=resp_body,
+            repeat=True,
+        )
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client._get_metadata("my-project", "my-region", "my-cluster", "my-instance")
+        exc = exc_info.value
+        assert exc.status == 403
+        assert (
+            exc.message
+            != "AlloyDB API has not been used in project 123456789 before or it is disabled"
+        )
+    await client.close()
+
+
 @pytest.mark.asyncio
 async def test__get_client_certificate(
     client: Any, credentials: FakeCredentials
@@ -155,6 +226,70 @@ async def test__get_client_certificate(
     assert cert_chain[0] == "This is the client cert"
     assert cert_chain[1] == "This is the intermediate cert"
     assert cert_chain[2] == "This is the root cert"
+
+
+async def test__get_client_certificate_error(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that AlloyDB API error messages are raised for _get_client_certificate.
+    """
+    # mock AlloyDB API calls with exceptions
+    client = AlloyDBClient(
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        quota_project=None,
+        credentials=credentials,
+    )
+    post_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster:generateClientCertificate"
+    resp_body = {
+        "error": {
+            "code": 404,
+            "message": "The AlloyDB instance does not exist.",
+        }
+    }
+    with aioresponses() as mocked:
+        mocked.post(
+            post_url,
+            status=404,
+            payload=resp_body,
+            repeat=True,
+        )
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client._get_client_certificate("my-project", "my-region", "my-cluster", "")
+        exc = exc_info.value
+        assert exc.status == 404
+        assert exc.message == "The AlloyDB instance does not exist."
+    await client.close()
+
+
+async def test__get_client_certificate_error_parsing_json(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that AlloyDB API error messages are raised for _get_client_certificate
+    when response JSON fails to be parsed.
+    """
+    # mock AlloyDB API calls with exceptions
+    client = AlloyDBClient(
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        quota_project=None,
+        credentials=credentials,
+    )
+    post_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster:generateClientCertificate"
+    resp_body = ["error"] # invalid json
+    with aioresponses() as mocked:
+        mocked.post(
+            post_url,
+            status=404,
+            payload=resp_body,
+            repeat=True,
+        )
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client._get_client_certificate("my-project", "my-region", "my-cluster", "")
+        exc = exc_info.value
+        assert exc.status == 404
+        assert exc.message != "The AlloyDB instance does not exist."
+    await client.close()
 
 
 @pytest.mark.asyncio
