@@ -170,10 +170,9 @@ async def test__get_metadata_error(
             await client._get_metadata(
                 "my-project", "my-region", "my-cluster", "my-instance"
             )
-        exc = exc_info.value
-        assert exc.status == 403
+        assert exc_info.value.status == 403
         assert (
-            exc.message
+            exc_info.value.message
             == "AlloyDB API has not been used in project 123456789 before or it is disabled"
         )
     await client.close()
@@ -205,10 +204,9 @@ async def test__get_metadata_error_parsing_json(
             await client._get_metadata(
                 "my-project", "my-region", "my-cluster", "my-instance"
             )
-        exc = exc_info.value
-        assert exc.status == 403
+        assert exc_info.value.status == 403
         assert (
-            exc.message
+            exc_info.value.message
             != "AlloyDB API has not been used in project 123456789 before or it is disabled"
         )
     await client.close()
@@ -263,9 +261,8 @@ async def test__get_client_certificate_error(
             await client._get_client_certificate(
                 "my-project", "my-region", "my-cluster", ""
             )
-        exc = exc_info.value
-        assert exc.status == 404
-        assert exc.message == "The AlloyDB instance does not exist."
+        assert exc_info.value.status == 404
+        assert exc_info.value.message == "The AlloyDB instance does not exist."
     await client.close()
 
 
@@ -295,9 +292,8 @@ async def test__get_client_certificate_error_parsing_json(
             await client._get_client_certificate(
                 "my-project", "my-region", "my-cluster", ""
             )
-        exc = exc_info.value
-        assert exc.status == 404
-        assert exc.message != "The AlloyDB instance does not exist."
+        assert exc_info.value.status == 404
+        assert exc_info.value.message != "The AlloyDB instance does not exist."
     await client.close()
 
 
