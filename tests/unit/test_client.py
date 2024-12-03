@@ -15,7 +15,8 @@
 import json
 from typing import Any, Optional
 
-from aiohttp import ClientResponseError, web
+from aiohttp import ClientResponseError
+from aiohttp import web
 from aioresponses import aioresponses
 from mocks import FakeCredentials
 import pytest
@@ -166,7 +167,9 @@ async def test__get_metadata_error(
             repeat=True,
         )
         with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_metadata("my-project", "my-region", "my-cluster", "my-instance")
+            await client._get_metadata(
+                "my-project", "my-region", "my-cluster", "my-instance"
+            )
         exc = exc_info.value
         assert exc.status == 403
         assert (
@@ -190,7 +193,7 @@ async def test__get_metadata_error_parsing_json(
         credentials=credentials,
     )
     get_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster/instances/my-instance/connectionInfo"
-    resp_body = ["error"] # invalid json
+    resp_body = ["error"]  # invalid json
     with aioresponses() as mocked:
         mocked.get(
             get_url,
@@ -199,7 +202,9 @@ async def test__get_metadata_error_parsing_json(
             repeat=True,
         )
         with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_metadata("my-project", "my-region", "my-cluster", "my-instance")
+            await client._get_metadata(
+                "my-project", "my-region", "my-cluster", "my-instance"
+            )
         exc = exc_info.value
         assert exc.status == 403
         assert (
@@ -255,7 +260,9 @@ async def test__get_client_certificate_error(
             repeat=True,
         )
         with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_client_certificate("my-project", "my-region", "my-cluster", "")
+            await client._get_client_certificate(
+                "my-project", "my-region", "my-cluster", ""
+            )
         exc = exc_info.value
         assert exc.status == 404
         assert exc.message == "The AlloyDB instance does not exist."
@@ -276,7 +283,7 @@ async def test__get_client_certificate_error_parsing_json(
         credentials=credentials,
     )
     post_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster:generateClientCertificate"
-    resp_body = ["error"] # invalid json
+    resp_body = ["error"]  # invalid json
     with aioresponses() as mocked:
         mocked.post(
             post_url,
@@ -285,7 +292,9 @@ async def test__get_client_certificate_error_parsing_json(
             repeat=True,
         )
         with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_client_certificate("my-project", "my-region", "my-cluster", "")
+            await client._get_client_certificate(
+                "my-project", "my-region", "my-cluster", ""
+            )
         exc = exc_info.value
         assert exc.status == 404
         assert exc.message != "The AlloyDB instance does not exist."
