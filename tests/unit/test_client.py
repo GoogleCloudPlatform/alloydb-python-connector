@@ -182,8 +182,8 @@ async def test__get_metadata_error_parsing_json(
     credentials: FakeCredentials,
 ) -> None:
     """
-    Test that AlloyDB API error messages are raised for _get_metadata when
-    response JSON fails to be parsed.
+    Test that aiohttp default error messages are raised when _get_metadata gets
+    a bad JSON response.
     """
     # mock AlloyDB API calls with exceptions
     client = AlloyDBClient(
@@ -205,10 +205,7 @@ async def test__get_metadata_error_parsing_json(
                 "my-project", "my-region", "my-cluster", "my-instance"
             )
         assert exc_info.value.status == 403
-        assert (
-            exc_info.value.message
-            != "AlloyDB API has not been used in project 123456789 before or it is disabled"
-        )
+        assert exc_info.value.message == "Forbidden"
     await client.close()
 
 
@@ -270,8 +267,8 @@ async def test__get_client_certificate_error_parsing_json(
     credentials: FakeCredentials,
 ) -> None:
     """
-    Test that AlloyDB API error messages are raised for _get_client_certificate
-    when response JSON fails to be parsed.
+    Test that aiohttp default error messages are raised when
+    _get_client_certificate gets a bad JSON response.
     """
     # mock AlloyDB API calls with exceptions
     client = AlloyDBClient(
@@ -293,7 +290,7 @@ async def test__get_client_certificate_error_parsing_json(
                 "my-project", "my-region", "my-cluster", ""
             )
         assert exc_info.value.status == 404
-        assert exc_info.value.message != "The AlloyDB instance does not exist."
+        assert exc_info.value.message == "Not Found"
     await client.close()
 
 
