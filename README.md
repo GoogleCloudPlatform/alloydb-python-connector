@@ -8,12 +8,14 @@
 
 [![CI][ci-badge]][ci-build]
 [![pypi][pypi-badge]][pypi-docs]
+[![pypi][pypi-downloads]][pypi-docs]
 [![python][python-versions]][pypi-docs]
 
 [ci-badge]: https://github.com/GoogleCloudPlatform/alloydb-python-connector/actions/workflows/tests.yaml/badge.svg?event=push
 [ci-build]: https://github.com/GoogleCloudPlatform/alloydb-python-connector/actions/workflows/tests.yaml?query=event%3Apush+branch%3Amain
 [pypi-badge]: https://img.shields.io/pypi/v/google-cloud-alloydb-connector
 [pypi-docs]: https://pypi.org/project/google-cloud-alloydb-connector
+[pypi-downloads]: https://img.shields.io/pypi/dm/google-cloud-alloydb-connector
 [python-versions]: https://img.shields.io/pypi/pyversions/google-cloud-alloydb-connector
 
 The _AlloyDB Python Connector_ is an [AlloyDB](https://cloud.google.com/alloydb)
