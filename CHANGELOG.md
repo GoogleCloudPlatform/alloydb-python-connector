@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.5.0...v1.6.0) (2024-12-10)
+
+
+### Features
+
+* improve aiohttp client error messages ([#400](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/400)) ([58ef2d2](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/58ef2d2538e3a332defefa15d19b1384db9027b1))
+* invalidate cache on bad connection info and failed IP lookup ([#389](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/389)) ([e8fbbdf](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e8fbbdf80d8aa5f0df2605a779edff631e5f5a2c))
+
 ## [1.5.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.4.0...v1.5.0) (2024-11-12)
 
 
