@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 from types import TracebackType
 from typing import Any, Optional, TYPE_CHECKING, Union
@@ -29,6 +30,7 @@ from google.cloud.alloydb.connector.enums import IPTypes
 from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
+from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -59,6 +61,9 @@ class AsyncConnector:
             of the following: RefreshStrategy.LAZY ("LAZY") or
             RefreshStrategy.BACKGROUND ("BACKGROUND").
             Default: RefreshStrategy.BACKGROUND
+        static_conn_info (io.TextIOBase): A file-like JSON object that contains
+            static connection info for the StaticConnectionInfoCache.
+            Defaults to None, which will not use the StaticConnectionInfoCache.
     """
 
     def __init__(
@@ -70,6 +75,7 @@ class AsyncConnector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
+        static_conn_info: io.TextIOBase = None,
     ) -> None:
         self._cache: dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
         # initialize default params
@@ -100,6 +106,7 @@ class AsyncConnector:
         except RuntimeError:
             self._keys = None
         self._client: Optional[AlloyDBClient] = None
+        self._static_conn_info = static_conn_info
 
     async def connect(
         self,
@@ -138,10 +145,13 @@ class AsyncConnector:
             )
 
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
+        static_conn_info = kwargs.pop("static_conn_info", self._static_conn_info)
 
         # use existing connection info if possible
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
+        elif static_conn_info:
+            cache = StaticConnectionInfoCache(instance_uri, static_conn_info)
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(
