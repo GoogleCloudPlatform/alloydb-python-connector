@@ -57,10 +57,13 @@ class StaticConnectionInfoCache:
         static_info = json.load(static_conn_info)
         ca_cert = static_info[instance_uri]["caCert"]
         cert_chain = static_info[instance_uri]["pemCertificateChain"]
+        dns = ""
+        if static_info[instance_uri]["pscInstanceConfig"]:
+            dns = static_info[instance_uri]["pscInstanceConfig"]["pscDnsName"].rstrip(".")
         ip_addrs = {
             "PRIVATE": static_info[instance_uri]["ipAddress"],
             "PUBLIC": static_info[instance_uri]["publicIpAddress"],
-            "PSC": static_info[instance_uri]["pscInstanceConfig"]["pscDnsName"],
+            "PSC": dns,
         }
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         priv_key = static_info["privateKey"]
