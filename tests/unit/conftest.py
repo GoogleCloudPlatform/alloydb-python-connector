@@ -66,8 +66,8 @@ async def start_proxy_server(instance: FakeInstance) -> None:
         # listen for incoming connections
         sock.listen(5)
 
-        while True:
-            with context.wrap_socket(sock, server_side=True) as ssock:
+        with context.wrap_socket(sock, server_side=True) as ssock:
+            while True:
                 conn, _ = ssock.accept()
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
@@ -75,7 +75,7 @@ async def start_proxy_server(instance: FakeInstance) -> None:
 
 
 @pytest.fixture(scope="session")
-def proxy_server(fake_instance: FakeInstance) -> Generator:
+def proxy_server(fake_instance: FakeInstance) -> None:
     """Run local proxy server capable of performing metadata exchange"""
     thread = Thread(
         target=asyncio.run,
@@ -87,5 +87,4 @@ def proxy_server(fake_instance: FakeInstance) -> Generator:
         daemon=True,
     )
     thread.start()
-    yield thread
-    thread.join()
+    thread.join(0.1) # wait 100ms to allow the proxy server to start
