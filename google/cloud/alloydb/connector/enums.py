@@ -22,9 +22,9 @@ class IPTypes(Enum):
     Enum for specifying IP type to connect to AlloyDB with.
     """
 
-    PUBLIC: str = "PUBLIC"
-    PRIVATE: str = "PRIVATE"
-    PSC: str = "PSC"
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+    PSC = "PSC"
 
     @classmethod
     def _missing_(cls, value: object) -> None:
@@ -39,8 +39,8 @@ class RefreshStrategy(Enum):
     Enum for specifying refresh strategy to connect to AlloyDB with.
     """
 
-    LAZY: str = "LAZY"
-    BACKGROUND: str = "BACKGROUND"
+    LAZY = "LAZY"
+    BACKGROUND = "BACKGROUND"
 
     @classmethod
     def _missing_(cls, value: object) -> None:
