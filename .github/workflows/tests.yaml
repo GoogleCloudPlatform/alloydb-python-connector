@@ -37,17 +37,8 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        # psycopg 2.9.10 isn't supported on Python 3.9 for macos-14. See
-        # https://github.com/psycopg/psycopg2/issues/1737. But it is supported
-        # on macos-12. When Python 3.9 reaches end-of-life, we should change
-        # this back to only run the Mac tests on macos-latest.
-        os: [windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         python-version: ["3.9", "3.13"]
-        include:
-          - os: macos-12
-            python-version: "3.9"
-          - os: macos-latest
-            python-version: "3.13"
       fail-fast: false
     steps:
       - name: Checkout code
