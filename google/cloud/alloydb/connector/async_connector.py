@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from types import TracebackType
-from typing import Any, Dict, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 import google.auth
 from google.auth.credentials import with_scopes_if_required
@@ -71,7 +71,7 @@ class AsyncConnector:
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
     ) -> None:
-        self._cache: Dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
+        self._cache: dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -223,7 +223,7 @@ class AsyncConnector:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:

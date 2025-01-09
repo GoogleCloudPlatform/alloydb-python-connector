@@ -15,7 +15,6 @@
 import asyncio
 from datetime import datetime
 from datetime import timedelta
-from typing import Tuple
 
 import aiohttp
 from mocks import FakeAlloyDBClient
@@ -48,7 +47,7 @@ from google.cloud.alloydb.connector.utils import generate_keys
     ],
 )
 def test_parse_instance_uri(
-    instance_uri: str, expected: Tuple[str, str, str, str]
+    instance_uri: str, expected: tuple[str, str, str, str]
 ) -> None:
     """
     Test that _parse_instance_uri works correctly on
