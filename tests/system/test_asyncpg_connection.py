@@ -203,9 +203,7 @@ async def test_lazy_connection_with_asyncpg() -> None:
     password = os.environ["ALLOYDB_PASS"]
     db = os.environ["ALLOYDB_DB"]
 
-    pool, connector = await create_asyncpg_pool(
-        inst_uri, user, password, db, "lazy"
-    )
+    pool, connector = await create_asyncpg_pool(inst_uri, user, password, db, "lazy")
 
     async with pool.acquire() as conn:
         res = await conn.fetch("SELECT 1")
