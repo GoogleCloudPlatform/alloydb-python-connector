@@ -21,7 +21,7 @@ import socket
 import struct
 from threading import Thread
 from types import TracebackType
-from typing import Any, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from google.auth import default
 from google.auth.credentials import TokenState
@@ -355,7 +355,7 @@ class Connector:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
