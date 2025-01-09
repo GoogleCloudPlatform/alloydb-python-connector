@@ -251,6 +251,42 @@ currently supports the following asyncio database drivers:
 
 [asyncio]: https://docs.python.org/3/library/asyncio.html
 
+#### Asyncpg Connection Pool
+
+```python
+import asyncpg
+from google.cloud.alloydb.connector import AsyncConnector
+
+async def main():
+    # initialize Connector object for connections to AlloyDB
+    connector = AsyncConnector()
+
+    # creation function to generate asyncpg connections as the 'connect' arg
+    async def getconn(instance_connection_name, **kwargs) -> asyncpg.Connection:
+        return await connector.connect(
+            instance_connection_name,
+            "asyncpg",
+            user="my-user",
+            password="my-password",
+            db="my-db",
+        )
+
+    # initialize connection pool
+    pool = await asyncpg.create_pool(
+        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+        connect=getconn,
+    )
+
+    # acquire connection and query AlloyDB database
+    async with pool.acquire() as conn:
+        res = await conn.fetch("SELECT NOW()")
+
+    # close Connector
+    await connector.close()
+```
+
+#### SQLAlchemy Async Engine
+
 ```python
 import asyncpg
 
@@ -260,7 +296,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # initialize Connector object for connections to AlloyDB
+    # creation function to generate asyncpg connections as 'async_creator' arg
     async def getconn() -> asyncpg.Connection:
         conn: asyncpg.Connection = await connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
@@ -311,6 +347,39 @@ visit the [official documentation][asyncpg-docs].
 The `AsyncConnector` also may be used as an async context manager, removing the
 need for explicit calls to `connector.close()` to cleanup resources.
 
+#### Asyncpg Connection Pool
+
+```python
+import asyncpg
+from google.cloud.alloydb.connector import AsyncConnector
+
+async def main():
+    # initialize AsyncConnector object for connections to AlloyDB
+    async with AsyncConnector() as connector:
+
+        # creation function to generate asyncpg connections as the 'connect' arg
+        async def getconn(instance_connection_name, **kwargs) -> asyncpg.Connection:
+            return await connector.connect(
+                instance_connection_name,
+                "asyncpg",
+                user="my-user",
+                password="my-password",
+                db="my-db",
+            )
+
+        # create connection pool
+        pool = await asyncpg.create_pool(
+            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+            connect=getconn,
+        )
+
+        # acquire connection and query AlloyDB database
+        async with pool.acquire() as conn:
+            res = await conn.fetch("SELECT NOW()")
+```
+
+#### SQLAlchemy Async Engine
+
 ```python
 import asyncio
 import asyncpg
@@ -321,17 +390,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # initialize Connector object for connections to AlloyDB
+    # creation function to generate asyncpg connections as 'async_creator' arg
     async def getconn() -> asyncpg.Connection:
-            conn: asyncpg.Connection = await connector.connect(
-                "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-                "asyncpg",
-                user="my-user",
-                password="my-password",
-                db="my-db-name"
-                # ... additional database driver args
-            )
-            return conn
+        conn: asyncpg.Connection = await connector.connect(
+            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+            "asyncpg",
+            user="my-user",
+            password="my-password",
+            db="my-db-name"
+            # ... additional database driver args
+        )
+        return conn
 
     # The AlloyDB Python Connector can be used along with SQLAlchemy using the
     # 'async_creator' argument to 'create_async_engine'
