@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import aiohttp
 from cryptography import x509
@@ -100,7 +100,7 @@ class AlloyDBClient:
         region: str,
         cluster: str,
         name: str,
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, Optional[str]]:
         """
         Fetch the metadata for a given AlloyDB instance.
 
@@ -156,7 +156,7 @@ class AlloyDBClient:
         region: str,
         cluster: str,
         pub_key: str,
-    ) -> Tuple[str, List[str]]:
+    ) -> tuple[str, list[str]]:
         """
         Fetch a client certificate for the given AlloyDB cluster.
 
@@ -172,7 +172,7 @@ class AlloyDBClient:
             pub_key (str): PEM-encoded client public key.
 
         Returns:
-            Tuple[str, list[str]]: Tuple containing the CA certificate
+            tuple[str, list[str]]: tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
         headers = {

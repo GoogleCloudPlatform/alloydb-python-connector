@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from typing import Tuple
 
 # [START alloydb_sqlalchemy_connect_async_connector]
 import asyncpg
@@ -29,7 +28,7 @@ async def create_sqlalchemy_engine(
     password: str,
     db: str,
     refresh_strategy: str = "background",
-) -> Tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
+) -> tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
     connector.

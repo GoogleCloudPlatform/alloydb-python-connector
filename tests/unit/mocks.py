@@ -19,7 +19,7 @@ from datetime import timezone
 import ipaddress
 import ssl
 import struct
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import Any, Callable, Literal, Optional
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -86,7 +86,7 @@ class FakeCredentials:
 
 def generate_cert(
     common_name: str, expires_in: int = 60, server_cert: bool = False
-) -> Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
+) -> tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
     """
     Generate a private key and cert object to be used in testing.
 
@@ -96,7 +96,7 @@ def generate_cert(
         server_cert (bool): Whether it is a server certificate.
 
     Returns:
-        Tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
+        tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
     """
     # generate private key
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -146,7 +146,7 @@ class FakeInstance:
         region: str = "test-region",
         cluster: str = "test-cluster",
         name: str = "test-instance",
-        ip_addrs: Dict = {
+        ip_addrs: dict = {
             "PRIVATE": "127.0.0.1",
             "PUBLIC": "0.0.0.0",
             "PSC": "x.y.alloydb.goog",
@@ -181,7 +181,7 @@ class FakeInstance:
         # create server cert signed by root cert
         self.server_cert = self.server_cert.sign(self.root_key, hashes.SHA256())
 
-    def get_pem_certs(self) -> Tuple[str, str, str]:
+    def get_pem_certs(self) -> tuple[str, str, str]:
         """Helper method to get all certs in pem string format."""
         pem_root = self.root_cert.public_bytes(
             encoding=serialization.Encoding.PEM
@@ -215,7 +215,7 @@ class FakeAlloyDBClient:
         region: str,
         cluster: str,
         pub_key: str,
-    ) -> Tuple[str, List[str]]:
+    ) -> tuple[str, list[str]]:
         root_cert, intermediate_cert, server_cert = self.instance.get_pem_certs()
         # encode public key to bytes
         pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
@@ -365,7 +365,7 @@ class FakeConnectionInfo:
         f.set_result(self)
         return f
 
-    def get_preferred_ip(self, ip_type: Any) -> Tuple[str, Any]:
+    def get_preferred_ip(self, ip_type: Any) -> tuple[str, Any]:
         f = asyncio.Future()
         f.set_result("10.0.0.1")
         return f

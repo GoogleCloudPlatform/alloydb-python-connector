@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import ssl
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from aiofiles.tempfile import TemporaryDirectory
 
@@ -39,10 +39,10 @@ class ConnectionInfo:
     """Contains all necessary information to connect securely to the
     server-side Proxy running on an AlloyDB instance."""
 
-    cert_chain: List[str]
+    cert_chain: list[str]
     ca_cert: str
     key: rsa.RSAPrivateKey
-    ip_addrs: Dict[str, Optional[str]]
+    ip_addrs: dict[str, Optional[str]]
     expiration: datetime.datetime
     context: Optional[ssl.SSLContext] = None
 

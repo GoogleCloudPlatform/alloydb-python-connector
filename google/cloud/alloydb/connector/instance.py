@@ -20,7 +20,7 @@ from datetime import timedelta
 from datetime import timezone
 import logging
 import re
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.exceptions import RefreshError
@@ -40,7 +40,7 @@ INSTANCE_URI_REGEX = re.compile(
 )
 
 
-def _parse_instance_uri(instance_uri: str) -> Tuple[str, str, str, str]:
+def _parse_instance_uri(instance_uri: str) -> tuple[str, str, str, str]:
     # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
     if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
         raise ValueError(
@@ -69,14 +69,14 @@ class RefreshAheadCache:
         instance_uri (str): The instance URI of the AlloyDB instance.
             ex. projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>
         client (AlloyDBClient): Client used to make requests to AlloyDB APIs.
-        keys (Tuple[rsa.RSAPrivateKey, str]): Private and Public key pair.
+        keys (tuple[rsa.RSAPrivateKey, str]): Private and Public key pair.
     """
 
     def __init__(
         self,
         instance_uri: str,
         client: AlloyDBClient,
-        keys: asyncio.Future[Tuple[rsa.RSAPrivateKey, str]],
+        keys: asyncio.Future[tuple[rsa.RSAPrivateKey, str]],
     ) -> None:
         # validate and parse instance_uri
         self._project, self._region, self._cluster, self._name = _parse_instance_uri(

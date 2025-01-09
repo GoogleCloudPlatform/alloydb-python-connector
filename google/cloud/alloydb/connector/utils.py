@@ -14,16 +14,14 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import aiofiles
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 async def _write_to_file(
-    dir_path: str, ca_cert: str, cert_chain: List[str], key: rsa.RSAPrivateKey
-) -> Tuple[str, str, str]:
+    dir_path: str, ca_cert: str, cert_chain: list[str], key: rsa.RSAPrivateKey
+) -> tuple[str, str, str]:
     """
     Helper function to write the server_ca, client certificate and
     private key to .pem files in a given directory.
@@ -48,7 +46,7 @@ async def _write_to_file(
     return (ca_filename, cert_chain_filename, key_filename)
 
 
-async def generate_keys() -> Tuple[rsa.RSAPrivateKey, str]:
+async def generate_keys() -> tuple[rsa.RSAPrivateKey, str]:
     priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     pub_key = (
         priv_key.public_key()
