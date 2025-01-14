@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.6.0...v1.7.0) (2025-01-14)
+
+
+### Features
+
+* support native asyncpg connection pools ([#409](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/409)) ([ea2a524](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/ea2a524a533e528aa1d32a01959a288b6e5cd89a))
+
+
+### Bug Fixes
+
+* Respect `google.api` namespace package. ([#411](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/411)) ([aa2dedb](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/aa2dedbe823713bf6f31acaf25e3bba4234d88b6))
+
 ## [1.6.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.5.0...v1.6.0) (2024-12-10)
 
 
