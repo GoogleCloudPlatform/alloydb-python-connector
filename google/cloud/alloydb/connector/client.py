@@ -18,13 +18,16 @@ import asyncio
 import logging
 from typing import Optional, TYPE_CHECKING
 
-import aiohttp
 from cryptography import x509
+from google.api_core.client_options import ClientOptions
+from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
 
+from google.cloud import alloydb_v1beta
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.version import __version__ as version
+from google.protobuf import duration_pb2
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -55,7 +58,7 @@ class AlloyDBClient:
         alloydb_api_endpoint: str,
         quota_project: Optional[str],
         credentials: Credentials,
-        client: Optional[aiohttp.ClientSession] = None,
+        client: Optional[alloydb_v1beta.AlloyDBAdminAsyncClient] = None,
         driver: Optional[str] = None,
         user_agent: Optional[str] = None,
     ) -> None:
@@ -72,21 +75,23 @@ class AlloyDBClient:
                 A credentials object created from the google-auth Python library.
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
-            client (aiohttp.ClientSession): Async client used to make requests to
-                AlloyDB APIs.
+            client (alloydb_v1.AlloyDBAdminAsyncClient): Async client used to
+                make requests to AlloyDB APIs.
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
         """
         user_agent = _format_user_agent(driver, user_agent)
-        headers = {
-            "x-goog-api-client": user_agent,
-            "User-Agent": user_agent,
-            "Content-Type": "application/json",
-        }
-        if quota_project:
-            headers["x-goog-user-project"] = quota_project
 
-        self._client = client if client else aiohttp.ClientSession(headers=headers)
+        self._client = client if client else alloydb_v1beta.AlloyDBAdminAsyncClient(
+            credentials=credentials,
+            client_options=ClientOptions(
+                api_endpoint=alloydb_api_endpoint,
+                quota_project_id=quota_project,
+            ),
+            client_info=ClientInfo(
+                user_agent=user_agent,
+            ),
+        )
         self._credentials = credentials
         self._alloydb_api_endpoint = alloydb_api_endpoint
         # asyncpg does not currently support using metadata exchange
@@ -118,35 +123,33 @@ class AlloyDBClient:
         Returns:
             dict: IP addresses of the AlloyDB instance.
         """
-        headers = {
-            "Authorization": f"Bearer {self._credentials.token}",
-        }
+        parent = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
 
-        url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}/connectionInfo"
-
-        resp = await self._client.get(url, headers=headers)
-        # try to get response json for better error message
-        try:
-            resp_dict = await resp.json()
-            if resp.status >= 400:
-                # if detailed error message is in json response, use as error message
-                message = resp_dict.get("error", {}).get("message")
-                if message:
-                    resp.reason = message
-        # skip, raise_for_status will catch all errors in finally block
-        except Exception:
-            pass
-        finally:
-            resp.raise_for_status()
+        req = alloydb_v1beta.GetConnectionInfoRequest(parent=parent)
+        resp = await self._client.get_connection_info(request=req)
+        resp = await resp
+        # # try to get response json for better error message
+        # try:
+        #     resp_dict = await resp.json()
+        #     if resp.status >= 400:
+        #         # if detailed error message is in json response, use as error message
+        #         message = resp_dict.get("error", {}).get("message")
+        #         if message:
+        #             resp.reason = message
+        # # skip, raise_for_status will catch all errors in finally block
+        # except Exception:
+        #     pass
+        # finally:
+        #     resp.raise_for_status()
 
         # Remove trailing period from PSC DNS name.
-        psc_dns = resp_dict.get("pscDnsName")
+        psc_dns = resp.psc_dns_name
         if psc_dns:
             psc_dns = psc_dns.rstrip(".")
 
         return {
-            "PRIVATE": resp_dict.get("ipAddress"),
-            "PUBLIC": resp_dict.get("publicIpAddress"),
+            "PRIVATE": resp.ip_address,
+            "PUBLIC": resp.public_ip_address,
             "PSC": psc_dns,
         }
 
@@ -175,34 +178,32 @@ class AlloyDBClient:
             tuple[str, list[str]]: tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
-        headers = {
-            "Authorization": f"Bearer {self._credentials.token}",
-        }
+        parent = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}"
+        dur = duration_pb2.Duration()
+        dur.seconds = 3600
+        req = alloydb_v1beta.GenerateClientCertificateRequest(
+            parent=parent,
+            cert_duration=dur,
+            public_key=pub_key,
+            use_metadata_exchange=self._use_metadata,
+        )
+        resp = await self._client.generate_client_certificate(request=req)
+        resp = await resp
+        # # try to get response json for better error message
+        # try:
+        #     resp_dict = await resp.json()
+        #     if resp.status >= 400:
+        #         # if detailed error message is in json response, use as error message
+        #         message = resp_dict.get("error", {}).get("message")
+        #         if message:
+        #             resp.reason = message
+        # # skip, raise_for_status will catch all errors in finally block
+        # except Exception:
+        #     pass
+        # finally:
+        #     resp.raise_for_status()
 
-        url = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}:generateClientCertificate"
-
-        data = {
-            "publicKey": pub_key,
-            "certDuration": "3600s",
-            "useMetadataExchange": self._use_metadata,
-        }
-
-        resp = await self._client.post(url, headers=headers, json=data)
-        # try to get response json for better error message
-        try:
-            resp_dict = await resp.json()
-            if resp.status >= 400:
-                # if detailed error message is in json response, use as error message
-                message = resp_dict.get("error", {}).get("message")
-                if message:
-                    resp.reason = message
-        # skip, raise_for_status will catch all errors in finally block
-        except Exception:
-            pass
-        finally:
-            resp.raise_for_status()
-
-        return (resp_dict["caCert"], resp_dict["pemCertificateChain"])
+        return (resp.ca_cert, resp.pem_certificate_chain)
 
     async def get_connection_info(
         self,
@@ -271,5 +272,4 @@ class AlloyDBClient:
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""
         logger.debug("Waiting for connector's http client to close")
-        await self._client.close()
         logger.debug("Closed connector's http client")
