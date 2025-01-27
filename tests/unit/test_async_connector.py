@@ -15,13 +15,13 @@
 import asyncio
 from typing import Union
 
-from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 import pytest
 
+from google.api_core.exceptions import RetryError
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
@@ -309,7 +309,7 @@ async def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     async with AsyncConnector(credentials=credentials) as connector:
-        with pytest.raises(ClientResponseError):
+        with pytest.raises(RetryError):
             await connector.connect(instance_uri, "asyncpg")
         assert instance_uri not in connector._cache
 
