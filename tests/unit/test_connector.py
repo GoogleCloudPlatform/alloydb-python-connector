@@ -16,7 +16,6 @@ import asyncio
 from threading import Thread
 from typing import Union
 
-from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -220,7 +219,7 @@ def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
-        with pytest.raises(ClientResponseError):
+        with pytest.raises(Exception):
             connector.connect(instance_uri, "pg8000")
         assert instance_uri not in connector._cache
 

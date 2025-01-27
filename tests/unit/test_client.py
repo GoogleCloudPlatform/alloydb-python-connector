@@ -21,70 +21,64 @@ from aioresponses import aioresponses
 from mocks import FakeCredentials
 import pytest
 
+from google.cloud import alloydb_v1beta
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.utils import generate_keys
 from google.cloud.alloydb.connector.version import __version__ as version
 
 
-async def connectionInfo(request: Any) -> web.Response:
-    response = {
-        "ipAddress": "10.0.0.1",
-        "instanceUid": "123456789",
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
+async def connectionInfo(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
+    ci = alloydb_v1beta.types.resources.ConnectionInfo()
+    ci.ip_address = "10.0.0.1"
+    ci.instance_uid = "123456789"
+    return ci
 
 
-async def connectionInfoPublicIP(request: Any) -> web.Response:
-    response = {
-        "ipAddress": "10.0.0.1",
-        "publicIpAddress": "127.0.0.1",
-        "instanceUid": "123456789",
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
+async def connectionInfoPublicIP(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
+    ci = alloydb_v1beta.types.resources.ConnectionInfo()
+    ci.ip_address = "10.0.0.1"
+    ci.public_ip_address = "127.0.0.1"
+    ci.instance_uid = "123456789"
+    return ci
 
 
-async def connectionInfoPsc(request: Any) -> web.Response:
-    response = {
-        "ipAddress": None,
-        "publicIpAddress": None,
-        "pscDnsName": "x.y.alloydb.goog",
-        "instanceUid": "123456789",
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
+async def connectionInfoPsc(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
+    ci = alloydb_v1beta.types.resources.ConnectionInfo()
+    ci.psc_dns_name = "x.y.alloydb.goog"
+    ci.instance_uid = "123456789"
+    return ci
 
 
-async def generateClientCertificate(request: Any) -> web.Response:
-    response = {
-        "caCert": "This is the CA cert",
-        "pemCertificateChain": [
-            "This is the client cert",
-            "This is the intermediate cert",
-            "This is the root cert",
-        ],
-    }
-    return web.Response(content_type="application/json", body=json.dumps(response))
+async def generateClientCertificate(request: Any) -> alloydb_v1beta.types.service.GenerateClientCertificateResponse:
+    ccr = alloydb_v1beta.types.service.GenerateClientCertificateResponse()
+    ccr.ca_cert = "This is the CA cert"
+    ccr.pem_certificate_chain.append("This is the client cert")
+    ccr.pem_certificate_chain.append("This is the intermediate cert")
+    ccr.pem_certificate_chain.append("This is the root cert")
+    return ccr
 
 
-@pytest.fixture
-async def client(aiohttp_client: Any) -> Any:
-    app = web.Application()
-    metadata_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance/connectionInfo"
-    app.router.add_get(metadata_uri, connectionInfo)
-    metadata_public_ip_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/public-instance/connectionInfo"
-    app.router.add_get(metadata_public_ip_uri, connectionInfoPublicIP)
-    metadata_psc_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster/instances/psc-instance/connectionInfo"
-    app.router.add_get(metadata_psc_uri, connectionInfoPsc)
-    client_cert_uri = "/v1beta/projects/test-project/locations/test-region/clusters/test-cluster:generateClientCertificate"
-    app.router.add_post(client_cert_uri, generateClientCertificate)
-    return await aiohttp_client(app)
+class MockAlloyDBAdminAsyncClient:
+    async def get_connection_info(self, request: alloydb_v1beta.GetConnectionInfoRequest) -> alloydb_v1beta.types.resources.ConnectionInfo:
+        parent = request.parent
+        instance = parent.split("/")[-1]
+        if instance == "test-instance":
+            return connectionInfo(request)
+        elif instance == "public-instance":
+            return connectionInfoPublicIP(request)
+        else:
+            return connectionInfoPsc(request)
+        
+    async def generate_client_certificate(self, request: alloydb_v1beta.GenerateClientCertificateRequest) -> web.Response:
+        return generateClientCertificate(request)
 
 
 @pytest.mark.asyncio
-async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
+async def test__get_metadata(credentials: FakeCredentials) -> None:
     """
     Test _get_metadata returns successfully.
     """
-    test_client = AlloyDBClient("", "", credentials, client)
+    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -93,19 +87,19 @@ async def test__get_metadata(client: Any, credentials: FakeCredentials) -> None:
     )
     assert ip_addrs == {
         "PRIVATE": "10.0.0.1",
-        "PUBLIC": None,
-        "PSC": None,
+        "PUBLIC": "",
+        "PSC": "",
     }
 
 
 @pytest.mark.asyncio
 async def test__get_metadata_with_public_ip(
-    client: Any, credentials: FakeCredentials
+    credentials: FakeCredentials
 ) -> None:
     """
     Test _get_metadata returns successfully with Public IP.
     """
-    test_client = AlloyDBClient("", "", credentials, client)
+    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -115,18 +109,18 @@ async def test__get_metadata_with_public_ip(
     assert ip_addrs == {
         "PRIVATE": "10.0.0.1",
         "PUBLIC": "127.0.0.1",
-        "PSC": None,
+        "PSC": "",
     }
 
 
 @pytest.mark.asyncio
 async def test__get_metadata_with_psc(
-    client: Any, credentials: FakeCredentials
+    credentials: FakeCredentials
 ) -> None:
     """
     Test _get_metadata returns successfully with PSC DNS name.
     """
-    test_client = AlloyDBClient("", "", credentials, client)
+    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -134,8 +128,8 @@ async def test__get_metadata_with_psc(
         "psc-instance",
     )
     assert ip_addrs == {
-        "PRIVATE": None,
-        "PUBLIC": None,
+        "PRIVATE": "",
+        "PUBLIC": "",
         "PSC": "x.y.alloydb.goog",
     }
 
@@ -178,45 +172,14 @@ async def test__get_metadata_error(
     await client.close()
 
 
-async def test__get_metadata_error_parsing_json(
-    credentials: FakeCredentials,
-) -> None:
-    """
-    Test that aiohttp default error messages are raised when _get_metadata gets
-    a bad JSON response.
-    """
-    # mock AlloyDB API calls with exceptions
-    client = AlloyDBClient(
-        alloydb_api_endpoint="https://alloydb.googleapis.com",
-        quota_project=None,
-        credentials=credentials,
-    )
-    get_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster/instances/my-instance/connectionInfo"
-    resp_body = ["error"]  # invalid json
-    with aioresponses() as mocked:
-        mocked.get(
-            get_url,
-            status=403,
-            payload=resp_body,
-            repeat=True,
-        )
-        with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_metadata(
-                "my-project", "my-region", "my-cluster", "my-instance"
-            )
-        assert exc_info.value.status == 403
-        assert exc_info.value.message == "Forbidden"
-    await client.close()
-
-
 @pytest.mark.asyncio
 async def test__get_client_certificate(
-    client: Any, credentials: FakeCredentials
+    credentials: FakeCredentials
 ) -> None:
     """
     Test _get_client_certificate returns successfully.
     """
-    test_client = AlloyDBClient("", "", credentials, client)
+    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
     keys = await generate_keys()
     certs = await test_client._get_client_certificate(
         "test-project", "test-region", "test-cluster", keys[1]
@@ -260,37 +223,6 @@ async def test__get_client_certificate_error(
             )
         assert exc_info.value.status == 404
         assert exc_info.value.message == "The AlloyDB instance does not exist."
-    await client.close()
-
-
-async def test__get_client_certificate_error_parsing_json(
-    credentials: FakeCredentials,
-) -> None:
-    """
-    Test that aiohttp default error messages are raised when
-    _get_client_certificate gets a bad JSON response.
-    """
-    # mock AlloyDB API calls with exceptions
-    client = AlloyDBClient(
-        alloydb_api_endpoint="https://alloydb.googleapis.com",
-        quota_project=None,
-        credentials=credentials,
-    )
-    post_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster:generateClientCertificate"
-    resp_body = ["error"]  # invalid json
-    with aioresponses() as mocked:
-        mocked.post(
-            post_url,
-            status=404,
-            payload=resp_body,
-            repeat=True,
-        )
-        with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_client_certificate(
-                "my-project", "my-region", "my-cluster", ""
-            )
-        assert exc_info.value.status == 404
-        assert exc_info.value.message == "Not Found"
     await client.close()
 
 
