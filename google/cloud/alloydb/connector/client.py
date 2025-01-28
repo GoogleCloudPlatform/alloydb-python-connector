@@ -85,7 +85,7 @@ class AlloyDBClient:
         self._client = client if client else alloydb_v1beta.AlloyDBAdminAsyncClient(
             credentials=credentials,
             client_options=ClientOptions(
-                api_endpoint=alloydb_api_endpoint,
+                api_endpoint="alloydb.googleapis.com",
                 quota_project_id=quota_project,
             ),
             client_info=ClientInfo(
@@ -123,11 +123,10 @@ class AlloyDBClient:
         Returns:
             dict: IP addresses of the AlloyDB instance.
         """
-        parent = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
+        parent = f"projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
 
         req = alloydb_v1beta.GetConnectionInfoRequest(parent=parent)
         resp = await self._client.get_connection_info(request=req)
-        resp = await resp
         # # try to get response json for better error message
         # try:
         #     resp_dict = await resp.json()
@@ -178,7 +177,7 @@ class AlloyDBClient:
             tuple[str, list[str]]: tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
-        parent = f"{self._alloydb_api_endpoint}/{API_VERSION}/projects/{project}/locations/{region}/clusters/{cluster}"
+        parent = f"projects/{project}/locations/{region}/clusters/{cluster}"
         dur = duration_pb2.Duration()
         dur.seconds = 3600
         req = alloydb_v1beta.GenerateClientCertificateRequest(
@@ -188,7 +187,6 @@ class AlloyDBClient:
             use_metadata_exchange=self._use_metadata,
         )
         resp = await self._client.generate_client_certificate(request=req)
-        resp = await resp
         # # try to get response json for better error message
         # try:
         #     resp_dict = await resp.json()
