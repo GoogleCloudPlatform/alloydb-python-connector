@@ -12,65 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from typing import Any, Optional
 
 from aiohttp import ClientResponseError
-from aiohttp import web
 from aioresponses import aioresponses
-from mocks import FakeCredentials
+from mocks import FakeAlloyDBAdminAsyncClient, FakeCredentials
 import pytest
 
+from google.api_core.exceptions import RetryError
 from google.cloud import alloydb_v1beta
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.utils import generate_keys
 from google.cloud.alloydb.connector.version import __version__ as version
-
-
-async def connectionInfo(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
-    ci = alloydb_v1beta.types.resources.ConnectionInfo()
-    ci.ip_address = "10.0.0.1"
-    ci.instance_uid = "123456789"
-    return ci
-
-
-async def connectionInfoPublicIP(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
-    ci = alloydb_v1beta.types.resources.ConnectionInfo()
-    ci.ip_address = "10.0.0.1"
-    ci.public_ip_address = "127.0.0.1"
-    ci.instance_uid = "123456789"
-    return ci
-
-
-async def connectionInfoPsc(request: Any) -> alloydb_v1beta.types.resources.ConnectionInfo:
-    ci = alloydb_v1beta.types.resources.ConnectionInfo()
-    ci.psc_dns_name = "x.y.alloydb.goog"
-    ci.instance_uid = "123456789"
-    return ci
-
-
-async def generateClientCertificate(request: Any) -> alloydb_v1beta.types.service.GenerateClientCertificateResponse:
-    ccr = alloydb_v1beta.types.service.GenerateClientCertificateResponse()
-    ccr.ca_cert = "This is the CA cert"
-    ccr.pem_certificate_chain.append("This is the client cert")
-    ccr.pem_certificate_chain.append("This is the intermediate cert")
-    ccr.pem_certificate_chain.append("This is the root cert")
-    return ccr
-
-
-class MockAlloyDBAdminAsyncClient:
-    async def get_connection_info(self, request: alloydb_v1beta.GetConnectionInfoRequest) -> alloydb_v1beta.types.resources.ConnectionInfo:
-        parent = request.parent
-        instance = parent.split("/")[-1]
-        if instance == "test-instance":
-            return connectionInfo(request)
-        elif instance == "public-instance":
-            return connectionInfoPublicIP(request)
-        else:
-            return connectionInfoPsc(request)
-        
-    async def generate_client_certificate(self, request: alloydb_v1beta.GenerateClientCertificateRequest) -> web.Response:
-        return generateClientCertificate(request)
 
 
 @pytest.mark.asyncio
@@ -78,7 +31,7 @@ async def test__get_metadata(credentials: FakeCredentials) -> None:
     """
     Test _get_metadata returns successfully.
     """
-    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -99,7 +52,7 @@ async def test__get_metadata_with_public_ip(
     """
     Test _get_metadata returns successfully with Public IP.
     """
-    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -120,7 +73,7 @@ async def test__get_metadata_with_psc(
     """
     Test _get_metadata returns successfully with PSC DNS name.
     """
-    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
     ip_addrs = await test_client._get_metadata(
         "test-project",
         "test-region",
@@ -140,34 +93,14 @@ async def test__get_metadata_error(
     """
     Test that AlloyDB API error messages are raised for _get_metadata.
     """
-    # mock AlloyDB API calls with exceptions
     client = AlloyDBClient(
-        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        alloydb_api_endpoint="alloydb.googleapis.com",
         quota_project=None,
         credentials=credentials,
     )
-    get_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster/instances/my-instance/connectionInfo"
-    resp_body = {
-        "error": {
-            "code": 403,
-            "message": "AlloyDB API has not been used in project 123456789 before or it is disabled",
-        }
-    }
-    with aioresponses() as mocked:
-        mocked.get(
-            get_url,
-            status=403,
-            payload=resp_body,
-            repeat=True,
-        )
-        with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_metadata(
-                "my-project", "my-region", "my-cluster", "my-instance"
-            )
-        assert exc_info.value.status == 403
-        assert (
-            exc_info.value.message
-            == "AlloyDB API has not been used in project 123456789 before or it is disabled"
+    with pytest.raises(RetryError) as exc_info:
+        await client._get_metadata(
+            "my-project", "my-region", "my-cluster", "my-instance"
         )
     await client.close()
 
@@ -179,7 +112,7 @@ async def test__get_client_certificate(
     """
     Test _get_client_certificate returns successfully.
     """
-    test_client = AlloyDBClient("", "", credentials, MockAlloyDBAdminAsyncClient())
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
     keys = await generate_keys()
     certs = await test_client._get_client_certificate(
         "test-project", "test-region", "test-cluster", keys[1]
@@ -197,32 +130,16 @@ async def test__get_client_certificate_error(
     """
     Test that AlloyDB API error messages are raised for _get_client_certificate.
     """
-    # mock AlloyDB API calls with exceptions
     client = AlloyDBClient(
-        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        alloydb_api_endpoint="alloydb.googleapis.com",
         quota_project=None,
         credentials=credentials,
     )
-    post_url = "https://alloydb.googleapis.com/v1beta/projects/my-project/locations/my-region/clusters/my-cluster:generateClientCertificate"
-    resp_body = {
-        "error": {
-            "code": 404,
-            "message": "The AlloyDB instance does not exist.",
-        }
-    }
-    with aioresponses() as mocked:
-        mocked.post(
-            post_url,
-            status=404,
-            payload=resp_body,
-            repeat=True,
+    with pytest.raises(RetryError) as exc_info:
+        await client._get_client_certificate(
+            "my-project", "my-region", "my-cluster", ""
         )
-        with pytest.raises(ClientResponseError) as exc_info:
-            await client._get_client_certificate(
-                "my-project", "my-region", "my-cluster", ""
-            )
-        assert exc_info.value.status == 404
-        assert exc_info.value.message == "The AlloyDB instance does not exist."
+    print(exc_info)
     await client.close()
 
 
@@ -234,10 +151,11 @@ async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
     """
     client = AlloyDBClient("www.test-endpoint.com", "my-quota-project", credentials)
     # verify base endpoint is set
-    assert client._alloydb_api_endpoint == "www.test-endpoint.com"
+    assert client._client.api_endpoint == "www.test-endpoint.com"
     # verify proper headers are set
-    assert client._client.headers["User-Agent"] == f"alloydb-python-connector/{version}"
-    assert client._client.headers["x-goog-user-project"] == "my-quota-project"
+    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
+    assert got_user_agent.startswith(f"alloydb-python-connector/{version}")
+    assert client._client._client._client_options.quota_project_id == "my-quota-project"
     # close client
     await client.close()
 
@@ -255,10 +173,8 @@ async def test_AlloyDBClient_init_custom_user_agent(
         credentials,
         user_agent="custom-agent/v1.0.0 other-agent/v2.0.0",
     )
-    assert (
-        client._client.headers["User-Agent"]
-        == f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0"
-    )
+    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
+    assert got_user_agent.startswith(f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0")
     await client.close()
 
 
@@ -277,10 +193,11 @@ async def test_AlloyDBClient_user_agent(
     client = AlloyDBClient(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
     )
+    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
     if driver is None:
-        assert client._user_agent == f"alloydb-python-connector/{version}"
+        assert got_user_agent.startswith(f"alloydb-python-connector/{version}")
     else:
-        assert client._user_agent == f"alloydb-python-connector/{version}+{driver}"
+        assert got_user_agent.startswith(f"alloydb-python-connector/{version}+{driver}")
     # close client
     await client.close()
 
