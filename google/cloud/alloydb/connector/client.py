@@ -75,7 +75,7 @@ class AlloyDBClient:
                 A credentials object created from the google-auth Python library.
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
-            client (alloydb_v1.AlloyDBAdminAsyncClient): Async client used to
+            client (alloydb_v1beta.AlloyDBAdminAsyncClient): Async client used to
                 make requests to AlloyDB APIs.
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
@@ -85,7 +85,7 @@ class AlloyDBClient:
         self._client = client if client else alloydb_v1beta.AlloyDBAdminAsyncClient(
             credentials=credentials,
             client_options=ClientOptions(
-                api_endpoint="alloydb.googleapis.com",
+                api_endpoint=alloydb_api_endpoint,
                 quota_project_id=quota_project,
             ),
             client_info=ClientInfo(
@@ -93,11 +93,9 @@ class AlloyDBClient:
             ),
         )
         self._credentials = credentials
-        self._alloydb_api_endpoint = alloydb_api_endpoint
         # asyncpg does not currently support using metadata exchange
         # only use metadata exchange for pg8000 driver
         self._use_metadata = True if driver == "pg8000" else False
-        self._user_agent = user_agent
 
     async def _get_metadata(
         self,
@@ -127,19 +125,6 @@ class AlloyDBClient:
 
         req = alloydb_v1beta.GetConnectionInfoRequest(parent=parent)
         resp = await self._client.get_connection_info(request=req)
-        # # try to get response json for better error message
-        # try:
-        #     resp_dict = await resp.json()
-        #     if resp.status >= 400:
-        #         # if detailed error message is in json response, use as error message
-        #         message = resp_dict.get("error", {}).get("message")
-        #         if message:
-        #             resp.reason = message
-        # # skip, raise_for_status will catch all errors in finally block
-        # except Exception:
-        #     pass
-        # finally:
-        #     resp.raise_for_status()
 
         # Remove trailing period from PSC DNS name.
         psc_dns = resp.psc_dns_name
@@ -187,20 +172,6 @@ class AlloyDBClient:
             use_metadata_exchange=self._use_metadata,
         )
         resp = await self._client.generate_client_certificate(request=req)
-        # # try to get response json for better error message
-        # try:
-        #     resp_dict = await resp.json()
-        #     if resp.status >= 400:
-        #         # if detailed error message is in json response, use as error message
-        #         message = resp_dict.get("error", {}).get("message")
-        #         if message:
-        #             resp.reason = message
-        # # skip, raise_for_status will catch all errors in finally block
-        # except Exception:
-        #     pass
-        # finally:
-        #     resp.raise_for_status()
-
         return (resp.ca_cert, resp.pem_certificate_chain)
 
     async def get_connection_info(
@@ -269,5 +240,4 @@ class AlloyDBClient:
 
     async def close(self) -> None:
         """Close AlloyDBClient gracefully."""
-        logger.debug("Waiting for connector's http client to close")
-        logger.debug("Closed connector's http client")
+        logger.debug("Closed AlloyDBClient")
