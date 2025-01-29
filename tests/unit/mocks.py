@@ -32,6 +32,7 @@ from google.auth.credentials import _helpers
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
 
+from google.cloud import alloydb_v1beta
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
@@ -448,3 +449,34 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
         "pscInstanceConfig": {"pscDnsName": i.ip_addrs["PSC"]},
     }
     return io.StringIO(json.dumps(static))
+
+
+class FakeAlloyDBAdminAsyncClient:
+    async def get_connection_info(self, request: alloydb_v1beta.GetConnectionInfoRequest) -> alloydb_v1beta.types.resources.ConnectionInfo:
+        ci = alloydb_v1beta.types.resources.ConnectionInfo()
+        ci.ip_address = "10.0.0.1"
+        ci.public_ip_address = "127.0.0.1"
+        ci.instance_uid = "123456789"
+        ci.psc_dns_name = "x.y.alloydb.goog"
+
+        parent = request.parent
+        instance = parent.split("/")[-1]
+        if instance == "test-instance":
+            ci.public_ip_address = ""
+            ci.psc_dns_name = ""
+            return ci
+        elif instance == "public-instance":
+            ci.psc_dns_name = ""
+            return ci
+        else:
+            ci.ip_address = ""
+            ci.public_ip_address = ""
+            return ci
+
+    async def generate_client_certificate(self, request: alloydb_v1beta.GenerateClientCertificateRequest) -> alloydb_v1beta.types.service.GenerateClientCertificateResponse:
+        ccr = alloydb_v1beta.types.service.GenerateClientCertificateResponse()
+        ccr.ca_cert = "This is the CA cert"
+        ccr.pem_certificate_chain.append("This is the client cert")
+        ccr.pem_certificate_chain.append("This is the intermediate cert")
+        ccr.pem_certificate_chain.append("This is the root cert")
+        return ccr

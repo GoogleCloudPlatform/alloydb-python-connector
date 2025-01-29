@@ -67,7 +67,7 @@ class AsyncConnector:
         self,
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
-        alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,

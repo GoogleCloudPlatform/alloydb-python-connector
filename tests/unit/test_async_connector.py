@@ -27,7 +27,7 @@ from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
-ALLOYDB_API_ENDPOINT = "https://alloydb.googleapis.com"
+ALLOYDB_API_ENDPOINT = "alloydb.googleapis.com"
 
 
 @pytest.mark.asyncio
