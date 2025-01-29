@@ -30,6 +30,7 @@ from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.utils import generate_keys
+import traceback
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -65,7 +66,7 @@ class AsyncConnector:
         self,
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
-        alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
@@ -181,6 +182,7 @@ class AsyncConnector:
             conn_info = await cache.connect_info()
             ip_address = conn_info.get_preferred_ip(ip_type)
         except Exception:
+            print(f"RISHABH DEBUG: exception = {traceback.print_exc()}")
             # with an error from AlloyDB API call or IP type, invalidate the
             # cache and re-raise the error
             await self._remove_cached(instance_uri)
