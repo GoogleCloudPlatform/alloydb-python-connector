@@ -192,7 +192,7 @@ class FakeInstance:
         ).decode("UTF-8")
         return (pem_root, pem_intermediate, pem_server)
     
-    def generate_pem_certificate_chain(self, pub_key: str) -> Tuple[str, List[str]]:
+    def generate_pem_certificate_chain(self, pub_key: str) -> tuple[str, List[str]]:
         """Generate the CA certificate and certificate chain for the AlloyDB instance."""
         root_cert, intermediate_cert, server_cert = self.get_pem_certs()
         # encode public key to bytes
