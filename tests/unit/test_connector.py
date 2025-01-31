@@ -249,7 +249,9 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
 
 
 @pytest.mark.usefixtures("proxy_server")
-def test_Connector_static_connection_info(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+def test_Connector_static_connection_info(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
     """
     Test that Connector.__init__() can specify a static connection info to
     connect to an instance.

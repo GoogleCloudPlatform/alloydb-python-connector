@@ -18,8 +18,12 @@ from typing import Union
 import pytest
 from aiohttp import ClientResponseError
 from mock import patch
-from mocks import (FakeAlloyDBClient, FakeConnectionInfo, FakeCredentials,
-                   write_static_info)
+from mocks import (
+    FakeAlloyDBClient,
+    FakeConnectionInfo,
+    FakeCredentials,
+    write_static_info,
+)
 
 from google.cloud.alloydb.connector import AsyncConnector, IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
@@ -332,13 +336,18 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
         # check that cache has been removed from dict
         assert instance_uri not in connector._cache
 
-async def test_Connector_static_connection_info(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+
+async def test_Connector_static_connection_info(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
     """
     Test that AsyncConnector.__init__() can specify a static connection info to
     connect to an instance.
     """
     static_info = write_static_info(fake_client.instance)
-    async with AsyncConnector(credentials=credentials, static_conn_info=static_info) as connector:
+    async with AsyncConnector(
+        credentials=credentials, static_conn_info=static_info
+    ) as connector:
         connector._client = fake_client
         # patch db connection creation
         with patch("google.cloud.alloydb.connector.asyncpg.connect") as mock_connect:

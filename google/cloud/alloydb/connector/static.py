@@ -58,7 +58,9 @@ class StaticConnectionInfoCache:
         cert_chain = static_info[instance_uri]["pemCertificateChain"]
         dns = ""
         if static_info[instance_uri]["pscInstanceConfig"]:
-            dns = static_info[instance_uri]["pscInstanceConfig"]["pscDnsName"].rstrip(".")
+            dns = static_info[instance_uri]["pscInstanceConfig"]["pscDnsName"].rstrip(
+                "."
+            )
         ip_addrs = {
             "PRIVATE": static_info[instance_uri]["ipAddress"],
             "PUBLIC": static_info[instance_uri]["publicIpAddress"],
@@ -67,9 +69,12 @@ class StaticConnectionInfoCache:
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         priv_key = static_info["privateKey"]
         priv_key_bytes: rsa.RSAPrivateKey = serialization.load_pem_private_key(
-            priv_key.encode("UTF-8"), password=None,
+            priv_key.encode("UTF-8"),
+            password=None,
         )
-        self._info = ConnectionInfo(cert_chain, ca_cert, priv_key_bytes, ip_addrs, expiration)
+        self._info = ConnectionInfo(
+            cert_chain, ca_cert, priv_key_bytes, ip_addrs, expiration
+        )
 
     async def force_refresh(self) -> None:
         """
@@ -84,7 +89,7 @@ class StaticConnectionInfoCache:
         connection to the AlloyDB instance.
         """
         return self._info
-    
+
     async def close(self) -> None:
         """
         This is a no-op.

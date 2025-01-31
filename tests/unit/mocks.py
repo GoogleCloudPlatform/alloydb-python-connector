@@ -191,7 +191,7 @@ class FakeInstance:
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
         return (pem_root, pem_intermediate, pem_server)
-    
+
     def generate_pem_certificate_chain(self, pub_key: str) -> tuple[str, list[str]]:
         """Generate the CA certificate and certificate chain for the AlloyDB instance."""
         root_cert, intermediate_cert, server_cert = self.get_pem_certs()
@@ -215,7 +215,7 @@ class FakeInstance:
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
         return (server_cert, [client_cert, intermediate_cert, root_cert])
-    
+
     def uri(self) -> str:
         """The URI of the AlloyDB instance."""
         return f"projects/{self.project}/locations/{self.region}/clusters/{self.cluster}/instances/{self.name}"
@@ -426,14 +426,11 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
         )
         .decode("UTF-8")
     )
-    priv_pem = (
-        priv_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-        .decode("UTF-8")
-    )
+    priv_pem = priv_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("UTF-8")
     ca_cert, chain = i.generate_pem_certificate_chain(pub_pem)
     static = {
         "publicKey": pub_pem,
@@ -442,7 +439,7 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
     static[i.uri()] = {
         "pemCertificateChain": chain,
         "caCert": ca_cert,
-        "ipAddress": "127.0.0.1", # "private" IP is localhost in testing
+        "ipAddress": "127.0.0.1",  # "private" IP is localhost in testing
         "publicIpAddress": "",
         "pscInstanceConfig": {"pscDnsName": ""},
     }

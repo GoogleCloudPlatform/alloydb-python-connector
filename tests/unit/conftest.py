@@ -20,8 +20,7 @@ from typing import Generator
 
 import pytest
 from aiofiles.tempfile import TemporaryDirectory
-from mocks import (FakeAlloyDBClient, FakeCredentials, FakeInstance,
-                   metadata_exchange)
+from mocks import FakeAlloyDBClient, FakeCredentials, FakeInstance, metadata_exchange
 
 from google.cloud.alloydb.connector.utils import _write_to_file
 
@@ -85,4 +84,4 @@ def proxy_server(fake_instance: FakeInstance) -> None:
         daemon=True,
     )
     thread.start()
-    thread.join(0.1) # wait 100ms to allow the proxy server to start
+    thread.join(0.1)  # wait 100ms to allow the proxy server to start
