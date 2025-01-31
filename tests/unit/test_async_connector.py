@@ -15,17 +15,16 @@
 import asyncio
 from typing import Union
 
-import pytest
 from aiohttp import ClientResponseError
 from mock import patch
-from mocks import (
-    FakeAlloyDBClient,
-    FakeConnectionInfo,
-    FakeCredentials,
-    write_static_info,
-)
+from mocks import FakeAlloyDBClient
+from mocks import FakeConnectionInfo
+from mocks import FakeCredentials
+from mocks import write_static_info
+import pytest
 
-from google.cloud.alloydb.connector import AsyncConnector, IPTypes
+from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
