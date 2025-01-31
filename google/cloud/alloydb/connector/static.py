@@ -19,7 +19,6 @@ import io
 import json
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 
@@ -70,9 +69,8 @@ class StaticConnectionInfoCache:
         }
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         priv_key = static_info["privateKey"]
-        priv_key_bytes: rsa.RSAPrivateKey = serialization.load_pem_private_key(
-            priv_key.encode("UTF-8"),
-            password=None,
+        priv_key_bytes = serialization.load_pem_private_key(
+            priv_key.encode("UTF-8"), password=None
         )
         self._info = ConnectionInfo(
             cert_chain, ca_cert, priv_key_bytes, ip_addrs, expiration

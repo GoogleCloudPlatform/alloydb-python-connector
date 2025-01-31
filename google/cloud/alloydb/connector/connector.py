@@ -87,7 +87,7 @@ class Connector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
-        static_conn_info: io.TextIOBase = None,
+        static_conn_info: Optional[io.TextIOBase] = None,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -176,6 +176,7 @@ class Connector:
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible
+        cache: Union[RefreshAheadCache, LazyRefreshCache, StaticConnectionInfoCache]
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
         elif self._static_conn_info:

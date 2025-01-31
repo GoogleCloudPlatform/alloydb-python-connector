@@ -17,10 +17,11 @@ from __future__ import annotations
 import aiofiles
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 
 async def _write_to_file(
-    dir_path: str, ca_cert: str, cert_chain: list[str], key: rsa.RSAPrivateKey
+    dir_path: str, ca_cert: str, cert_chain: list[str], key: PrivateKeyTypes
 ) -> tuple[str, str, str]:
     """
     Helper function to write the server_ca, client certificate and

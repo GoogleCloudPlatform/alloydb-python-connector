@@ -27,7 +27,7 @@ from google.cloud.alloydb.connector.utils import _write_to_file
 if TYPE_CHECKING:
     import datetime
 
-    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
     from google.cloud.alloydb.connector.enums import IPTypes
 
@@ -41,7 +41,7 @@ class ConnectionInfo:
 
     cert_chain: list[str]
     ca_cert: str
-    key: rsa.RSAPrivateKey
+    key: PrivateKeyTypes
     ip_addrs: dict[str, Optional[str]]
     expiration: datetime.datetime
     context: Optional[ssl.SSLContext] = None
