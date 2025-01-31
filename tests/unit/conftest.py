@@ -16,7 +16,6 @@ import asyncio
 import socket
 import ssl
 from threading import Thread
-from typing import Generator
 
 from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
