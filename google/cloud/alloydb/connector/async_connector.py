@@ -21,12 +21,13 @@ from types import TracebackType
 from typing import Any, Optional, TYPE_CHECKING, Union
 
 import google.auth
-import google.auth.transport.requests
 from google.auth.credentials import with_scopes_if_required
+import google.auth.transport.requests
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.enums import IPTypes, RefreshStrategy
+from google.cloud.alloydb.connector.enums import IPTypes
+from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.static import StaticConnectionInfoCache

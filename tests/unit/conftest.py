@@ -19,11 +19,11 @@ from threading import Thread
 from typing import Generator
 
 from aiofiles.tempfile import TemporaryDirectory
-import pytest
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
 from mocks import FakeInstance
 from mocks import metadata_exchange
+import pytest
 
 from google.cloud.alloydb.connector.utils import _write_to_file
 
