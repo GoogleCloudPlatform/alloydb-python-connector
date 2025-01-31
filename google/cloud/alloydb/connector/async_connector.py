@@ -21,13 +21,12 @@ from types import TracebackType
 from typing import Any, Optional, TYPE_CHECKING, Union
 
 import google.auth
-from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
+from google.auth.credentials import with_scopes_if_required
 
 import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.enums import IPTypes
-from google.cloud.alloydb.connector.enums import RefreshStrategy
+from google.cloud.alloydb.connector.enums import IPTypes, RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
@@ -145,13 +144,12 @@ class AsyncConnector:
             )
 
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
-        static_conn_info = kwargs.pop("static_conn_info", self._static_conn_info)
 
         # use existing connection info if possible
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
-        elif static_conn_info:
-            cache = StaticConnectionInfoCache(instance_uri, static_conn_info)
+        elif self._static_conn_info:
+            cache = StaticConnectionInfoCache(instance_uri, self._static_conn_info)
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(

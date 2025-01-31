@@ -15,16 +15,13 @@
 import asyncio
 from typing import Union
 
+import pytest
 from aiohttp import ClientResponseError
 from mock import patch
-from mocks import FakeAlloyDBClient
-from mocks import FakeConnectionInfo
-from mocks import FakeCredentials
-from mocks import write_static_info
-import pytest
+from mocks import (FakeAlloyDBClient, FakeConnectionInfo, FakeCredentials,
+                   write_static_info)
 
-from google.cloud.alloydb.connector import AsyncConnector
-from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector import AsyncConnector, IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
@@ -352,29 +349,6 @@ async def test_Connector_static_connection_info(credentials: FakeCredentials, fa
                 user="test-user",
                 password="test-password",
                 db="test-db",
-            )
-        # check connection is returned
-        assert connection is True
-
-
-async def test_connect_static_connection_info(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
-    """
-    Test that AsyncConnector.connect() can specify a static connection info to
-    connect to an instance.
-    """
-    static_info = write_static_info(fake_client.instance)
-    async with AsyncConnector(credentials=credentials) as connector:
-        connector._client = fake_client
-        # patch db connection creation
-        with patch("google.cloud.alloydb.connector.asyncpg.connect") as mock_connect:
-            mock_connect.return_value = True
-            connection = await connector.connect(
-                fake_client.instance.uri(),
-                "asyncpg",
-                user="test-user",
-                password="test-password",
-                db="test-db",
-                static_conn_info=static_info,
             )
         # check connection is returned
         assert connection is True

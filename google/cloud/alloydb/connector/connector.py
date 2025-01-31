@@ -15,29 +15,27 @@
 from __future__ import annotations
 
 import asyncio
-from functools import partial
 import io
 import logging
 import socket
 import struct
+from functools import partial
 from threading import Thread
 from types import TracebackType
 from typing import Any, Optional, TYPE_CHECKING, Union
 
 from google.auth import default
-from google.auth.credentials import TokenState
-from google.auth.credentials import with_scopes_if_required
+from google.auth.credentials import TokenState, with_scopes_if_required
 from google.auth.transport import requests
 
+import google.cloud.alloydb.connector.pg8000 as pg8000
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.enums import IPTypes
-from google.cloud.alloydb.connector.enums import RefreshStrategy
+from google.cloud.alloydb.connector.enums import IPTypes, RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
-import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
 from google.cloud.alloydb.connector.utils import generate_keys
-import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
     import ssl
@@ -175,12 +173,11 @@ class Connector:
                 driver=driver,
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
-        static_conn_info = kwargs.pop("static_conn_info", self._static_conn_info)
         # use existing connection info if possible
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
-        elif static_conn_info:
-            cache = StaticConnectionInfoCache(instance_uri, static_conn_info)
+        elif self._static_conn_info:
+            cache = StaticConnectionInfoCache(instance_uri, self._static_conn_info)
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(
