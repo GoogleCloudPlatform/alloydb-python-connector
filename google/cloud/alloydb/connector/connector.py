@@ -22,7 +22,7 @@ import socket
 import struct
 from threading import Thread
 from types import TracebackType
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING
 
 from google.auth import default
 from google.auth.credentials import TokenState
@@ -35,7 +35,7 @@ from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
-from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
+from google.cloud.alloydb.connector.types import CacheTypes
 from google.cloud.alloydb.connector.utils import generate_keys
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
@@ -93,7 +93,7 @@ class Connector:
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
-        self._cache: dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
+        self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -176,11 +176,8 @@ class Connector:
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
         # use existing connection info if possible
-        cache: Union[RefreshAheadCache, LazyRefreshCache, StaticConnectionInfoCache]
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
-        elif self._static_conn_info:
-            cache = StaticConnectionInfoCache(instance_uri, self._static_conn_info)
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(

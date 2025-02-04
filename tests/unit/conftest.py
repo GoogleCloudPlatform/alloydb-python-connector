@@ -16,6 +16,7 @@ import asyncio
 import socket
 import ssl
 from threading import Thread
+from typing import Final
 
 from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
@@ -25,6 +26,8 @@ from mocks import metadata_exchange
 import pytest
 
 from google.cloud.alloydb.connector.utils import _write_to_file
+
+DELAY: Final[float] = 1.0
 
 
 @pytest.fixture
@@ -86,4 +89,4 @@ def proxy_server(fake_instance: FakeInstance) -> None:
         daemon=True,
     )
     thread.start()
-    thread.join(0.1)  # wait 100ms to allow the proxy server to start
+    thread.join(DELAY)  # add a delay to allow the proxy server to start
