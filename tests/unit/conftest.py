@@ -16,7 +16,6 @@ import asyncio
 import socket
 import ssl
 from threading import Thread
-from typing import Final
 
 from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
@@ -27,7 +26,7 @@ import pytest
 
 from google.cloud.alloydb.connector.utils import _write_to_file
 
-DELAY: Final[float] = 1.0
+DELAY = 1.0
 
 
 @pytest.fixture

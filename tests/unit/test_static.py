@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mocks import FakeInstance, write_static_info
+from mocks import FakeInstance
+from mocks import write_static_info
 
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
@@ -36,6 +37,7 @@ def test_StaticConnectionInfoCache_init() -> None:
     }
     assert cache._info.expiration
 
+
 def test_StaticConnectionInfoCache_init_trailing_dot_dns() -> None:
     """
     Test that StaticConnectionInfoCache.__init__ populates its ConnectionInfo
@@ -56,6 +58,7 @@ def test_StaticConnectionInfoCache_init_trailing_dot_dns() -> None:
     }
     assert cache._info.expiration
 
+
 async def test_StaticConnectionInfoCache_force_refresh() -> None:
     """
     Test that StaticConnectionInfoCache.force_refresh is a no-op.
@@ -68,19 +71,22 @@ async def test_StaticConnectionInfoCache_force_refresh() -> None:
     conn_info2 = cache._info
     assert conn_info2 == conn_info
 
+
 async def test_StaticConnectionInfoCache_connect_info() -> None:
     """
-    Test that StaticConnectionInfoCache.connect_info works as expected.
+    Test that StaticConnectionInfoCache.connect_info returns the ConnectionInfo
+    object.
     """
     i = FakeInstance()
     static_info = write_static_info(i)
     cache = StaticConnectionInfoCache(i.uri(), static_info)
     # check that cached connection info is now set
     assert isinstance(cache._info, ConnectionInfo)
-    conn_info = await cache.connect_info()
+    conn_info = cache._info
     # check that calling connect_info uses cached info
     conn_info2 = await cache.connect_info()
     assert conn_info2 == conn_info
+
 
 async def test_StaticConnectionInfoCache_close() -> None:
     """

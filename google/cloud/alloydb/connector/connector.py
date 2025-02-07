@@ -76,6 +76,9 @@ class Connector:
         static_conn_info (io.TextIOBase): A file-like JSON object that contains
             static connection info for the StaticConnectionInfoCache.
             Defaults to None, which will not use the StaticConnectionInfoCache.
+            This is a *dev-only* option and should not be used in production as
+            it will result in failed connections after the client certificate
+            expires.
     """
 
     def __init__(

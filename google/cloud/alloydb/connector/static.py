@@ -26,7 +26,12 @@ from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 class StaticConnectionInfoCache:
     """
     StaticConnectionInfoCache creates a connection info cache that will always
-    return a pre-defined connection info.
+    return a pre-defined connection info. This is a *dev-only* option and
+    should not be used in production as it will result in failed connections
+    after the client certificate expires. It is also subject to breaking changes
+    in the format. NOTE: The static connection info is not refreshed by the
+    connector. The JSON format supports multiple instances, regardless of
+    cluster.
 
     This static connection info should hold JSON with the following format:
         {
