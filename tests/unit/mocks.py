@@ -149,7 +149,7 @@ class FakeInstance:
         cluster: str = "test-cluster",
         name: str = "test-instance",
         ip_addrs: dict = {
-            "PRIVATE": "127.0.0.1",
+            "PRIVATE": "127.0.0.1",  # "private" IP is localhost in testing
             "PUBLIC": "0.0.0.0",
             "PSC": "x.y.alloydb.goog",
         },
@@ -443,8 +443,8 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
     static[i.uri()] = {
         "pemCertificateChain": chain,
         "caCert": ca_cert,
-        "ipAddress": "127.0.0.1",  # "private" IP is localhost in testing
-        "publicIpAddress": "",
-        "pscInstanceConfig": {"pscDnsName": ""},
+        "ipAddress": i.ip_addrs["PRIVATE"],
+        "publicIpAddress": i.ip_addrs["PUBLIC"],
+        "pscInstanceConfig": {"pscDnsName": i.ip_addrs["PSC"]},
     }
     return io.StringIO(json.dumps(static))
