@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from types import TracebackType
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING
 
 import google.auth
 from google.auth.credentials import with_scopes_if_required
@@ -29,6 +29,7 @@ from google.cloud.alloydb.connector.enums import IPTypes
 from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
+from google.cloud.alloydb.connector.types import CacheTypes
 from google.cloud.alloydb.connector.utils import generate_keys
 
 if TYPE_CHECKING:
@@ -71,7 +72,7 @@ class AsyncConnector:
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
     ) -> None:
-        self._cache: dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
+        self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint

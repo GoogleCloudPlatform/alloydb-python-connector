@@ -16,12 +16,13 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
+import io
 import logging
 import socket
 import struct
 from threading import Thread
 from types import TracebackType
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING
 
 from google.auth import default
 from google.auth.credentials import TokenState
@@ -34,6 +35,7 @@ from google.cloud.alloydb.connector.enums import RefreshStrategy
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
+from google.cloud.alloydb.connector.types import CacheTypes
 from google.cloud.alloydb.connector.utils import generate_keys
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
@@ -71,6 +73,12 @@ class Connector:
             of the following: RefreshStrategy.LAZY ("LAZY") or
             RefreshStrategy.BACKGROUND ("BACKGROUND").
             Default: RefreshStrategy.BACKGROUND
+        static_conn_info (io.TextIOBase): A file-like JSON object that contains
+            static connection info for the StaticConnectionInfoCache.
+            Defaults to None, which will not use the StaticConnectionInfoCache.
+            This is a *dev-only* option and should not be used in production as
+            it will result in failed connections after the client certificate
+            expires.
     """
 
     def __init__(
@@ -82,12 +90,13 @@ class Connector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
+        static_conn_info: Optional[io.TextIOBase] = None,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
-        self._cache: dict[str, Union[RefreshAheadCache, LazyRefreshCache]] = {}
+        self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
         self._alloydb_api_endpoint = alloydb_api_endpoint
@@ -113,6 +122,7 @@ class Connector:
             loop=self._loop,
         )
         self._client: Optional[AlloyDBClient] = None
+        self._static_conn_info = static_conn_info
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
         """

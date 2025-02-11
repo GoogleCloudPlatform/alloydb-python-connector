@@ -16,7 +16,9 @@ import asyncio
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+import io
 import ipaddress
+import json
 import ssl
 import struct
 from typing import Any, Callable, Literal, Optional
@@ -147,7 +149,7 @@ class FakeInstance:
         cluster: str = "test-cluster",
         name: str = "test-instance",
         ip_addrs: dict = {
-            "PRIVATE": "127.0.0.1",
+            "PRIVATE": "127.0.0.1",  # "private" IP is localhost in testing
             "PUBLIC": "0.0.0.0",
             "PSC": "x.y.alloydb.goog",
         },
@@ -193,6 +195,34 @@ class FakeInstance:
             encoding=serialization.Encoding.PEM
         ).decode("UTF-8")
         return (pem_root, pem_intermediate, pem_server)
+
+    def generate_pem_certificate_chain(self, pub_key: str) -> tuple[str, list[str]]:
+        """Generate the CA certificate and certificate chain for the AlloyDB instance."""
+        root_cert, intermediate_cert, server_cert = self.get_pem_certs()
+        # encode public key to bytes
+        pub_key_bytes: rsa.RSAPublicKey = serialization.load_pem_public_key(
+            pub_key.encode("UTF-8"),
+        )
+        # build client cert
+        client_cert = (
+            x509.CertificateBuilder()
+            .subject_name(self.intermediate_cert.subject)
+            .issuer_name(self.intermediate_cert.issuer)
+            .public_key(pub_key_bytes)
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(self.cert_before)
+            .not_valid_after(self.cert_expiry)
+        )
+        # sign client cert with intermediate cert
+        client_cert = client_cert.sign(self.intermediate_key, hashes.SHA256())
+        client_cert = client_cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode("UTF-8")
+        return (server_cert, [client_cert, intermediate_cert, root_cert])
+
+    def uri(self) -> str:
+        """The URI of the AlloyDB instance."""
+        return f"projects/{self.project}/locations/{self.region}/clusters/{self.cluster}/instances/{self.name}"
 
 
 class FakeAlloyDBClient:
@@ -378,3 +408,43 @@ class FakeConnectionInfo:
 
     async def close(self) -> None:
         self._close_called = True
+
+
+def write_static_info(i: FakeInstance) -> io.StringIO:
+    """
+    Creates a static connection info JSON for the StaticConnectionInfoCache.
+
+    Args:
+        i (FakeInstance): The FakeInstance to use to create the CA cert and
+            chain.
+
+    Returns:
+        io.StringIO
+    """
+    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pub_pem = (
+        priv_key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode("UTF-8")
+    )
+    priv_pem = priv_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode("UTF-8")
+    ca_cert, chain = i.generate_pem_certificate_chain(pub_pem)
+    static = {
+        "publicKey": pub_pem,
+        "privateKey": priv_pem,
+    }
+    static[i.uri()] = {
+        "pemCertificateChain": chain,
+        "caCert": ca_cert,
+        "ipAddress": i.ip_addrs["PRIVATE"],
+        "publicIpAddress": i.ip_addrs["PUBLIC"],
+        "pscInstanceConfig": {"pscDnsName": i.ip_addrs["PSC"]},
+    }
+    return io.StringIO(json.dumps(static))

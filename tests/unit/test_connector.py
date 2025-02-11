@@ -20,6 +20,7 @@ from aiohttp import ClientResponseError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
+from mocks import write_static_info
 import pytest
 
 from google.cloud.alloydb.connector import Connector
@@ -248,3 +249,28 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
             await connector.connect_async(instance_uri, "pg8000", ip_type="private")
         # check that cache has been removed from dict
         assert instance_uri not in connector._cache
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_Connector_static_connection_info(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """
+    Test that Connector.__init__() can specify a static connection info to
+    connect to an instance.
+    """
+    static_info = write_static_info(fake_client.instance)
+    with Connector(credentials=credentials, static_conn_info=static_info) as connector:
+        connector._client = fake_client
+        # patch db connection creation
+        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
+            mock_connect.return_value = True
+            connection = connector.connect(
+                fake_client.instance.uri(),
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check connection is returned
+        assert connection is True
