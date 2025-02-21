@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
-
-from aiohttp import ClientResponseError
-from aioresponses import aioresponses
-from mocks import FakeAlloyDBAdminAsyncClient, FakeCredentials
-import pytest
+from typing import Optional
 
 from google.api_core.exceptions import RetryError
-from google.cloud import alloydb_v1beta
+from mocks import FakeAlloyDBAdminAsyncClient
+from mocks import FakeCredentials
+import pytest
+
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.utils import generate_keys
 from google.cloud.alloydb.connector.version import __version__ as version
@@ -46,9 +44,7 @@ async def test__get_metadata(credentials: FakeCredentials) -> None:
 
 
 @pytest.mark.asyncio
-async def test__get_metadata_with_public_ip(
-    credentials: FakeCredentials
-) -> None:
+async def test__get_metadata_with_public_ip(credentials: FakeCredentials) -> None:
     """
     Test _get_metadata returns successfully with Public IP.
     """
@@ -67,9 +63,7 @@ async def test__get_metadata_with_public_ip(
 
 
 @pytest.mark.asyncio
-async def test__get_metadata_with_psc(
-    credentials: FakeCredentials
-) -> None:
+async def test__get_metadata_with_psc(credentials: FakeCredentials) -> None:
     """
     Test _get_metadata returns successfully with PSC DNS name.
     """
@@ -106,9 +100,7 @@ async def test__get_metadata_error(
 
 
 @pytest.mark.asyncio
-async def test__get_client_certificate(
-    credentials: FakeCredentials
-) -> None:
+async def test__get_client_certificate(credentials: FakeCredentials) -> None:
     """
     Test _get_client_certificate returns successfully.
     """
@@ -171,7 +163,9 @@ async def test_AlloyDBClient_init_custom_user_agent(
         credentials,
         user_agent="custom-agent/v1.0.0 other-agent/v2.0.0",
     )
-    assert client._user_agent.startswith(f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0")
+    assert client._user_agent.startswith(
+        f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0"
+    )
     await client.close()
 
 
@@ -193,7 +187,9 @@ async def test_AlloyDBClient_user_agent(
     if driver is None:
         assert client._user_agent.startswith(f"alloydb-python-connector/{version}")
     else:
-        assert client._user_agent.startswith(f"alloydb-python-connector/{version}+{driver}")
+        assert client._user_agent.startswith(
+            f"alloydb-python-connector/{version}+{driver}"
+        )
     # close client
     await client.close()
 

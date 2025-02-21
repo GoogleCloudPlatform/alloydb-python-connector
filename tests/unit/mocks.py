@@ -452,7 +452,9 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
 
 
 class FakeAlloyDBAdminAsyncClient:
-    async def get_connection_info(self, request: alloydb_v1beta.GetConnectionInfoRequest) -> alloydb_v1beta.types.resources.ConnectionInfo:
+    async def get_connection_info(
+        self, request: alloydb_v1beta.GetConnectionInfoRequest
+    ) -> alloydb_v1beta.types.resources.ConnectionInfo:
         ci = alloydb_v1beta.types.resources.ConnectionInfo()
         ci.ip_address = "10.0.0.1"
         ci.public_ip_address = "127.0.0.1"
@@ -473,7 +475,9 @@ class FakeAlloyDBAdminAsyncClient:
             ci.public_ip_address = ""
             return ci
 
-    async def generate_client_certificate(self, request: alloydb_v1beta.GenerateClientCertificateRequest) -> alloydb_v1beta.types.service.GenerateClientCertificateResponse:
+    async def generate_client_certificate(
+        self, request: alloydb_v1beta.GenerateClientCertificateRequest
+    ) -> alloydb_v1beta.types.service.GenerateClientCertificateResponse:
         ccr = alloydb_v1beta.types.service.GenerateClientCertificateResponse()
         ccr.ca_cert = "This is the CA cert"
         ccr.pem_certificate_chain.append("This is the client cert")
