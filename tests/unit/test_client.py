@@ -98,7 +98,7 @@ async def test__get_metadata_error(
         quota_project=None,
         credentials=credentials,
     )
-    with pytest.raises(RetryError) as exc_info:
+    with pytest.raises(RetryError):
         await client._get_metadata(
             "my-project", "my-region", "my-cluster", "my-instance"
         )
@@ -135,11 +135,10 @@ async def test__get_client_certificate_error(
         quota_project=None,
         credentials=credentials,
     )
-    with pytest.raises(RetryError) as exc_info:
+    with pytest.raises(RetryError):
         await client._get_client_certificate(
             "my-project", "my-region", "my-cluster", ""
         )
-    print(exc_info)
     await client.close()
 
 
@@ -153,8 +152,7 @@ async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
     # verify base endpoint is set
     assert client._client.api_endpoint == "www.test-endpoint.com"
     # verify proper headers are set
-    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
-    assert got_user_agent.startswith(f"alloydb-python-connector/{version}")
+    assert client._user_agent.startswith(f"alloydb-python-connector/{version}")
     assert client._client._client._client_options.quota_project_id == "my-quota-project"
     # close client
     await client.close()
@@ -173,8 +171,7 @@ async def test_AlloyDBClient_init_custom_user_agent(
         credentials,
         user_agent="custom-agent/v1.0.0 other-agent/v2.0.0",
     )
-    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
-    assert got_user_agent.startswith(f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0")
+    assert client._user_agent.startswith(f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0")
     await client.close()
 
 
@@ -193,11 +190,10 @@ async def test_AlloyDBClient_user_agent(
     client = AlloyDBClient(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
     )
-    got_user_agent = client._client.transport._wrapped_methods[client._client.transport.list_clusters]._metadata[0][1]
     if driver is None:
-        assert got_user_agent.startswith(f"alloydb-python-connector/{version}")
+        assert client._user_agent.startswith(f"alloydb-python-connector/{version}")
     else:
-        assert got_user_agent.startswith(f"alloydb-python-connector/{version}+{driver}")
+        assert client._user_agent.startswith(f"alloydb-python-connector/{version}+{driver}")
     # close client
     await client.close()
 
