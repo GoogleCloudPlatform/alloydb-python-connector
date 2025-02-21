@@ -16,13 +16,13 @@ import asyncio
 from threading import Thread
 from typing import Union
 
+from google.api_core.exceptions import RetryError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
 from mocks import write_static_info
 import pytest
 
-from google.api_core.exceptions import RetryError
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError

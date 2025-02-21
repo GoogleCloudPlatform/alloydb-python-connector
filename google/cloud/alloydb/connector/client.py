@@ -23,11 +23,11 @@ from google.api_core.client_options import ClientOptions
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
+import google.cloud.alloydb_v1beta as v1beta
+from google.protobuf import duration_pb2
 
-from google.cloud import alloydb_v1beta
 from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 from google.cloud.alloydb.connector.version import __version__ as version
-from google.protobuf import duration_pb2
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -58,7 +58,7 @@ class AlloyDBClient:
         alloydb_api_endpoint: str,
         quota_project: Optional[str],
         credentials: Credentials,
-        client: Optional[alloydb_v1beta.AlloyDBAdminAsyncClient] = None,
+        client: Optional[v1beta.AlloyDBAdminAsyncClient] = None,
         driver: Optional[str] = None,
         user_agent: Optional[str] = None,
     ) -> None:
@@ -75,22 +75,26 @@ class AlloyDBClient:
                 A credentials object created from the google-auth Python library.
                 Must have the AlloyDB Admin scopes. For more info check out
                 https://google-auth.readthedocs.io/en/latest/.
-            client (alloydb_v1beta.AlloyDBAdminAsyncClient): Async client used to
-                make requests to AlloyDB APIs.
+            client (v1beta.AlloyDBAdminAsyncClient): Async client used to make
+                requests to AlloyDB APIs.
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
         """
         user_agent = _format_user_agent(driver, user_agent)
 
-        self._client = client if client else alloydb_v1beta.AlloyDBAdminAsyncClient(
-            credentials=credentials,
-            client_options=ClientOptions(
-                api_endpoint=alloydb_api_endpoint,
-                quota_project_id=quota_project,
-            ),
-            client_info=ClientInfo(
-                user_agent=user_agent,
-            ),
+        self._client = (
+            client
+            if client
+            else v1beta.AlloyDBAdminAsyncClient(
+                credentials=credentials,
+                client_options=ClientOptions(
+                    api_endpoint=alloydb_api_endpoint,
+                    quota_project_id=quota_project,
+                ),
+                client_info=ClientInfo(
+                    user_agent=user_agent,
+                ),
+            )
         )
         self._credentials = credentials
         # asyncpg does not currently support using metadata exchange
@@ -122,9 +126,11 @@ class AlloyDBClient:
         Returns:
             dict: IP addresses of the AlloyDB instance.
         """
-        parent = f"projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
+        parent = (
+            f"projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
+        )
 
-        req = alloydb_v1beta.GetConnectionInfoRequest(parent=parent)
+        req = v1beta.GetConnectionInfoRequest(parent=parent)
         resp = await self._client.get_connection_info(request=req)
 
         # Remove trailing period from PSC DNS name.
@@ -166,7 +172,7 @@ class AlloyDBClient:
         parent = f"projects/{project}/locations/{region}/clusters/{cluster}"
         dur = duration_pb2.Duration()
         dur.seconds = 3600
-        req = alloydb_v1beta.GenerateClientCertificateRequest(
+        req = v1beta.GenerateClientCertificateRequest(
             parent=parent,
             cert_duration=dur,
             public_key=pub_key,
