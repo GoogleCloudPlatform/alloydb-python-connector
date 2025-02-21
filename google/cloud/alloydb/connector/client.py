@@ -96,6 +96,7 @@ class AlloyDBClient:
         # asyncpg does not currently support using metadata exchange
         # only use metadata exchange for pg8000 driver
         self._use_metadata = True if driver == "pg8000" else False
+        self._user_agent = user_agent
 
     async def _get_metadata(
         self,
