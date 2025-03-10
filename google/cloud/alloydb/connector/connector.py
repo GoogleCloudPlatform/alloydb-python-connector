@@ -392,5 +392,3 @@ class Connector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
-        if self._client:
-            await self._client.close()

@@ -244,7 +244,3 @@ class AlloyDBClient:
             ip_addrs,
             expiration,
         )
-
-    async def close(self) -> None:
-        """Close AlloyDBClient gracefully."""
-        logger.debug("Closed AlloyDBClient")

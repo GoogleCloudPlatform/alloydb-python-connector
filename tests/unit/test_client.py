@@ -96,7 +96,6 @@ async def test__get_metadata_error(
         await client._get_metadata(
             "my-project", "my-region", "my-cluster", "my-instance"
         )
-    await client.close()
 
 
 @pytest.mark.asyncio
@@ -131,7 +130,6 @@ async def test__get_client_certificate_error(
         await client._get_client_certificate(
             "my-project", "my-region", "my-cluster", ""
         )
-    await client.close()
 
 
 @pytest.mark.asyncio
@@ -146,8 +144,6 @@ async def test_AlloyDBClient_init_(credentials: FakeCredentials) -> None:
     # verify proper headers are set
     assert client._user_agent.startswith(f"alloydb-python-connector/{version}")
     assert client._client._client._client_options.quota_project_id == "my-quota-project"
-    # close client
-    await client.close()
 
 
 @pytest.mark.asyncio
@@ -166,7 +162,6 @@ async def test_AlloyDBClient_init_custom_user_agent(
     assert client._user_agent.startswith(
         f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0"
     )
-    await client.close()
 
 
 @pytest.mark.parametrize(
@@ -190,8 +185,6 @@ async def test_AlloyDBClient_user_agent(
         assert client._user_agent.startswith(
             f"alloydb-python-connector/{version}+{driver}"
         )
-    # close client
-    await client.close()
 
 
 @pytest.mark.parametrize(
@@ -210,5 +203,3 @@ async def test_AlloyDBClient_use_metadata(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
     )
     assert client._use_metadata == expected
-    # close client
-    await client.close()
