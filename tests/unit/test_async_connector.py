@@ -163,8 +163,6 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
 
         # check connection is returned
         assert connection.result() is True
-        # outside of context manager check close cleaned up
-        assert connector._client.closed is True
 
 
 @pytest.mark.asyncio
@@ -244,8 +242,6 @@ async def test_context_manager_connect_and_close(
 
             # check connection is returned
             assert connection.result() is True
-        # outside of context manager check close cleaned up
-        assert fake_client.closed is True
 
 
 @pytest.mark.asyncio

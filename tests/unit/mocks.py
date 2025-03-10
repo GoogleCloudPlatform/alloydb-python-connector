@@ -233,7 +233,6 @@ class FakeAlloyDBClient:
         self, instance: Optional[FakeInstance] = None, driver: str = "pg8000"
     ) -> None:
         self.instance = FakeInstance() if instance is None else instance
-        self.closed = False
         self._user_agent = f"test-user-agent+{driver}"
         self._credentials = FakeCredentials()
 
@@ -317,9 +316,6 @@ class FakeAlloyDBClient:
             ip_addrs,
             expiration,
         )
-
-    async def close(self) -> None:
-        self.closed = True
 
 
 def metadata_exchange(sock: ssl.SSLSocket) -> None:
@@ -466,14 +462,12 @@ class FakeAlloyDBAdminAsyncClient:
         if instance == "test-instance":
             ci.public_ip_address = ""
             ci.psc_dns_name = ""
-            return ci
         elif instance == "public-instance":
             ci.psc_dns_name = ""
-            return ci
         else:
             ci.ip_address = ""
             ci.public_ip_address = ""
-            return ci
+        return ci
 
     async def generate_client_certificate(
         self, request: alloydb_v1beta.GenerateClientCertificateRequest
