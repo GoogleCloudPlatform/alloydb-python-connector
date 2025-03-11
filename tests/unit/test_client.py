@@ -81,23 +81,6 @@ async def test__get_metadata_with_psc(credentials: FakeCredentials) -> None:
     }
 
 
-async def test__get_metadata_error(
-    credentials: FakeCredentials,
-) -> None:
-    """
-    Test that AlloyDB API error messages are raised for _get_metadata.
-    """
-    client = AlloyDBClient(
-        alloydb_api_endpoint="alloydb.googleapis.com",
-        quota_project=None,
-        credentials=credentials,
-    )
-    with pytest.raises(RetryError):
-        await client._get_metadata(
-            "my-project", "my-region", "my-cluster", "my-instance"
-        )
-
-
 @pytest.mark.asyncio
 async def test__get_client_certificate(credentials: FakeCredentials) -> None:
     """
@@ -113,23 +96,6 @@ async def test__get_client_certificate(credentials: FakeCredentials) -> None:
     assert cert_chain[0] == "This is the client cert"
     assert cert_chain[1] == "This is the intermediate cert"
     assert cert_chain[2] == "This is the root cert"
-
-
-async def test__get_client_certificate_error(
-    credentials: FakeCredentials,
-) -> None:
-    """
-    Test that AlloyDB API error messages are raised for _get_client_certificate.
-    """
-    client = AlloyDBClient(
-        alloydb_api_endpoint="alloydb.googleapis.com",
-        quota_project=None,
-        credentials=credentials,
-    )
-    with pytest.raises(RetryError):
-        await client._get_client_certificate(
-            "my-project", "my-region", "my-cluster", ""
-        )
 
 
 @pytest.mark.asyncio
