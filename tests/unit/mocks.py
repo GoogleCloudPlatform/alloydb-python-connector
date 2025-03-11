@@ -23,16 +23,7 @@ import ssl
 import struct
 from typing import Any, Callable, Literal, Optional
 
-from cryptography.x509 import (
-    CertificateBuilder as x509_CertificateBuilder,
-    NameAttribute as x509_NameAttribute,
-    random_serial_number as x509_random_serial_number,
-    SubjectAlternativeName as x509_SubjectAlternativeName,
-    IPAddress as x509_IPAddress,
-    DNSName as x509_DNSName,
-    load_pem_x509_certificate as x509_load_pem_x509_certificate,
-    Name as x509_Name,
-)
+from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -98,7 +89,7 @@ class FakeCredentials:
 
 def generate_cert(
     common_name: str, expires_in: int = 60, server_cert: bool = False
-) -> tuple[x509_CertificateBuilder, rsa.RSAPrivateKey]:
+) -> tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]:
     """
     Generate a private key and cert object to be used in testing.
 
@@ -108,7 +99,7 @@ def generate_cert(
         server_cert (bool): Whether it is a server certificate.
 
     Returns:
-        tuple[x509_CertificateBuilder, rsa.RSAPrivateKey]
+        tuple[x509.CertificateBuilder, rsa.RSAPrivateKey]
     """
     # generate private key
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -116,32 +107,32 @@ def generate_cert(
     now = datetime.now(timezone.utc)
     expiration = now + timedelta(minutes=expires_in)
     # configure cert subject
-    subject = issuer = x509_Name(
+    subject = issuer = x509.Name(
         [
-            x509_NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509_NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-            x509_NameAttribute(NameOID.LOCALITY_NAME, "Mountain View"),
-            x509_NameAttribute(NameOID.ORGANIZATION_NAME, "Google Inc"),
-            x509_NameAttribute(NameOID.COMMON_NAME, common_name),
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, "Mountain View"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Google Inc"),
+            x509.NameAttribute(NameOID.COMMON_NAME, common_name),
         ]
     )
     # build cert
     cert = (
-        x509_CertificateBuilder()
+        x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(issuer)
         .public_key(key.public_key())
-        .serial_number(x509_random_serial_number())
+        .serial_number(x509.random_serial_number())
         .not_valid_before(now)
         .not_valid_after(expiration)
     )
     if server_cert:
         cert = cert.add_extension(
-            x509_SubjectAlternativeName(
+            x509.SubjectAlternativeName(
                 general_names=[
-                    x509_IPAddress(ipaddress.ip_address("127.0.0.1")),
-                    x509_IPAddress(ipaddress.ip_address("10.0.0.1")),
-                    x509_DNSName("x.y.alloydb.goog."),
+                    x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+                    x509.IPAddress(ipaddress.ip_address("10.0.0.1")),
+                    x509.DNSName("x.y.alloydb.goog."),
                 ]
             ),
             critical=False,
@@ -215,11 +206,11 @@ class FakeInstance:
         )
         # build client cert
         client_cert = (
-            x509_CertificateBuilder()
+            x509.CertificateBuilder()
             .subject_name(self.intermediate_cert.subject)
             .issuer_name(self.intermediate_cert.issuer)
             .public_key(pub_key_bytes)
-            .serial_number(x509_random_serial_number())
+            .serial_number(x509.random_serial_number())
             .not_valid_before(self.cert_before)
             .not_valid_after(self.cert_expiry)
         )
@@ -262,11 +253,11 @@ class FakeAlloyDBClient:
         )
         # build client cert
         client_cert = (
-            x509_CertificateBuilder()
+            x509.CertificateBuilder()
             .subject_name(self.instance.intermediate_cert.subject)
             .issuer_name(self.instance.intermediate_cert.issuer)
             .public_key(pub_key_bytes)
-            .serial_number(x509_random_serial_number())
+            .serial_number(x509.random_serial_number())
             .not_valid_before(self.instance.cert_before)
             .not_valid_after(self.instance.cert_expiry)
         )
@@ -315,7 +306,7 @@ class FakeAlloyDBClient:
         # unpack certs
         ca_cert, cert_chain = certs
         # get expiration from client certificate
-        cert_obj = x509_load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
+        cert_obj = x509.load_pem_x509_certificate(cert_chain[0].encode("UTF-8"))
         expiration = cert_obj.not_valid_after_utc
 
         return ConnectionInfo(
