@@ -131,7 +131,7 @@ def default(session, path):
     # Run pytest with coverage.
     session.run(
         "pytest",
-        "--cov=google.cloud.alloydb.connector",
+        # "--cov=google.cloud.alloydb.connector",
         "-v",
         "--cov-config=.coveragerc",
         "--cov-report=",
