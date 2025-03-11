@@ -14,7 +14,6 @@
 
 from typing import Optional
 
-from google.api_core.exceptions import RetryError
 from mocks import FakeAlloyDBAdminAsyncClient
 from mocks import FakeCredentials
 import pytest

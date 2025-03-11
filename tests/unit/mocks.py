@@ -23,10 +23,10 @@ import ssl
 import struct
 from typing import Any, Callable, Literal, Optional
 
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+import cryptography.x509 as x509
 from cryptography.x509.oid import NameOID
 from google.auth.credentials import _helpers
 from google.auth.credentials import TokenState
