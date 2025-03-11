@@ -126,7 +126,7 @@ def cover(session):
 def default(session, path):
     # Install all test dependencies, then install this package in-place.
     session.install("-r", "requirements-test.txt")
-    session.install("-e", ".")
+    session.install(".")
     session.install("-r", "requirements.txt")
     # Run pytest with coverage.
     session.run(
