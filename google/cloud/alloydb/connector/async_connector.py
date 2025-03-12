@@ -66,7 +66,7 @@ class AsyncConnector:
         self,
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
-        alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
@@ -235,5 +235,3 @@ class AsyncConnector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
-        if self._client:
-            await self._client.close()

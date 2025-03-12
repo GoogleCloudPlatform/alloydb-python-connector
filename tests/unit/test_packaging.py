@@ -19,8 +19,8 @@ import sys
 
 
 def test_namespace_package_compat(tmp_path: pathlib.PosixPath) -> None:
-    # The ``google`` namespace package should not be masked
-    # by the presence of ``google-cloud-alloydb-connector``.
+    # The ``google`` namespace package should not be masked by the presence of
+    # `google-cloud-alloydb` and ``google-cloud-alloydb-connector``.
     google = tmp_path / "google"
     google.mkdir()
     google.joinpath("othermod.py").write_text("")
@@ -28,20 +28,11 @@ def test_namespace_package_compat(tmp_path: pathlib.PosixPath) -> None:
     cmd = [sys.executable, "-m", "google.othermod"]
     subprocess.check_call(cmd, env=env)
 
-    # The ``google.cloud`` namespace package should not be masked
-    # by the presence of ``google-cloud-alloydb-connector``.
+    # The ``google.cloud`` namespace package should not be masked by the presence of
+    # ``google-cloud-alloydb`` and ``google-cloud-alloydb-connector``.
     google_cloud = tmp_path / "google" / "cloud"
     google_cloud.mkdir()
     google_cloud.joinpath("othermod.py").write_text("")
     env = dict(os.environ, PYTHONPATH=str(tmp_path))
     cmd = [sys.executable, "-m", "google.cloud.othermod"]
-    subprocess.check_call(cmd, env=env)
-
-    # The ``google.cloud.sql`` namespace package should not be masked
-    # by the presence of ``google-cloud-alloydb-connector``.
-    google_cloud_alloydb = tmp_path / "google" / "cloud" / "alloydb"
-    google_cloud_alloydb.mkdir()
-    google_cloud_alloydb.joinpath("othermod.py").write_text("")
-    env = dict(os.environ, PYTHONPATH=str(tmp_path))
-    cmd = [sys.executable, "-m", "google.cloud.alloydb.othermod"]
     subprocess.check_call(cmd, env=env)
