@@ -139,6 +139,12 @@ def default(session, path):
         path,
         *session.posargs,
     )
+    session.run(
+        "coverage",
+        "xml",
+        "-o",
+        "sponge_log.xml",
+    )
 
 
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
