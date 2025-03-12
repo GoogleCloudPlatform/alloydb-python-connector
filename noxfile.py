@@ -129,21 +129,10 @@ def default(session, path):
     session.install(".")
     session.install("-r", "requirements.txt")
     # Run pytest with coverage.
-    # session.run(
-    #     "pytest",
-    #     # "--cov=google.cloud.alloydb.connector",
-    #     "-v",
-    #     # "--cov-config=.coveragerc",
-    #     # "--cov-report=",
-    #     # "--cov-fail-under=0",
-    #     "--junitxml=sponge_log.xml",
-    #     path,
-    #     *session.posargs,
-    # )
     session.run(
         "coverage",
         "run",
-        "--include=google/cloud/alloydb/connector/*.py",
+        "--include=*/google/cloud/alloydb/connector/*.py",
         "-m",
         "pytest",
         "-v",
