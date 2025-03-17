@@ -64,7 +64,7 @@ class Connector:
             billing purposes.
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
-            the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
+            the AlloyDB API endpoint. Defaults to "alloydb.googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
         ip_type (str | IPTypes): Default IP type for all AlloyDB connections.
             Defaults to IPTypes.PRIVATE ("PRIVATE") for private IP connections.
@@ -85,7 +85,7 @@ class Connector:
         self,
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
-        alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
@@ -392,5 +392,3 @@ class Connector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
-        if self._client:
-            await self._client.close()
