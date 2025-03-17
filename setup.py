@@ -27,6 +27,8 @@ dependencies = [
     "requests",
     "google-auth",
     "protobuf",
+    "google-cloud-alloydb",
+    "google-api-core",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
