@@ -126,19 +126,29 @@ def cover(session):
 def default(session, path):
     # Install all test dependencies, then install this package in-place.
     session.install("-r", "requirements-test.txt")
-    session.install("-e", ".")
+    session.install(".")
     session.install("-r", "requirements.txt")
     # Run pytest with coverage.
+    # Using the coverage command instead of `pytest --cov`, because
+    # `pytest ---cov` causes the module to be initialized twice, which returns
+    # this error: "ImportError: PyO3 modules compiled for CPython 3.8 or older
+    # may only be initialized once per interpreter process". More info about
+    # this is stated here: https://github.com/pytest-dev/pytest-cov/issues/614.
     session.run(
+        "coverage",
+        "run",
+        "--include=*/google/cloud/alloydb/connector/*.py",
+        "-m",
         "pytest",
-        "--cov=google.cloud.alloydb.connector",
         "-v",
-        "--cov-config=.coveragerc",
-        "--cov-report=",
-        "--cov-fail-under=0",
-        "--junitxml=sponge_log.xml",
         path,
         *session.posargs,
+    )
+    session.run(
+        "coverage",
+        "xml",
+        "-o",
+        "sponge_log.xml",
     )
 
 
