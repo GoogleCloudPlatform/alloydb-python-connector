@@ -37,6 +37,7 @@ from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
 from google.cloud.alloydb.connector.types import CacheTypes
 from google.cloud.alloydb.connector.utils import generate_keys
+from google.cloud.alloydb.connector.utils import strip_http_prefix
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
@@ -99,7 +100,7 @@ class Connector:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
-        self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._alloydb_api_endpoint = strip_http_prefix(alloydb_api_endpoint)
         self._enable_iam_auth = enable_iam_auth
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):

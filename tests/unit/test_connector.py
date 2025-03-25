@@ -107,6 +107,26 @@ def test_Connector_init_ip_type(
     connector.close()
 
 
+def test_Connector_init_alloydb_api_endpoint_with_http_prefix() -> None:
+    """
+    Test to check whether the __init__ method of Connector properly sets
+    alloydb_api_endpoint when its URL has an 'http://' prefix.
+    """
+    connector = Connector(alloydb_api_endpoint="http://alloydb.googleapis.com")
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
+def test_Connector_init_alloydb_api_endpoint_with_https_prefix() -> None:
+    """
+    Test to check whether the __init__ method of Connector properly sets
+    alloydb_api_endpoint when its URL has an 'https://' prefix.
+    """
+    connector = Connector(alloydb_api_endpoint="https://alloydb.googleapis.com")
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
 def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Connector
