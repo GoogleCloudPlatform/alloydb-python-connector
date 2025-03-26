@@ -109,22 +109,30 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
     )
 
 
-def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix() -> None:
+def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
+    credentials: FakeCredentials,
+) -> None:
     """
     Test to check whether the __init__ method of AsyncConnector properly sets
     alloydb_api_endpoint when its URL has an 'http://' prefix.
     """
-    connector = AsyncConnector(alloydb_api_endpoint="http://alloydb.googleapis.com")
+    connector = AsyncConnector(
+        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
+    )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
 
 
-def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix() -> None:
+def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
+    credentials: FakeCredentials,
+) -> None:
     """
     Test to check whether the __init__ method of AsyncConnector properly sets
     alloydb_api_endpoint when its URL has an 'https://' prefix.
     """
-    connector = AsyncConnector(alloydb_api_endpoint="https://alloydb.googleapis.com")
+    connector = AsyncConnector(
+        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
+    )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
 
