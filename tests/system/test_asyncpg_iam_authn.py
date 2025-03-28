@@ -16,7 +16,6 @@ from datetime import datetime
 import os
 
 # [START alloydb_sqlalchemy_connect_async_connector_iam_authn]
-import asyncpg
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
@@ -61,20 +60,16 @@ async def create_sqlalchemy_engine(
     """
     connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
-    async def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = await connector.connect(
+    # create async SQLAlchemy connection pool
+    engine = sqlalchemy.ext.asyncio.create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=lambda: connector.connect(
             inst_uri,
             "asyncpg",
             user=user,
             db=db,
             enable_iam_auth=True,
-        )
-        return conn
-
-    # create async SQLAlchemy connection pool
-    engine = sqlalchemy.ext.asyncio.create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=getconn,
+        ),
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
     return engine, connector

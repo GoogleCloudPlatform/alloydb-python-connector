@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from typing import Any
 
 # [START alloydb_sqlalchemy_connect_async_connector]
 import asyncpg
@@ -66,20 +65,16 @@ async def create_sqlalchemy_engine(
     """
     connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
-    async def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = await connector.connect(
+    # create SQLAlchemy connection pool
+    engine = sqlalchemy.ext.asyncio.create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=lambda: connector.connect(
             inst_uri,
             "asyncpg",
             user=user,
             password=password,
             db=db,
-        )
-        return conn
-
-    # create SQLAlchemy connection pool
-    engine = sqlalchemy.ext.asyncio.create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=getconn,
+        ),
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
     return engine, connector
@@ -129,20 +124,17 @@ async def create_asyncpg_pool(
     """
     connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
-    async def getconn(
-        instance_connection_name: str, **kwargs: Any
-    ) -> asyncpg.Connection:
-        conn: asyncpg.Connection = await connector.connect(
+    # create native asyncpg pool (requires asyncpg version >=0.30.0)
+    pool = await asyncpg.create_pool(
+        instance_connection_name,
+        connect=lambda instance_connection_name, **kwargs: connector.connect(
             instance_connection_name,
             "asyncpg",
             user=user,
             password=password,
             db=db,
-        )
-        return conn
-
-    # create native asyncpg pool (requires asyncpg version >=0.30.0)
-    pool = await asyncpg.create_pool(instance_connection_name, connect=getconn)
+        ),
+    )
     return pool, connector
 
 
