@@ -134,9 +134,10 @@ import sqlalchemy
 # initialize Connector object
 connector = Connector()
 
-# function to return the database connection
-def getconn():
-    conn = connector.connect(
+# initialize SQLAlchemy connection pool with Connector
+pool = sqlalchemy.create_engine(
+    "postgresql+pg8000://",
+    creator=lambda: connector.connect(
         "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
         "pg8000",
         user="my-user",
@@ -145,13 +146,7 @@ def getconn():
         # NOTE: this assumes private IP by default.
         # Add the following keyword arg to use public IP:
         # ip_type="PUBLIC"
-    )
-    return conn
-
-# create connection pool
-pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=getconn,
+    ),
 )
 ```
 
@@ -196,30 +191,19 @@ Connector as a context manager:
 from google.cloud.alloydb.connector import Connector
 import sqlalchemy
 
-# helper function to return SQLAlchemy connection pool
-def init_connection_pool(connector: Connector) -> sqlalchemy.engine.Engine:
-    # function used to generate database connection
-    def getconn():
-        conn = connector.connect(
+# initialize Connector as context manager
+with Connector() as connector:
+    # initialize SQLAlchemy connection pool with Connector
+    pool = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=lambda: connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
             "pg8000",
             user="my-user",
             password="my-password",
             db="my-db-name"
-        )
-        return conn
-
-    # create connection pool
-    pool = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
-        creator=getconn,
+        ),
     )
-    return pool
-
-# initialize Connector as context manager
-with Connector() as connector:
-    # initialize connection pool
-    pool = init_connection_pool(connector)
     # insert statement
     insert_stmt = sqlalchemy.text(
         "INSERT INTO my_table (id, title) VALUES (:id, :title)",
@@ -258,30 +242,26 @@ import asyncpg
 from google.cloud.alloydb.connector import AsyncConnector
 
 async def main():
-    # initialize Connector object for connections to AlloyDB
+    # initialize AsyncConnector object for connections to AlloyDB
     connector = AsyncConnector()
 
-    # creation function to generate asyncpg connections as the 'connect' arg
-    async def getconn(instance_connection_name, **kwargs) -> asyncpg.Connection:
-        return await connector.connect(
+    # initialize asyncpg connection pool with AsyncConnector
+    pool = await asyncpg.create_pool(
+        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+        connect=lambda instance_connection_name, **kwargs: connector.connect(
             instance_connection_name,
             "asyncpg",
             user="my-user",
             password="my-password",
             db="my-db",
-        )
-
-    # initialize connection pool
-    pool = await asyncpg.create_pool(
-        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-        connect=getconn,
+        ),
     )
 
     # acquire connection and query AlloyDB database
     async with pool.acquire() as conn:
         res = await conn.fetch("SELECT NOW()")
 
-    # close Connector
+    # close AsyncConnector
     await connector.close()
 ```
 
@@ -296,9 +276,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # creation function to generate asyncpg connections as 'async_creator' arg
-    async def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = await connector.connect(
+    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
+    # 'async_creator' argument to 'create_async_engine'
+    pool = create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=lambda: connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
             "asyncpg",
             user="my-user",
@@ -308,14 +290,7 @@ async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
             # Add the following keyword arg to use public IP:
             # ip_type="PUBLIC"
             # ... additional database driver args
-        )
-        return conn
-
-    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
-    # 'async_creator' argument to 'create_async_engine'
-    pool = create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=getconn,
+        ),
     )
     return pool
 
@@ -357,20 +332,16 @@ async def main():
     # initialize AsyncConnector object for connections to AlloyDB
     async with AsyncConnector() as connector:
 
-        # creation function to generate asyncpg connections as the 'connect' arg
-        async def getconn(instance_connection_name, **kwargs) -> asyncpg.Connection:
-            return await connector.connect(
+        # create connection pool
+        pool = await asyncpg.create_pool(
+            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+            connect=lambda instance_connection_name, **kwargs: connector.connect(
                 instance_connection_name,
                 "asyncpg",
                 user="my-user",
                 password="my-password",
                 db="my-db",
-            )
-
-        # create connection pool
-        pool = await asyncpg.create_pool(
-            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-            connect=getconn,
+            ),
         )
 
         # acquire connection and query AlloyDB database
@@ -390,23 +361,18 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # creation function to generate asyncpg connections as 'async_creator' arg
-    async def getconn() -> asyncpg.Connection:
-        conn: asyncpg.Connection = await connector.connect(
+    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
+    # 'async_creator' argument to 'create_async_engine'
+    pool = create_async_engine(
+        "postgresql+asyncpg://",
+        async_creator=lambda: connector.connect(
             "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
             "asyncpg",
             user="my-user",
             password="my-password",
             db="my-db-name"
             # ... additional database driver args
-        )
-        return conn
-
-    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
-    # 'async_creator' argument to 'create_async_engine'
-    pool = create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=getconn,
+        ),
     )
     return pool
 
@@ -494,21 +460,17 @@ import sqlalchemy
 # initialize Connector object
 connector = Connector()
 
-# function to return the database connection
-def getconn():
-  return connector.connect(
-    "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-    "pg8000",
-    user="my-user",
-    password="my-password",
-    db="my-db-name",
-    ip_type="PUBLIC",  # use public IP
-  )
-
 # create connection pool
 pool = sqlalchemy.create_engine(
     "postgresql+pg8000://",
-    creator=getconn,
+    creator=lambda: connector.connect(
+        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+        "pg8000",
+        user="my-user",
+        password="my-password",
+        db="my-db-name",
+        ip_type="PUBLIC",  # use public IP
+    ),
 )
 
 # use connection pool...

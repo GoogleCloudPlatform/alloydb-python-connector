@@ -16,7 +16,6 @@ from datetime import datetime
 import os
 
 # [START alloydb_sqlalchemy_connect_connector]
-import pg8000
 import sqlalchemy
 
 from google.cloud.alloydb.connector import Connector
@@ -66,20 +65,16 @@ def create_sqlalchemy_engine(
     """
     connector = Connector(refresh_strategy=refresh_strategy)
 
-    def getconn() -> pg8000.dbapi.Connection:
-        conn: pg8000.dbapi.Connection = connector.connect(
+    # create SQLAlchemy connection pool
+    engine = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=lambda: connector.connect(
             inst_uri,
             "pg8000",
             user=user,
             password=password,
             db=db,
-        )
-        return conn
-
-    # create SQLAlchemy connection pool
-    engine = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
-        creator=getconn,
+        ),
     )
     engine.dialect.description_encoding = None
     return engine, connector
