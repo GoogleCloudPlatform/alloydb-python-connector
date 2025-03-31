@@ -31,6 +31,7 @@ from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.types import CacheTypes
 from google.cloud.alloydb.connector.utils import generate_keys
+from google.cloud.alloydb.connector.utils import strip_http_prefix
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -51,7 +52,7 @@ class AsyncConnector:
             billing purposes.
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
-            the AlloyDB API endpoint. Defaults to "https://alloydb.googleapis.com".
+            the AlloyDB API endpoint. Defaults to "alloydb.googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
         ip_type (str | IPTypes): Default IP type for all AlloyDB connections.
             Defaults to IPTypes.PRIVATE ("PRIVATE") for private IP connections.
@@ -66,7 +67,7 @@ class AsyncConnector:
         self,
         credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
-        alloydb_api_endpoint: str = "https://alloydb.googleapis.com",
+        alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
@@ -75,7 +76,7 @@ class AsyncConnector:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
-        self._alloydb_api_endpoint = alloydb_api_endpoint
+        self._alloydb_api_endpoint = strip_http_prefix(alloydb_api_endpoint)
         self._enable_iam_auth = enable_iam_auth
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
@@ -235,5 +236,3 @@ class AsyncConnector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
-        if self._client:
-            await self._client.close()

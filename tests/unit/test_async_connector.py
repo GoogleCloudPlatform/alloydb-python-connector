@@ -15,7 +15,7 @@
 import asyncio
 from typing import Union
 
-from aiohttp import ClientResponseError
+from google.api_core.exceptions import RetryError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
@@ -27,7 +27,7 @@ from google.cloud.alloydb.connector import IPTypes
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
-ALLOYDB_API_ENDPOINT = "https://alloydb.googleapis.com"
+ALLOYDB_API_ENDPOINT = "alloydb.googleapis.com"
 
 
 @pytest.mark.asyncio
@@ -109,6 +109,34 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
     )
 
 
+def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector properly sets
+    alloydb_api_endpoint when its URL has an 'http://' prefix.
+    """
+    connector = AsyncConnector(
+        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
+    )
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
+def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector properly sets
+    alloydb_api_endpoint when its URL has an 'https://' prefix.
+    """
+    connector = AsyncConnector(
+        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
+    )
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
 @pytest.mark.asyncio
 async def test_AsyncConnector_context_manager(
     credentials: FakeCredentials,
@@ -163,8 +191,6 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
 
         # check connection is returned
         assert connection.result() is True
-        # outside of context manager check close cleaned up
-        assert connector._client.closed is True
 
 
 @pytest.mark.asyncio
@@ -244,8 +270,6 @@ async def test_context_manager_connect_and_close(
 
             # check connection is returned
             assert connection.result() is True
-        # outside of context manager check close cleaned up
-        assert fake_client.closed is True
 
 
 @pytest.mark.asyncio
@@ -309,7 +333,7 @@ async def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     async with AsyncConnector(credentials=credentials) as connector:
-        with pytest.raises(ClientResponseError):
+        with pytest.raises(RetryError):
             await connector.connect(instance_uri, "asyncpg")
         assert instance_uri not in connector._cache
 

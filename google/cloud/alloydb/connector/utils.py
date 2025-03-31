@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import re
+
 import aiofiles
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -58,3 +60,13 @@ async def generate_keys() -> tuple[rsa.RSAPrivateKey, str]:
         .decode("UTF-8")
     )
     return (priv_key, pub_key)
+
+
+def strip_http_prefix(url: str) -> str:
+    """
+    Returns a new URL with 'http://' or 'https://' prefix removed.
+    """
+    m = re.search(r"^(https?://)?(.+)", url)
+    if m is None:
+        return ""
+    return m.group(2)
