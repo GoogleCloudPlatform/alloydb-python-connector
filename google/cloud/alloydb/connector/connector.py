@@ -233,7 +233,6 @@ class Connector:
                 ip_address,
                 await conn_info.create_ssl_context(),
                 enable_iam_auth,
-                driver,
             )
             sock = await self._loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)
@@ -244,7 +243,7 @@ class Connector:
             raise
 
     def metadata_exchange(
-        self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool, driver: str
+        self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool
     ) -> ssl.SSLSocket:
         """
         Sends metadata about the connection prior to the database
@@ -272,8 +271,6 @@ class Connector:
             ctx (ssl.SSLContext): Context used to create a TLS connection
                 with AlloyDB instance ssl certificates.
             enable_iam_auth (bool): Flag to enable IAM database authentication.
-            driver (str): A string representing the database driver to connect with.
-                Supported drivers are pg8000.
 
         Returns:
             sock (ssl.SSLSocket): mTLS/SSL socket connected to AlloyDB Proxy server.
