@@ -16,7 +16,7 @@ import asyncio
 from threading import Thread
 from typing import Union
 
-from aiohttp import ClientResponseError
+from google.api_core.exceptions import RetryError
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -37,7 +37,7 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     """
     connector = Connector(credentials)
     assert connector._quota_project is None
-    assert connector._alloydb_api_endpoint == "https://alloydb.googleapis.com"
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     assert connector._client is None
     assert connector._credentials == credentials
     connector.close()
@@ -107,6 +107,34 @@ def test_Connector_init_ip_type(
     connector.close()
 
 
+def test_Connector_init_alloydb_api_endpoint_with_http_prefix(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check whether the __init__ method of Connector properly sets
+    alloydb_api_endpoint when its URL has an 'http://' prefix.
+    """
+    connector = Connector(
+        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
+    )
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
+def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check whether the __init__ method of Connector properly sets
+    alloydb_api_endpoint when its URL has an 'https://' prefix.
+    """
+    connector = Connector(
+        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
+    )
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
 def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     """
     Test to check whether the __init__ method of Connector
@@ -114,7 +142,7 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     """
     with Connector(credentials) as connector:
         assert connector._quota_project is None
-        assert connector._alloydb_api_endpoint == "https://alloydb.googleapis.com"
+        assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
         assert connector._client is None
         assert connector._credentials == credentials
 
@@ -220,7 +248,7 @@ def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
-        with pytest.raises(ClientResponseError):
+        with pytest.raises(RetryError):
             connector.connect(instance_uri, "pg8000")
         assert instance_uri not in connector._cache
 
