@@ -10,10 +10,6 @@
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
 
 
-### Features
-
-* Replace aiohttp.ClientSession with AlloyDBAdminAsyncClient ([#416](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/416)) ([10a4d7f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/10a4d7f2d024a1f1654184f3a5651dbf9513642f))
-
 ## [1.7.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.6.0...v1.7.0) (2025-01-14)
 
 
