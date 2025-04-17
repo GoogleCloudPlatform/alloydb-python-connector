@@ -32,6 +32,7 @@ from google.auth.transport import requests
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.enums import IPTypes
 from google.cloud.alloydb.connector.enums import RefreshStrategy
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 import google.cloud.alloydb.connector.pg8000 as pg8000
@@ -146,7 +147,7 @@ class Connector:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
         if self._closed:
-            raise RuntimeError("Connection attempt failed because the connector has already been closed.")
+            raise ClosedConnectorError("Connection attempt failed because the connector has already been closed.")
         # call async connect and wait on result
         connect_task = asyncio.run_coroutine_threadsafe(
             self.connect_async(instance_uri, driver, **kwargs), self._loop

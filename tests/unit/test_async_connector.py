@@ -24,6 +24,7 @@ import pytest
 
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
@@ -375,6 +376,6 @@ async def test_connect_when_closed(credentials: FakeCredentials) -> None:
     """
     connector = AsyncConnector(credentials=credentials)
     await connector.close()
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ClosedConnectorError) as exc_info:
         await connector.connect("", "")
     assert exc_info.value.args[0] == "Connection attempt failed because the connector has already been closed."
