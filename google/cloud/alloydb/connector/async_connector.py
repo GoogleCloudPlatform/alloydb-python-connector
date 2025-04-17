@@ -102,6 +102,7 @@ class AsyncConnector:
         except RuntimeError:
             self._keys = None
         self._client: Optional[AlloyDBClient] = None
+        self._closed = False
 
     async def connect(
         self,
@@ -127,6 +128,8 @@ class AsyncConnector:
         Returns:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
+        if self._closed:
+            raise RuntimeError("Can't connect because the connection is closed")
         if self._keys is None:
             self._keys = asyncio.create_task(generate_keys())
         if self._client is None:
@@ -236,3 +239,4 @@ class AsyncConnector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
+        self._closed = True

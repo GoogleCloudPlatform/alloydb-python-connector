@@ -124,6 +124,7 @@ class Connector:
         )
         self._client: Optional[AlloyDBClient] = None
         self._static_conn_info = static_conn_info
+        self._closed = False
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
         """
@@ -144,6 +145,8 @@ class Connector:
         Returns:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
+        if self._closed:
+            raise RuntimeError("Can't connect because the connection is closed")
         # call async connect and wait on result
         connect_task = asyncio.run_coroutine_threadsafe(
             self.connect_async(instance_uri, driver, **kwargs), self._loop
@@ -385,6 +388,7 @@ class Connector:
                 self._loop.call_soon_threadsafe(self._loop.stop)
             # wait for thread to finish closing (i.e. loop to stop)
             self._thread.join()
+        self._closed = True
 
     async def close_async(self) -> None:
         """Helper function to cancel RefreshAheadCaches' tasks
