@@ -130,7 +130,9 @@ class AsyncConnector:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
         if self._closed:
-            raise ClosedConnectorError("Connection attempt failed because the connector has already been closed.")
+            raise ClosedConnectorError(
+                "Connection attempt failed because the connector has already been closed."
+            )
         if self._keys is None:
             self._keys = asyncio.create_task(generate_keys())
         if self._client is None:

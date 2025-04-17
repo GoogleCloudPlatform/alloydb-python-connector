@@ -316,4 +316,7 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
     connector.close()
     with pytest.raises(ClosedConnectorError) as exc_info:
         connector.connect("", "")
-    assert exc_info.value.args[0] == "Connection attempt failed because the connector has already been closed."
+    assert (
+        exc_info.value.args[0]
+        == "Connection attempt failed because the connector has already been closed."
+    )
