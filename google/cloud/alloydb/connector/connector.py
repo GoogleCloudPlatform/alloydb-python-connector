@@ -146,7 +146,7 @@ class Connector:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
         if self._closed:
-            raise RuntimeError("Can't connect because the connection is closed")
+            raise RuntimeError("Connection attempt failed because the connector has already been closed.")
         # call async connect and wait on result
         connect_task = asyncio.run_coroutine_threadsafe(
             self.connect_async(instance_uri, driver, **kwargs), self._loop

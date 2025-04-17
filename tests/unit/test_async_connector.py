@@ -377,4 +377,4 @@ async def test_connect_when_closed(credentials: FakeCredentials) -> None:
     await connector.close()
     with pytest.raises(RuntimeError) as exc_info:
         await connector.connect("", "")
-    assert exc_info.value.args[0] == "Can't connect because the connection is closed"
+    assert exc_info.value.args[0] == "Connection attempt failed because the connector has already been closed."
