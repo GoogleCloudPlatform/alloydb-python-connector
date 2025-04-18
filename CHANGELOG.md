@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.8.0...v1.8.1) (2025-04-18)
+
+
+### Bug Fixes
+
+* throw exception when connecting to closed Connector ([#436](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/436)) ([1043a1f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1043a1f5a6cbd33b39ba6521ca695d6ab1c132c9))
+
+
+### Miscellaneous Chores
+
+* release 1.8.1 ([#438](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/438)) ([e4e356b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e4e356b5ca37eb6a58b16aac8c34c4227a29b9b1))
+
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
 
 
