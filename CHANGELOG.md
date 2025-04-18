@@ -10,7 +10,6 @@
 
 ### Miscellaneous Chores
 
-* release 1.7.0 ([#433](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/433)) ([5e1fa00](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5e1fa0020ecf8614ba1a57c19e23671b556080b8))
 * release 1.8.1 ([#438](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/438)) ([e4e356b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e4e356b5ca37eb6a58b16aac8c34c4227a29b9b1))
 
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
