@@ -19,3 +19,7 @@ class RefreshError(Exception):
 
 class IPTypeNotFoundError(Exception):
     pass
+
+
+class ClosedConnectorError(Exception):
+    pass

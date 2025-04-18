@@ -25,6 +25,7 @@ import pytest
 
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.utils import generate_keys
@@ -40,6 +41,7 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     assert connector._client is None
     assert connector._credentials == credentials
+    assert connector._closed is False
     connector.close()
 
 
@@ -150,15 +152,17 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
 def test_Connector_close(credentials: FakeCredentials) -> None:
     """
     Test that Connector's close method stops event loop and
-    background thread.
+    background thread, and sets the connector as closed.
     """
     with Connector(credentials) as connector:
         loop: asyncio.AbstractEventLoop = connector._loop
         thread: Thread = connector._thread
         assert loop.is_running() is True
         assert thread.is_alive() is True
+        assert connector._closed is False
     assert loop.is_running() is False
     assert thread.is_alive() is False
+    assert connector._closed is True
 
 
 @pytest.mark.usefixtures("proxy_server")
@@ -302,3 +306,17 @@ def test_Connector_static_connection_info(
             )
         # check connection is returned
         assert connection is True
+
+
+def test_connect_when_closed(credentials: FakeCredentials) -> None:
+    """
+    Test that connector.connect errors when the connection is closed.
+    """
+    connector = Connector(credentials=credentials)
+    connector.close()
+    with pytest.raises(ClosedConnectorError) as exc_info:
+        connector.connect("", "")
+    assert (
+        exc_info.value.args[0]
+        == "Connection attempt failed because the connector has already been closed."
+    )

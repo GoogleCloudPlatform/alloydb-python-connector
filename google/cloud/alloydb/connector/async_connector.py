@@ -27,6 +27,7 @@ import google.cloud.alloydb.connector.asyncpg as asyncpg
 from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.enums import IPTypes
 from google.cloud.alloydb.connector.enums import RefreshStrategy
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 from google.cloud.alloydb.connector.lazy import LazyRefreshCache
 from google.cloud.alloydb.connector.types import CacheTypes
@@ -102,6 +103,7 @@ class AsyncConnector:
         except RuntimeError:
             self._keys = None
         self._client: Optional[AlloyDBClient] = None
+        self._closed = False
 
     async def connect(
         self,
@@ -127,6 +129,10 @@ class AsyncConnector:
         Returns:
             connection: A DBAPI connection to the specified AlloyDB instance.
         """
+        if self._closed:
+            raise ClosedConnectorError(
+                "Connection attempt failed because the connector has already been closed."
+            )
         if self._keys is None:
             self._keys = asyncio.create_task(generate_keys())
         if self._client is None:
@@ -236,3 +242,4 @@ class AsyncConnector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
+        self._closed = True

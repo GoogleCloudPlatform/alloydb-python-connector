@@ -24,6 +24,7 @@ import pytest
 
 from google.cloud.alloydb.connector import AsyncConnector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
 
@@ -42,6 +43,7 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     assert connector._client is None
     assert connector._credentials == credentials
     assert connector._enable_iam_auth is False
+    assert connector._closed is False
     await connector.close()
 
 
@@ -109,7 +111,7 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
     )
 
 
-def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
+async def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
     credentials: FakeCredentials,
 ) -> None:
     """
@@ -120,10 +122,10 @@ def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
         alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
-    connector.close()
+    await connector.close()
 
 
-def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
+async def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
     credentials: FakeCredentials,
 ) -> None:
     """
@@ -134,7 +136,7 @@ def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
         alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
-    connector.close()
+    await connector.close()
 
 
 @pytest.mark.asyncio
@@ -357,3 +359,26 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
             await connector.connect(instance_uri, "asyncpg", ip_type="private")
         # check that cache has been removed from dict
         assert instance_uri not in connector._cache
+
+
+async def test_close_sets_connector_as_closed(credentials: FakeCredentials) -> None:
+    """
+    Test that when connector is closed, it marked as closed.
+    """
+    async with AsyncConnector(credentials=credentials) as connector:
+        assert connector._closed is False
+    assert connector._closed is True
+
+
+async def test_connect_when_closed(credentials: FakeCredentials) -> None:
+    """
+    Test that connector.connect errors when the connection is closed.
+    """
+    connector = AsyncConnector(credentials=credentials)
+    await connector.close()
+    with pytest.raises(ClosedConnectorError) as exc_info:
+        await connector.connect("", "")
+    assert (
+        exc_info.value.args[0]
+        == "Connection attempt failed because the connector has already been closed."
+    )
