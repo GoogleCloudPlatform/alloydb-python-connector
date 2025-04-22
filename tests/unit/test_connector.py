@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import asyncio
-from threading import Thread
 from typing import Union
 
 from google.api_core.exceptions import RetryError
 from mock import patch
 from mocks import FakeAlloyDBClient
+from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 from mocks import write_static_info
 import pytest
@@ -151,17 +151,10 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
 
 def test_Connector_close(credentials: FakeCredentials) -> None:
     """
-    Test that Connector's close method stops event loop and
-    background thread, and sets the connector as closed.
+    Test that Connector's close method sets the connector as closed.
     """
     with Connector(credentials) as connector:
-        loop: asyncio.AbstractEventLoop = connector._loop
-        thread: Thread = connector._thread
-        assert loop.is_running() is True
-        assert thread.is_alive() is True
         assert connector._closed is False
-    assert loop.is_running() is False
-    assert thread.is_alive() is False
     assert connector._closed is True
 
 
@@ -233,11 +226,7 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     """Test that Connector.close can be called multiple times."""
     # open and close Connector object
     connector = Connector(credentials=credentials)
-    # verify background thread exists
-    assert connector._thread
     connector.close()
-    # check that connector thread is no longer running
-    assert connector._thread.is_alive() is False
     # call connector.close a second time
     connector.close()
 
@@ -320,3 +309,16 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
+
+
+def test_close_stops_instance(credentials: FakeCredentials) -> None:
+    """
+    Test that any connected instances are closed when the connector is
+    closed.
+    """
+    connector = Connector(credentials)
+    connector._client = FakeAlloyDBClient()
+    fake = FakeConnectionInfo()
+    connector._cache["test-instance"] = fake
+    connector.close()
+    assert fake._close_called is True

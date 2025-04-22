@@ -48,6 +48,15 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(name=__name__)
 
+# TODO: Rollback the PR of adding global_event_loop when either
+# https://github.com/grpc/grpc/issues/25364 is resolved or an async REST
+# transport for AlloyDBAdminAsyncClient gets introduced.
+# The issue is that the async gRPC transport does not work with multiple event
+# loops in the same process. So all calls to the AlloyDB Admin API, even from
+# multiple threads, need to be made to a single-event loop.
+global_event_loop = asyncio.new_event_loop()
+Thread(target=lambda: global_event_loop.run_forever(), daemon=True).start()
+
 # the port the AlloyDB server-side proxy receives connections on
 SERVER_PROXY_PORT = 5433
 # the maximum amount of time to wait before aborting a metadata exchange
@@ -94,10 +103,6 @@ class Connector:
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         static_conn_info: Optional[io.TextIOBase] = None,
     ) -> None:
-        # create event loop and start it in background thread
-        self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
-        self._thread = Thread(target=self._loop.run_forever, daemon=True)
-        self._thread.start()
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
@@ -120,8 +125,8 @@ class Connector:
         else:
             self._credentials, _ = default(scopes=scopes)
         self._keys = asyncio.wrap_future(
-            asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
-            loop=self._loop,
+            asyncio.run_coroutine_threadsafe(generate_keys(), global_event_loop),
+            loop=global_event_loop,
         )
         self._client: Optional[AlloyDBClient] = None
         self._static_conn_info = static_conn_info
@@ -152,7 +157,7 @@ class Connector:
             )
         # call async connect and wait on result
         connect_task = asyncio.run_coroutine_threadsafe(
-            self.connect_async(instance_uri, driver, **kwargs), self._loop
+            self.connect_async(instance_uri, driver, **kwargs), global_event_loop
         )
         return connect_task.result()
 
@@ -241,9 +246,9 @@ class Connector:
                 await conn_info.create_ssl_context(),
                 enable_iam_auth,
             )
-            sock = await self._loop.run_in_executor(None, metadata_partial)
+            sock = await global_event_loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)
-            return await self._loop.run_in_executor(None, connect_partial)
+            return await global_event_loop.run_in_executor(None, connect_partial)
         except Exception:
             # we attempt a force refresh, then throw the error
             await cache.force_refresh()
@@ -378,19 +383,11 @@ class Connector:
 
     def close(self) -> None:
         """Close Connector by stopping tasks and releasing resources."""
-        if self._loop.is_running():
-            close_future = asyncio.run_coroutine_threadsafe(
-                self.close_async(), loop=self._loop
-            )
-            # Will attempt to gracefully shut down tasks for 3s
-            close_future.result(timeout=3)
-        # if background thread exists for Connector, clean it up
-        if self._thread.is_alive():
-            if self._loop.is_running():
-                # stop event loop running in background thread
-                self._loop.call_soon_threadsafe(self._loop.stop)
-            # wait for thread to finish closing (i.e. loop to stop)
-            self._thread.join()
+        close_future = asyncio.run_coroutine_threadsafe(
+            self.close_async(), loop=global_event_loop
+        )
+        # Will attempt to gracefully shut down tasks for 3s
+        close_future.result(timeout=3)
         self._closed = True
 
     async def close_async(self) -> None:
