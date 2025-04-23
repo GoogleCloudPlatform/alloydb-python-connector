@@ -79,14 +79,28 @@ class AlloyDBClient:
                 requests to AlloyDB APIs.
                 Optional, defaults to None and creates new client.
             driver (str): Database driver to be used by the client.
+            user_agent (str): The custom user-agent string to use in the HTTP
+                header when making requests to AlloyDB APIs.
+                Optional, defaults to None and uses a pre-defined one.
         """
         user_agent = _format_user_agent(driver, user_agent)
 
-        self._client = (
-            client
-            if client
-            else v1beta.AlloyDBAdminAsyncClient(
+        # TODO(rhatgadkar-goog): Rollback the PR of deciding between creating
+        # AlloyDBAdminClient or AlloyDBAdminAsyncClient when either
+        # https://github.com/grpc/grpc/issues/25364 is resolved or an async REST
+        # transport for AlloyDBAdminAsyncClient gets introduced.
+        # The issue is that the async gRPC transport does not work with multiple
+        # event loops in the same process. So all calls to the AlloyDB Admin
+        # API, even from multiple threads, need to be made to a single-event
+        # loop. See https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/435
+        # for more details.
+        self._is_sync = False
+        if client:
+            self._client = client
+        elif driver == "pg8000":
+            self._client = v1beta.AlloyDBAdminClient(
                 credentials=credentials,
+                transport="grpc",
                 client_options=ClientOptions(
                     api_endpoint=alloydb_api_endpoint,
                     quota_project_id=quota_project,
@@ -95,7 +109,20 @@ class AlloyDBClient:
                     user_agent=user_agent,
                 ),
             )
-        )
+            self._is_sync = True
+        else:
+            self._client = v1beta.AlloyDBAdminAsyncClient(
+                credentials=credentials,
+                transport="grpc_asyncio",
+                client_options=ClientOptions(
+                    api_endpoint=alloydb_api_endpoint,
+                    quota_project_id=quota_project,
+                ),
+                client_info=ClientInfo(
+                    user_agent=user_agent,
+                ),
+            )
+
         self._credentials = credentials
         # asyncpg does not currently support using metadata exchange
         # only use metadata exchange for pg8000 driver
@@ -131,7 +158,10 @@ class AlloyDBClient:
         )
 
         req = v1beta.GetConnectionInfoRequest(parent=parent)
-        resp = await self._client.get_connection_info(request=req)
+        if self._is_sync:
+            resp = self._client.get_connection_info(request=req)
+        else:
+            resp = await self._client.get_connection_info(request=req)
 
         # Remove trailing period from PSC DNS name.
         psc_dns = resp.psc_dns_name
@@ -178,7 +208,10 @@ class AlloyDBClient:
             public_key=pub_key,
             use_metadata_exchange=self._use_metadata,
         )
-        resp = await self._client.generate_client_certificate(request=req)
+        if self._is_sync:
+            resp = self._client.generate_client_certificate(request=req)
+        else:
+            resp = await self._client.generate_client_certificate(request=req)
         return (resp.ca_cert, resp.pem_certificate_chain)
 
     async def get_connection_info(
