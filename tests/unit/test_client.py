@@ -14,7 +14,9 @@
 
 from typing import Optional
 
+import google.cloud.alloydb_v1beta as v1beta
 from mocks import FakeAlloyDBAdminAsyncClient
+from mocks import FakeAlloyDBAdminClient
 from mocks import FakeCredentials
 import pytest
 
@@ -80,6 +82,40 @@ async def test__get_metadata_with_psc(credentials: FakeCredentials) -> None:
     }
 
 
+async def test__get_metadata_with_async_client(credentials: FakeCredentials) -> None:
+    """
+    Test _get_metadata returns successfully for an async client.
+    """
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
+    test_client._is_sync = False
+    assert (
+        await test_client._get_metadata(
+            "test-project",
+            "test-region",
+            "test-cluster",
+            "psc-instance",
+        )
+        is not None
+    )
+
+
+async def test__get_metadata_with_sync_client(credentials: FakeCredentials) -> None:
+    """
+    Test _get_metadata returns successfully for a sync client.
+    """
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminClient())
+    test_client._is_sync = True
+    assert (
+        await test_client._get_metadata(
+            "test-project",
+            "test-region",
+            "test-cluster",
+            "psc-instance",
+        )
+        is not None
+    )
+
+
 @pytest.mark.asyncio
 async def test__get_client_certificate(credentials: FakeCredentials) -> None:
     """
@@ -95,6 +131,40 @@ async def test__get_client_certificate(credentials: FakeCredentials) -> None:
     assert cert_chain[0] == "This is the client cert"
     assert cert_chain[1] == "This is the intermediate cert"
     assert cert_chain[2] == "This is the root cert"
+
+
+async def test__get_client_certificate_with_async_client(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test _get_client_certificate returns successfully for an async client.
+    """
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
+    test_client._is_sync = False
+    keys = await generate_keys()
+    assert (
+        await test_client._get_client_certificate(
+            "test-project", "test-region", "test-cluster", keys[1]
+        )
+        is not None
+    )
+
+
+async def test__get_client_certificate_with_sync_client(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test _get_client_certificate returns successfully for a sync client.
+    """
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminClient())
+    test_client._is_sync = True
+    keys = await generate_keys()
+    assert (
+        await test_client._get_client_certificate(
+            "test-project", "test-region", "test-cluster", keys[1]
+        )
+        is not None
+    )
 
 
 @pytest.mark.asyncio
@@ -127,6 +197,48 @@ async def test_AlloyDBClient_init_custom_user_agent(
     assert client._user_agent.startswith(
         f"alloydb-python-connector/{version} custom-agent/v1.0.0 other-agent/v2.0.0"
     )
+
+
+async def test_AlloyDBClient_init_specified_client(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test to check that __init__ method of AlloyDBClient uses specified client.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com",
+        "my-quota-project",
+        credentials,
+        FakeAlloyDBAdminAsyncClient(),
+    )
+    assert client._is_sync is False
+    assert type(client._client) is FakeAlloyDBAdminAsyncClient
+
+
+async def test_AlloyDBClient_init_sync_client(credentials: FakeCredentials) -> None:
+    """
+    Test to check that __init__ method of AlloyDBClient creates a sync client
+    when client is not specified and driver is pg8000.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com", "my-quota-project", credentials, driver="pg8000"
+    )
+    assert client._is_sync is True
+    assert type(client._client) is v1beta.AlloyDBAdminClient
+    assert client._client.transport.kind == "grpc"
+
+
+async def test_AlloyDBClient_init_async_client(credentials: FakeCredentials) -> None:
+    """
+    Test to check that __init__ method of AlloyDBClient creates an async client
+    when client is not specified and driver is not pg8000.
+    """
+    client = AlloyDBClient(
+        "www.test-endpoint.com", "my-quota-project", credentials, driver=""
+    )
+    assert client._is_sync is False
+    assert type(client._client) is v1beta.AlloyDBAdminAsyncClient
+    assert client._client.transport.kind == "grpc_asyncio"
 
 
 @pytest.mark.parametrize(
