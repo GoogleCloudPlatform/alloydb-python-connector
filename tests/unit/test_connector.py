@@ -17,6 +17,7 @@ from threading import Thread
 from typing import Union
 
 from google.api_core.exceptions import RetryError
+from google.api_core.retry.retry_unary import Retry
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -25,6 +26,7 @@ import pytest
 
 from google.cloud.alloydb.connector import Connector
 from google.cloud.alloydb.connector import IPTypes
+from google.cloud.alloydb.connector.client import AlloyDBClient
 from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
 from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydb.connector.instance import RefreshAheadCache
@@ -252,6 +254,19 @@ def test_Connector_remove_cached_bad_instance(
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
+        # The timeout of AlloyDB API methods is set to 60s by default.
+        # We override it to 1s to shorten the duration of the test.
+        connector._client = AlloyDBClient(
+            "alloydb.googleapis.com", "test-project", credentials, driver="pg8000"
+        )
+        transport = connector._client._client.transport
+        transport._wrapped_methods[transport.get_connection_info]._retry = Retry(
+            timeout=1
+        )
+        transport._wrapped_methods[
+            transport.generate_client_certificate
+        ]._retry = Retry(timeout=1)
+
         with pytest.raises(RetryError):
             connector.connect(instance_uri, "pg8000")
         assert instance_uri not in connector._cache
