@@ -20,7 +20,7 @@ import nox
 
 BLACK_VERSION = "black==23.12.1"
 ISORT_VERSION = "isort==5.13.2"
-LINT_PATHS = ["google", "tests", "noxfile.py", "setup.py"]
+LINT_PATHS = ["google", "tests", "noxfile.py"]
 
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
@@ -71,7 +71,7 @@ def lint(session):
         "--non-interactive",
         "--show-traceback",
     )
-    # verify that setup.py is valid
+    # verify that pyproject.toml is valid
     session.run("python", "-m", "build", "--sdist")
     session.run("twine", "check", "--strict", "dist/*")
 
