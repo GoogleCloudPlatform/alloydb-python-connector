@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.8.1.dev0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.8.0...development-build-1.8.1.dev0) (2025-04-29)
+
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
 
 
