@@ -15,8 +15,8 @@
 from mocks import FakeInstance
 from mocks import write_static_info
 
-from google.cloud.alloydb.connector.connection_info import ConnectionInfo
-from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
+from google.cloud.alloydb_connector.connection_info import ConnectionInfo
+from google.cloud.alloydb_connector.static import StaticConnectionInfoCache
 
 
 def test_StaticConnectionInfoCache_init() -> None:

@@ -20,12 +20,12 @@ import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
-from google.cloud.alloydb.connector.connection_info import ConnectionInfo
-from google.cloud.alloydb.connector.exceptions import RefreshError
-from google.cloud.alloydb.connector.instance import _parse_instance_uri
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
-from google.cloud.alloydb.connector.refresh_utils import _is_valid
-from google.cloud.alloydb.connector.utils import generate_keys
+from google.cloud.alloydb_connector.connection_info import ConnectionInfo
+from google.cloud.alloydb_connector.exceptions import RefreshError
+from google.cloud.alloydb_connector.instance import _parse_instance_uri
+from google.cloud.alloydb_connector.instance import RefreshAheadCache
+from google.cloud.alloydb_connector.refresh_utils import _is_valid
+from google.cloud.alloydb_connector.utils import generate_keys
 
 
 @pytest.mark.parametrize(

@@ -24,7 +24,7 @@ from mocks import FakeInstance
 from mocks import metadata_exchange
 import pytest
 
-from google.cloud.alloydb.connector.utils import _write_to_file
+from google.cloud.alloydb_connector.utils import _write_to_file
 
 DELAY = 1.0
 

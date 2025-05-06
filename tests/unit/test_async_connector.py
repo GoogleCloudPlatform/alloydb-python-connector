@@ -23,12 +23,12 @@ from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 import pytest
 
-from google.cloud.alloydb.connector import AsyncConnector
-from google.cloud.alloydb.connector import IPTypes
-from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
-from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
+from google.cloud.alloydb_connector import AsyncConnector
+from google.cloud.alloydb_connector import IPTypes
+from google.cloud.alloydb_connector.client import AlloyDBClient
+from google.cloud.alloydb_connector.exceptions import ClosedConnectorError
+from google.cloud.alloydb_connector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydb_connector.instance import RefreshAheadCache
 
 ALLOYDB_API_ENDPOINT = "alloydb.googleapis.com"
 
