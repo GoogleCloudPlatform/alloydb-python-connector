@@ -176,7 +176,7 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
     """
     Test that connector.connect calls asyncpg.connect and cleans up
     """
-    with patch("google.cloud.alloydb.connector.asyncpg.connect") as connect:
+    with patch("google.cloud.alloydb_connector.asyncpg.connect") as connect:
         # patch db connection creation and return plain future
         future = asyncio.Future()
         future.set_result(True)
@@ -203,7 +203,7 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
     Test that any failed connection results in a force refresh.
     """
     with patch(
-        "google.cloud.alloydb.connector.asyncpg.connect",
+        "google.cloud.alloydb_connector.asyncpg.connect",
         side_effect=Exception("connection failed"),
     ):
         connector = AsyncConnector(credentials)
@@ -254,7 +254,7 @@ async def test_context_manager_connect_and_close(
     Test that connector.connect calls asyncpg.connect and cleans up using the
     async context manager
     """
-    with patch("google.cloud.alloydb.connector.asyncpg.connect") as connect:
+    with patch("google.cloud.alloydb_connector.asyncpg.connect") as connect:
         fake_client = FakeAlloyDBClient()
         async with AsyncConnector(credentials) as connector:
             connector._client = fake_client

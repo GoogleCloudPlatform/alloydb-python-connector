@@ -176,7 +176,7 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
     with Connector(credentials) as connector:
         connector._client = client
         # patch db connection creation
-        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
+        with patch("google.cloud.alloydb_connector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
             connection = connector.connect(
                 "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -310,7 +310,7 @@ def test_Connector_static_connection_info(
     with Connector(credentials=credentials, static_conn_info=static_info) as connector:
         connector._client = fake_client
         # patch db connection creation
-        with patch("google.cloud.alloydb.connector.pg8000.connect") as mock_connect:
+        with patch("google.cloud.alloydb_connector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
             connection = connector.connect(
                 fake_client.instance.uri(),
