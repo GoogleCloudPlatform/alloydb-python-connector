@@ -128,7 +128,7 @@ like `user`, `password` and `db` etc.
 To use this connector with SQLAlchemy, use the `creator` argument for `sqlalchemy.create_engine`:
 
 ```python
-from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb_connector import Connector
 import sqlalchemy
 
 # initialize Connector object
@@ -188,7 +188,7 @@ calls to `connector.close()`.
 Connector as a context manager:
 
 ```python
-from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb_connector import Connector
 import sqlalchemy
 
 # initialize Connector as context manager
@@ -239,7 +239,7 @@ currently supports the following asyncio database drivers:
 
 ```python
 import asyncpg
-from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb_connector import AsyncConnector
 
 async def main():
     # initialize AsyncConnector object for connections to AlloyDB
@@ -273,7 +273,7 @@ import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb_connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
     # The AlloyDB Python Connector can be used along with SQLAlchemy using the
@@ -326,7 +326,7 @@ need for explicit calls to `connector.close()` to cleanup resources.
 
 ```python
 import asyncpg
-from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb_connector import AsyncConnector
 
 async def main():
     # initialize AsyncConnector object for connections to AlloyDB
@@ -358,7 +358,7 @@ import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from google.cloud.alloydb.connector import AsyncConnector
+from google.cloud.alloydb_connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
     # The AlloyDB Python Connector can be used along with SQLAlchemy using the
@@ -453,7 +453,7 @@ and `"PSC"`.
 Example:
 
 ```python
-from google.cloud.alloydb.connector import Connector
+from google.cloud.alloydb_connector import Connector
 
 import sqlalchemy
 
@@ -489,7 +489,7 @@ Python Connector:
 import logging
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s")
-logger = logging.getLogger(name="google.cloud.alloydb.connector")
+logger = logging.getLogger(name="google.cloud.alloydb_connector")
 logger.setLevel(logging.DEBUG)
 ```
 
