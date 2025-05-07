@@ -66,7 +66,7 @@ asyncpg = ["asyncpg>=0.30.0"]
 version = { attr = "google.cloud.alloydb_connector.version.__version__" }
 
 [tool.setuptools.package-data]
-"google.cloud.alloydb.connector" = ["py.typed"]
+"google.cloud.alloydb_connector" = ["py.typed"]
 
 [tool.setuptools.packages.find]
 # Only include packages under the 'google' namespace. Do not include tests,
