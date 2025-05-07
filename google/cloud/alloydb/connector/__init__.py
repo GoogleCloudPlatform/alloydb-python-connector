@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from google.cloud.alloydb_connector.async_connector import AsyncConnector
-from google.cloud.alloydb_connector.connector import Connector
-from google.cloud.alloydb_connector.enums import IPTypes
-from google.cloud.alloydb_connector.enums import RefreshStrategy
-from google.cloud.alloydb_connector.version import __version__
+from google.cloud.alloydb_connector import AsyncConnector
+from google.cloud.alloydb_connector import Connector
+from google.cloud.alloydb_connector import IPTypes
+from google.cloud.alloydb_connector import RefreshStrategy
+from google.cloud.alloydb_connector import __version__
 
 __all__ = [
     "__version__",

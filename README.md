@@ -105,9 +105,18 @@ AlloyDB private IP address.
 
 Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
 
+There are two ways to import this AlloyDB connector package:
+1. `import google.cloud.alloydb_connector`
+2. `import google.cloud.alloydb.connector`
+
+The preferred way is `import google.cloud.alloydb_connector` to avoid namespace
+collisions with the [google-cloud-alloydb][alloydb-py-lib] package. Meanwhile,
+`import google.cloud.alloydb.connector` will continue to work forever.
+
 [vpc]: https://cloud.google.com/vpc/docs/vpc
 [alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
 [psc]: https://cloud.google.com/vpc/docs/private-service-connect
+[alloydb-py-lib]: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-alloydb
 
 ### Synchronous Driver Usage
 
