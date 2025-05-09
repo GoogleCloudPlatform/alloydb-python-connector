@@ -16,7 +16,7 @@ import asyncio
 
 import pytest
 
-from google.cloud.alloydb.connector.rate_limiter import AsyncRateLimiter
+from google.cloud.alloydbconnector.rate_limiter import AsyncRateLimiter
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from google.cloud.alloydbconnector import __version__
-from google.cloud.alloydbconnector import AsyncConnector
-from google.cloud.alloydbconnector import Connector
-from google.cloud.alloydbconnector import IPTypes
-from google.cloud.alloydbconnector import RefreshStrategy
 
-__all__ = [
-    "__version__",
-    "Connector",
-    "AsyncConnector",
-    "IPTypes",
-    "RefreshStrategy",
+import typing
+
+from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
+
+CacheTypes = typing.Union[
+    RefreshAheadCache, LazyRefreshCache, StaticConnectionInfoCache
 ]

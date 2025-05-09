@@ -29,17 +29,17 @@ from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
 from google.auth.transport import requests
 
-from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.enums import IPTypes
-from google.cloud.alloydb.connector.enums import RefreshStrategy
-from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
-from google.cloud.alloydb.connector.instance import RefreshAheadCache
-from google.cloud.alloydb.connector.lazy import LazyRefreshCache
-import google.cloud.alloydb.connector.pg8000 as pg8000
-from google.cloud.alloydb.connector.types import CacheTypes
-from google.cloud.alloydb.connector.utils import generate_keys
-from google.cloud.alloydb.connector.utils import strip_http_prefix
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
+from google.cloud.alloydbconnector.client import AlloyDBClient
+from google.cloud.alloydbconnector.enums import IPTypes
+from google.cloud.alloydbconnector.enums import RefreshStrategy
+from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
+from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+import google.cloud.alloydbconnector.pg8000 as pg8000
+from google.cloud.alloydbconnector.types import CacheTypes
+from google.cloud.alloydbconnector.utils import generate_keys
+from google.cloud.alloydbconnector.utils import strip_http_prefix
 
 if TYPE_CHECKING:
     import ssl

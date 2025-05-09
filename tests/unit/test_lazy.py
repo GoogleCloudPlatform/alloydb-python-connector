@@ -14,10 +14,10 @@
 
 import asyncio
 
-from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.connection_info import ConnectionInfo
-from google.cloud.alloydb.connector.lazy import LazyRefreshCache
-from google.cloud.alloydb.connector.utils import generate_keys
+from google.cloud.alloydbconnector.client import AlloyDBClient
+from google.cloud.alloydbconnector.connection_info import ConnectionInfo
+from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+from google.cloud.alloydbconnector.utils import generate_keys
 
 
 async def test_LazyRefreshCache_connect_info(fake_client: AlloyDBClient) -> None:

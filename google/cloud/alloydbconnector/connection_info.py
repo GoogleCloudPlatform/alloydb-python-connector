@@ -21,15 +21,15 @@ from typing import Optional, TYPE_CHECKING
 
 from aiofiles.tempfile import TemporaryDirectory
 
-from google.cloud.alloydb.connector.exceptions import IPTypeNotFoundError
-from google.cloud.alloydb.connector.utils import _write_to_file
+from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector.utils import _write_to_file
 
 if TYPE_CHECKING:
     import datetime
 
     from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
-    from google.cloud.alloydb.connector.enums import IPTypes
+    from google.cloud.alloydbconnector.enums import IPTypes
 
 logger = logging.getLogger(name=__name__)
 

@@ -26,8 +26,8 @@ from google.auth.transport import requests
 import google.cloud.alloydb_v1beta as v1beta
 from google.protobuf import duration_pb2
 
-from google.cloud.alloydb.connector.connection_info import ConnectionInfo
-from google.cloud.alloydb.connector.version import __version__ as version
+from google.cloud.alloydbconnector.connection_info import ConnectionInfo
+from google.cloud.alloydbconnector.version import __version__ as version
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials

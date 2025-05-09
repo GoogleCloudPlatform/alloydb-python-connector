@@ -20,9 +20,9 @@ from mocks import FakeAlloyDBAdminClient
 from mocks import FakeCredentials
 import pytest
 
-from google.cloud.alloydb.connector.client import AlloyDBClient
-from google.cloud.alloydb.connector.utils import generate_keys
-from google.cloud.alloydb.connector.version import __version__ as version
+from google.cloud.alloydbconnector.client import AlloyDBClient
+from google.cloud.alloydbconnector.utils import generate_keys
+from google.cloud.alloydbconnector.version import __version__ as version
 
 
 @pytest.mark.asyncio
