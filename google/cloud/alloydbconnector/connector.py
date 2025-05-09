@@ -29,6 +29,7 @@ from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
 from google.auth.transport import requests
 
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.enums import RefreshStrategy
@@ -39,7 +40,6 @@ import google.cloud.alloydbconnector.pg8000 as pg8000
 from google.cloud.alloydbconnector.types import CacheTypes
 from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.utils import strip_http_prefix
-import google.cloud.alloydbconnectors_v1.proto.resources_pb2 as connectorspb
 
 if TYPE_CHECKING:
     import ssl

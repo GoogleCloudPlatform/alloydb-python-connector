@@ -31,10 +31,10 @@ from cryptography.x509.oid import NameOID
 from google.auth.credentials import _helpers
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
+import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 
 from google.cloud import alloydb_v1beta
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
-import google.cloud.alloydbconnectors_v1.proto.resources_pb2 as connectorspb
 
 
 class FakeCredentials:
