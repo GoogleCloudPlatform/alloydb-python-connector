@@ -18,7 +18,7 @@ import os
 # [START alloydb_sqlalchemy_connect_connector_public_ip]
 import sqlalchemy
 
-from google.cloud.alloydb_connector import Connector
+from google.cloud.alloydbconnector import Connector
 
 
 def create_sqlalchemy_engine(

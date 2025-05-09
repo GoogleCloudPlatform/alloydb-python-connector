@@ -24,13 +24,13 @@ from mocks import FakeCredentials
 from mocks import write_static_info
 import pytest
 
-from google.cloud.alloydb_connector import Connector
-from google.cloud.alloydb_connector import IPTypes
-from google.cloud.alloydb_connector.client import AlloyDBClient
-from google.cloud.alloydb_connector.exceptions import ClosedConnectorError
-from google.cloud.alloydb_connector.exceptions import IPTypeNotFoundError
-from google.cloud.alloydb_connector.instance import RefreshAheadCache
-from google.cloud.alloydb_connector.utils import generate_keys
+from google.cloud.alloydbconnector import Connector
+from google.cloud.alloydbconnector import IPTypes
+from google.cloud.alloydbconnector.client import AlloyDBClient
+from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
+from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.utils import generate_keys
 
 
 def test_Connector_init(credentials: FakeCredentials) -> None:
@@ -176,7 +176,7 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
     with Connector(credentials) as connector:
         connector._client = client
         # patch db connection creation
-        with patch("google.cloud.alloydb_connector.pg8000.connect") as mock_connect:
+        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
             connection = connector.connect(
                 "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
@@ -310,7 +310,7 @@ def test_Connector_static_connection_info(
     with Connector(credentials=credentials, static_conn_info=static_info) as connector:
         connector._client = fake_client
         # patch db connection creation
-        with patch("google.cloud.alloydb_connector.pg8000.connect") as mock_connect:
+        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
             connection = connector.connect(
                 fake_client.instance.uri(),

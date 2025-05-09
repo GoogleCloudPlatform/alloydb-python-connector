@@ -18,7 +18,7 @@ import pytest
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
-from google.cloud.alloydb_connector import AsyncConnector
+from google.cloud.alloydbconnector import AsyncConnector
 
 
 async def create_sqlalchemy_engine(

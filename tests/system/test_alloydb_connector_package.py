@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import google.cloud.alloydb.connector as conn_old
-import google.cloud.alloydb_connector as conn_new
+import google.cloud.alloydbconnector as conn_new
 
 
-def test_alloydb_connector_package() -> None:
+def test_alloydbconnector_package() -> None:
     """
     Test imported objects are same in google.cloud.alloydb.connector and
-    google.cloud.alloydb_connector packages.
+    google.cloud.alloydbconnector packages.
     """
     assert conn_old.AsyncConnector == conn_new.AsyncConnector
     assert conn_old.Connector == conn_new.Connector

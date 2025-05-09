@@ -24,9 +24,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from mocks import FakeInstance
 import pytest
 
-from google.cloud.alloydb_connector import IPTypes
-from google.cloud.alloydb_connector.connection_info import ConnectionInfo
-from google.cloud.alloydb_connector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector import IPTypes
+from google.cloud.alloydbconnector.connection_info import ConnectionInfo
+from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
 
 
 async def test_ConnectionInfo_init_(fake_instance: FakeInstance) -> None:

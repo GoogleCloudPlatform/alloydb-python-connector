@@ -22,16 +22,16 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from google.cloud.alloydb_connector.connection_info import ConnectionInfo
-from google.cloud.alloydb_connector.exceptions import RefreshError
-from google.cloud.alloydb_connector.rate_limiter import AsyncRateLimiter
-from google.cloud.alloydb_connector.refresh_utils import _is_valid
-from google.cloud.alloydb_connector.refresh_utils import _seconds_until_refresh
+from google.cloud.alloydbconnector.connection_info import ConnectionInfo
+from google.cloud.alloydbconnector.exceptions import RefreshError
+from google.cloud.alloydbconnector.rate_limiter import AsyncRateLimiter
+from google.cloud.alloydbconnector.refresh_utils import _is_valid
+from google.cloud.alloydbconnector.refresh_utils import _seconds_until_refresh
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric import rsa
 
-    from google.cloud.alloydb_connector.client import AlloyDBClient
+    from google.cloud.alloydbconnector.client import AlloyDBClient
 
 logger = logging.getLogger(name=__name__)
 

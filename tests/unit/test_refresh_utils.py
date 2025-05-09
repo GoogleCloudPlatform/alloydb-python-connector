@@ -18,7 +18,7 @@ from datetime import timezone
 
 import pytest
 
-from google.cloud.alloydb_connector.refresh_utils import _seconds_until_refresh
+from google.cloud.alloydbconnector.refresh_utils import _seconds_until_refresh
 
 
 def test_seconds_until_refresh_over_1_hour() -> None:

@@ -11,16 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from google.cloud.alloydb_connector.async_connector import AsyncConnector
-from google.cloud.alloydb_connector.connector import Connector
-from google.cloud.alloydb_connector.enums import IPTypes
-from google.cloud.alloydb_connector.enums import RefreshStrategy
-from google.cloud.alloydb_connector.version import __version__
 
-__all__ = [
-    "__version__",
-    "Connector",
-    "AsyncConnector",
-    "IPTypes",
-    "RefreshStrategy",
+import typing
+
+from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
+
+CacheTypes = typing.Union[
+    RefreshAheadCache, LazyRefreshCache, StaticConnectionInfoCache
 ]
