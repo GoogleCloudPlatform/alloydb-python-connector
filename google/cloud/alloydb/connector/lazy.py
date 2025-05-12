@@ -19,10 +19,10 @@ from datetime import timezone
 import logging
 from typing import Optional
 
-from google.cloud.alloydbconnector.client import AlloyDBClient
-from google.cloud.alloydbconnector.connection_info import ConnectionInfo
-from google.cloud.alloydbconnector.instance import _parse_instance_uri
-from google.cloud.alloydbconnector.refresh_utils import _refresh_buffer
+from google.cloud.alloydb.connector.client import AlloyDBClient
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
+from google.cloud.alloydb.connector.instance import _parse_instance_uri
+from google.cloud.alloydb.connector.refresh_utils import _refresh_buffer
 
 logger = logging.getLogger(name=__name__)
 

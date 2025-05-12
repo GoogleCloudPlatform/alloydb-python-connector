@@ -137,7 +137,7 @@ def default(session, path):
     session.run(
         "coverage",
         "run",
-        "--include=*/google/cloud/alloydbconnector/*.py",
+        "--include=*/google/cloud/alloydb/connector/*.py",
         "-m",
         "pytest",
         "-v",

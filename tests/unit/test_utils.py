@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud.alloydbconnector.utils import strip_http_prefix
+from google.cloud.alloydb.connector.utils import strip_http_prefix
 
 
 def test_strip_http_prefix_with_empty_url() -> None:

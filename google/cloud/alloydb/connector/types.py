@@ -12,17 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import google.cloud.alloydb.connector as conn_old
-import google.cloud.alloydbconnector as conn_new
+import typing
 
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
+from google.cloud.alloydb.connector.lazy import LazyRefreshCache
+from google.cloud.alloydb.connector.static import StaticConnectionInfoCache
 
-def test_alloydbconnector_package() -> None:
-    """
-    Test imported objects are same in google.cloud.alloydb.connector and
-    google.cloud.alloydbconnector packages.
-    """
-    assert conn_old.AsyncConnector == conn_new.AsyncConnector
-    assert conn_old.Connector == conn_new.Connector
-    assert conn_old.IPTypes == conn_new.IPTypes
-    assert conn_old.RefreshStrategy == conn_new.RefreshStrategy
-    assert conn_old.__version__ == conn_new.__version__
+CacheTypes = typing.Union[
+    RefreshAheadCache, LazyRefreshCache, StaticConnectionInfoCache
+]

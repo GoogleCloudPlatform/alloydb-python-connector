@@ -33,8 +33,8 @@ from google.auth.credentials import TokenState
 from google.auth.transport import requests
 
 from google.cloud import alloydb_v1beta
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
-from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 
 
 class FakeCredentials:

@@ -17,7 +17,7 @@ import os
 
 import sqlalchemy
 
-from google.cloud.alloydbconnector import Connector
+from google.cloud.alloydb.connector import Connector
 
 
 def create_sqlalchemy_engine(

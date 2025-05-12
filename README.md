@@ -105,18 +105,9 @@ AlloyDB private IP address.
 
 Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
 
-There are two ways to import this AlloyDB connector package:
-1. `import google.cloud.alloydbconnector`
-2. `import google.cloud.alloydb.connector`
-
-The preferred way is `import google.cloud.alloydbconnector` to avoid namespace
-collisions with the [google-cloud-alloydb][alloydb-py-lib] package. Meanwhile,
-`import google.cloud.alloydb.connector` will continue to work forever.
-
 [vpc]: https://cloud.google.com/vpc/docs/vpc
 [alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
 [psc]: https://cloud.google.com/vpc/docs/private-service-connect
-[alloydb-py-lib]: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-alloydb
 
 ### Synchronous Driver Usage
 
@@ -137,7 +128,7 @@ like `user`, `password` and `db` etc.
 To use this connector with SQLAlchemy, use the `creator` argument for `sqlalchemy.create_engine`:
 
 ```python
-from google.cloud.alloydbconnector import Connector
+from google.cloud.alloydb.connector import Connector
 import sqlalchemy
 
 # initialize Connector object
@@ -197,7 +188,7 @@ calls to `connector.close()`.
 Connector as a context manager:
 
 ```python
-from google.cloud.alloydbconnector import Connector
+from google.cloud.alloydb.connector import Connector
 import sqlalchemy
 
 # initialize Connector as context manager
@@ -248,7 +239,7 @@ currently supports the following asyncio database drivers:
 
 ```python
 import asyncpg
-from google.cloud.alloydbconnector import AsyncConnector
+from google.cloud.alloydb.connector import AsyncConnector
 
 async def main():
     # initialize AsyncConnector object for connections to AlloyDB
@@ -282,7 +273,7 @@ import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from google.cloud.alloydbconnector import AsyncConnector
+from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
     # The AlloyDB Python Connector can be used along with SQLAlchemy using the
@@ -335,7 +326,7 @@ need for explicit calls to `connector.close()` to cleanup resources.
 
 ```python
 import asyncpg
-from google.cloud.alloydbconnector import AsyncConnector
+from google.cloud.alloydb.connector import AsyncConnector
 
 async def main():
     # initialize AsyncConnector object for connections to AlloyDB
@@ -367,7 +358,7 @@ import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from google.cloud.alloydbconnector import AsyncConnector
+from google.cloud.alloydb.connector import AsyncConnector
 
 async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
     # The AlloyDB Python Connector can be used along with SQLAlchemy using the
@@ -462,7 +453,7 @@ and `"PSC"`.
 Example:
 
 ```python
-from google.cloud.alloydbconnector import Connector
+from google.cloud.alloydb.connector import Connector
 
 import sqlalchemy
 
@@ -498,7 +489,7 @@ Python Connector:
 import logging
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s")
-logger = logging.getLogger(name="google.cloud.alloydbconnector")
+logger = logging.getLogger(name="google.cloud.alloydb.connector")
 logger.setLevel(logging.DEBUG)
 ```
 

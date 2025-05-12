@@ -63,10 +63,10 @@ pg8000 = ["pg8000>=1.31.1"]
 asyncpg = ["asyncpg>=0.30.0"]
 
 [tool.setuptools.dynamic]
-version = { attr = "google.cloud.alloydbconnector.version.__version__" }
+version = { attr = "google.cloud.alloydb.connector.version.__version__" }
 
 [tool.setuptools.package-data]
-"google.cloud.alloydbconnector" = ["py.typed"]
+"google.cloud.alloydb.connector" = ["py.typed"]
 
 [tool.setuptools.packages.find]
 # Only include packages under the 'google' namespace. Do not include tests,

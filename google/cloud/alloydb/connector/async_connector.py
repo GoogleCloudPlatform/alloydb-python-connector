@@ -23,16 +23,16 @@ import google.auth
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
 
-import google.cloud.alloydbconnector.asyncpg as asyncpg
-from google.cloud.alloydbconnector.client import AlloyDBClient
-from google.cloud.alloydbconnector.enums import IPTypes
-from google.cloud.alloydbconnector.enums import RefreshStrategy
-from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
-from google.cloud.alloydbconnector.instance import RefreshAheadCache
-from google.cloud.alloydbconnector.lazy import LazyRefreshCache
-from google.cloud.alloydbconnector.types import CacheTypes
-from google.cloud.alloydbconnector.utils import generate_keys
-from google.cloud.alloydbconnector.utils import strip_http_prefix
+import google.cloud.alloydb.connector.asyncpg as asyncpg
+from google.cloud.alloydb.connector.client import AlloyDBClient
+from google.cloud.alloydb.connector.enums import IPTypes
+from google.cloud.alloydb.connector.enums import RefreshStrategy
+from google.cloud.alloydb.connector.exceptions import ClosedConnectorError
+from google.cloud.alloydb.connector.instance import RefreshAheadCache
+from google.cloud.alloydb.connector.lazy import LazyRefreshCache
+from google.cloud.alloydb.connector.types import CacheTypes
+from google.cloud.alloydb.connector.utils import generate_keys
+from google.cloud.alloydb.connector.utils import strip_http_prefix
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials

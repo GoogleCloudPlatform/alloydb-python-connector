@@ -20,7 +20,7 @@ import json
 
 from cryptography.hazmat.primitives import serialization
 
-from google.cloud.alloydbconnector.connection_info import ConnectionInfo
+from google.cloud.alloydb.connector.connection_info import ConnectionInfo
 
 
 class StaticConnectionInfoCache:
