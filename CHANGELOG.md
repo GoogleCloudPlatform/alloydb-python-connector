@@ -14,13 +14,6 @@
 * support verify-full mode ([#446](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/446)) ([524c115](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/524c115dcf8abec47d12bd424df34741f1f60325))
 * throw exception when connecting to closed Connector ([#436](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/436)) ([1043a1f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1043a1f5a6cbd33b39ba6521ca695d6ab1c132c9))
 
-
-### Miscellaneous Chores
-
-* release 1.7.0 ([#433](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/433)) ([5e1fa00](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/5e1fa0020ecf8614ba1a57c19e23671b556080b8))
-* release 1.8.1 ([#438](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/438)) ([e4e356b](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e4e356b5ca37eb6a58b16aac8c34c4227a29b9b1))
-* release 1.9.0 ([#453](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/453)) ([944d478](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/944d478f1c70572948444b8565119f9bdeaa2108))
-
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
 
 
