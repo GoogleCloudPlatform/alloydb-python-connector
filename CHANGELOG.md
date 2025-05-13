@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.9.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.8.0...v1.9.0) (2025-05-13)
+
+
+### Features
+
+* create alias alloydbconnector package ([#451](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/451)) ([14509e8](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/14509e87300b87d57d376097130cd5ae2003d573))
+
+
+### Bug Fixes
+
+* Modify AlloyDBClient to use sync transport for sync connector ([#442](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/442)) ([984dd80](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/984dd800bbaa4c64c3c3e423c770cb623be4df0b))
+* support verify-full mode ([#446](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/446)) ([524c115](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/524c115dcf8abec47d12bd424df34741f1f60325))
+* throw exception when connecting to closed Connector ([#436](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/436)) ([1043a1f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/1043a1f5a6cbd33b39ba6521ca695d6ab1c132c9))
+
 ## [1.8.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.7.0...v1.8.0) (2025-04-16)
 
 
