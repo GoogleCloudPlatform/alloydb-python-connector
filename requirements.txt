@@ -3,4 +3,4 @@ aiohttp==3.11.18
 cryptography==44.0.3
 google-auth==2.40.1
 requests==2.32.3
-protobuf==6.30.2
+protobuf==6.31.0
