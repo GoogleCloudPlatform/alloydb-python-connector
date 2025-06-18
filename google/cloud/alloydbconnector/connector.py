@@ -27,6 +27,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from google.auth import default
 from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
+import google.cloud.alloydbconnector.asyncpg as asyncpg
 from google.auth.transport import requests
 
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
@@ -204,6 +205,7 @@ class Connector:
             logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
         connect_func = {
+            "asyncpg": asyncpg.connect,
             "pg8000": pg8000.connect,
         }
         # only accept supported database drivers
