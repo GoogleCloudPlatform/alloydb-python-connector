@@ -241,6 +241,8 @@ def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> 
     # check that connector thread is no longer running
     assert connector._thread.is_alive() is False
     # call connector.close a second time
+    assert connector._loop.is_running() is False
+    print("RISHABH DEBUG: before calling close() a second time")
     connector.close()
 
 

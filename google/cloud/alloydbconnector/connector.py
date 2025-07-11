@@ -384,13 +384,19 @@ class Connector:
             )
             # Will attempt to gracefully shut down tasks for 3s
             close_future.result(timeout=3)
+        else:
+            print("RISHABH DEBUG: loop is not running 1")
         # if background thread exists for Connector, clean it up
         if self._thread.is_alive():
             if self._loop.is_running():
                 # stop event loop running in background thread
                 self._loop.call_soon_threadsafe(self._loop.stop)
+            else:
+                print("RISHABH DEBUG: loop is not running 2")
             # wait for thread to finish closing (i.e. loop to stop)
             self._thread.join()
+        else:
+            print("RISHABH DEBUG: thread is not alive")
         self._closed = True
 
     async def close_async(self) -> None:
