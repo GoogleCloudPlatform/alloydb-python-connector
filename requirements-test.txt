@@ -6,8 +6,8 @@ pg8000==1.31.2
 # It is supported for macos-12 runner:
 # https://github.com/psycopg/psycopg2/issues/1737. But macos-12 runner is
 # deprecated: https://github.com/actions/runner-images/issues/10721. So we
-# install psycopg 2.9.9 on Python 3.9 for macos-latest runner.
-psycopg2-binary==2.9.9; python_version == "3.9" and sys_platform == "darwin" 
+# install psycopg <2.9.10 on Python 3.9 for macos-latest runner.
+psycopg2-binary<2.9.10; python_version == "3.9" and sys_platform == "darwin"
 psycopg2-binary==2.9.10; python_version != "3.9" or sys_platform != "darwin"
 
 pytest==8.4.1
