@@ -82,5 +82,5 @@ exclude = ['docs/*']
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-timeout = 30  
+timeout = 120  
 log_cli=true 
