@@ -28,5 +28,9 @@
       "matchLanguages": ["python"],
       "matchUpdateTypes": ["minor", "patch"],
     },
+    {
+      "matchPackageNames": ["psycopg2-binary"],
+      "allowedVersions": "!/2.9.10/"
+    },
   ],
 }
