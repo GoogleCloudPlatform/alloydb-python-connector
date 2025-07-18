@@ -39,7 +39,6 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     Test to check whether the __init__ method of Connector
     properly sets default attributes.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     connector = Connector(credentials)
     assert connector._quota_project is None
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
@@ -47,12 +46,10 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     assert connector._credentials == credentials
     assert connector._closed is False
     connector.close()
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
     """Test that Connector errors due to bad ip_type str."""
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     bad_ip_type = "BAD-IP-TYPE"
     with pytest.raises(ValueError) as exc_info:
         Connector(ip_type=bad_ip_type, credentials=credentials)
@@ -60,7 +57,6 @@ def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
     )
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 @pytest.mark.parametrize(
@@ -111,11 +107,9 @@ def test_Connector_init_ip_type(
     Test to check whether the __init__ method of Connector
     properly sets ip_type.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     connector = Connector(credentials=credentials, ip_type=ip_type)
     assert connector._ip_type == expected
     connector.close()
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_init_alloydb_api_endpoint_with_http_prefix(
@@ -125,13 +119,11 @@ def test_Connector_init_alloydb_api_endpoint_with_http_prefix(
     Test to check whether the __init__ method of Connector properly sets
     alloydb_api_endpoint when its URL has an 'http://' prefix.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     connector = Connector(
         alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
@@ -141,13 +133,11 @@ def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
     Test to check whether the __init__ method of Connector properly sets
     alloydb_api_endpoint when its URL has an 'https://' prefix.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     connector = Connector(
         alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_context_manager(credentials: FakeCredentials) -> None:
@@ -155,13 +145,11 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     Test to check whether the __init__ method of Connector
     properly sets defaults as context manager.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     with Connector(credentials) as connector:
         assert connector._quota_project is None
         assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
         assert connector._client is None
         assert connector._credentials == credentials
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_close(credentials: FakeCredentials) -> None:
@@ -169,7 +157,6 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     Test that Connector's close method stops event loop and
     background thread, and sets the connector as closed.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     with Connector(credentials) as connector:
         loop: asyncio.AbstractEventLoop = connector._loop
         thread: Thread = connector._thread
@@ -179,7 +166,6 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert loop.is_running() is False
     assert thread.is_alive() is False
     assert connector._closed is True
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 @pytest.mark.usefixtures("proxy_server")
@@ -187,7 +173,6 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
     """
     Test that connector.connect returns connection object.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     client = fake_client
     with Connector(credentials) as connector:
         connector._client = client
@@ -203,14 +188,12 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
             )
         # check connection is returned
         assert connection is True
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_connect_bad_ip_type(
     credentials: FakeCredentials, fake_client: FakeAlloyDBClient
 ) -> None:
     """Test that Connector.connect errors due to bad ip_type str."""
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     with Connector(credentials=credentials) as connector:
         connector._client = fake_client
         bad_ip_type = "BAD-IP-TYPE"
@@ -227,14 +210,12 @@ def test_connect_bad_ip_type(
             exc_info.value.args[0]
             == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
         )
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
     """
     Test that connector.connect errors with unsupported database driver.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     client = FakeAlloyDBClient()
     with Connector(credentials) as connector:
         connector._client = client
@@ -249,7 +230,6 @@ def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
             exc_info.value.args[0]
             == "Driver 'bad_driver' is not a supported database driver."
         )
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> None:
@@ -273,7 +253,6 @@ def test_Connector_remove_cached_bad_instance(
     the cache and ensure no background refresh happens (which would be
     wasted cycles).
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
     with Connector(credentials) as connector:
         # The timeout of AlloyDB API methods is set to 60s by default.
@@ -292,7 +271,6 @@ def test_Connector_remove_cached_bad_instance(
         with pytest.raises(RetryError):
             connector.connect(instance_uri, "pg8000")
         assert instance_uri not in connector._cache
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) -> None:
@@ -300,7 +278,6 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
     it should delete the instance from the cache and ensure no background refresh
     happens (which would be wasted cycles).
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance"
     # set instance to only have Public IP
     fake_client = FakeAlloyDBClient()
@@ -320,7 +297,6 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
             await connector.connect_async(instance_uri, "pg8000", ip_type="private")
         # check that cache has been removed from dict
         assert instance_uri not in connector._cache
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 @pytest.mark.usefixtures("proxy_server")
@@ -331,7 +307,6 @@ def test_Connector_static_connection_info(
     Test that Connector.__init__() can specify a static connection info to
     connect to an instance.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     static_info = write_static_info(fake_client.instance)
     with Connector(credentials=credentials, static_conn_info=static_info) as connector:
         connector._client = fake_client
@@ -347,14 +322,12 @@ def test_Connector_static_connection_info(
             )
         # check connection is returned
         assert connection is True
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
 
 
 def test_connect_when_closed(credentials: FakeCredentials) -> None:
     """
     Test that connector.connect errors when the connection is closed.
     """
-    print(f"RISHABH DEBUG: started test: {time.time()}")
     connector = Connector(credentials=credentials)
     connector.close()
     with pytest.raises(ClosedConnectorError) as exc_info:
@@ -363,4 +336,3 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
-    print(f"RISHABH DEBUG: completed test: {time.time()}")
