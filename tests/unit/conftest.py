@@ -75,7 +75,7 @@ async def start_proxy_server(instance: FakeInstance) -> None:
                 conn.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def proxy_server(fake_instance: FakeInstance) -> None:
     """Run local proxy server capable of performing metadata exchange"""
     thread = Thread(
