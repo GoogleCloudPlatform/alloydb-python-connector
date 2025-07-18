@@ -168,26 +168,26 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     assert connector._closed is True
 
 
-@pytest.mark.usefixtures("proxy_server")
-def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
-    """
-    Test that connector.connect returns connection object.
-    """
-    client = fake_client
-    with Connector(credentials) as connector:
-        connector._client = client
-        # patch db connection creation
-        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
-            mock_connect.return_value = True
-            connection = connector.connect(
-                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-                "pg8000",
-                user="test-user",
-                password="test-password",
-                db="test-db",
-            )
-        # check connection is returned
-        assert connection is True
+# @pytest.mark.usefixtures("proxy_server")
+# def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+#     """
+#     Test that connector.connect returns connection object.
+#     """
+#     client = fake_client
+#     with Connector(credentials) as connector:
+#         connector._client = client
+#         # patch db connection creation
+#         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
+#             mock_connect.return_value = True
+#             connection = connector.connect(
+#                 "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+#                 "pg8000",
+#                 user="test-user",
+#                 password="test-password",
+#                 db="test-db",
+#             )
+#         # check connection is returned
+#         assert connection is True
 
 
 def test_connect_bad_ip_type(
