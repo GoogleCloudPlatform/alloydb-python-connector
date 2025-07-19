@@ -140,6 +140,7 @@ def default(session, path):
         "--include=*/google/cloud/alloydbconnector/*.py",
         "-m",
         "pytest",
+        "-s",
         "-v",
         path,
         *session.posargs,
