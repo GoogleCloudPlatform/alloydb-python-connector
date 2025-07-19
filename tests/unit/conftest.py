@@ -62,13 +62,13 @@ async def start_proxy_server(instance: FakeInstance) -> None:
                 tmpdir, server, [server, root], instance.server_key
             )
             context.load_cert_chain(cert_chain_filename, key_filename)
-        # bind socket to AlloyDB proxy server port on localhost
-        sock.bind((ip_address, port))
 
         with context.wrap_socket(sock, server_side=True) as ssock:
+            # bind socket to AlloyDB proxy server port on localhost
+            ssock.bind((ip_address, port))
+            # listen for incoming connections
+            ssock.listen(5)
             while True:
-                # listen for incoming connections
-                ssock.listen(5)
                 conn, _ = ssock.accept()
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
