@@ -16,6 +16,7 @@ import asyncio
 import socket
 import ssl
 from threading import Thread
+from typing import Generator
 
 from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
@@ -25,8 +26,6 @@ from mocks import metadata_exchange
 import pytest
 
 from google.cloud.alloydbconnector.utils import _write_to_file
-
-DELAY = 1.0
 
 
 @pytest.fixture
@@ -68,15 +67,14 @@ async def start_proxy_server(instance: FakeInstance) -> None:
         sock.listen(5)
 
         with context.wrap_socket(sock, server_side=True) as ssock:
-            while True:
-                conn, _ = ssock.accept()
-                metadata_exchange(conn)
-                conn.sendall(instance.name.encode("utf-8"))
-                conn.close()
+            conn, _ = ssock.accept()
+            metadata_exchange(conn)
+            conn.sendall(instance.name.encode("utf-8"))
+            conn.close()
 
 
 @pytest.fixture
-def proxy_server(fake_instance: FakeInstance) -> None:
+def proxy_server(fake_instance: FakeInstance) -> Generator:
     """Run local proxy server capable of performing metadata exchange"""
     thread = Thread(
         target=asyncio.run,
@@ -88,4 +86,5 @@ def proxy_server(fake_instance: FakeInstance) -> None:
         daemon=True,
     )
     thread.start()
-    thread.join(DELAY)  # add a delay to allow the proxy server to start
+    yield thread
+    thread.join()
