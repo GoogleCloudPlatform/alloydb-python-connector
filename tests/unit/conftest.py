@@ -69,11 +69,13 @@ async def start_proxy_server(instance: FakeInstance) -> None:
         with context.wrap_socket(sock, server_side=True) as ssock:
             while True:
                 # listen for incoming connections
+                print(f"RISHABH DEBUG: listening for connection")
                 ssock.listen(5)
                 conn, _ = ssock.accept()
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
                 conn.close()
+                print(f"RISHABH DEBUG: finished processing a connection")
 
 
 @pytest.fixture(scope="session")
