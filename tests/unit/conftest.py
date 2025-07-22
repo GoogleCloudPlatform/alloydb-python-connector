@@ -71,7 +71,9 @@ async def start_proxy_server(instance: FakeInstance) -> None:
                 # listen for incoming connections
                 print(f"RISHABH DEBUG: listening for connection")
                 ssock.listen(5)
+                print(f"RISHABH DEBUG: accepting a connection")
                 conn, _ = ssock.accept()
+                print(f"RISHABH DEBUG: doing metadata exchange")
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
                 conn.close()
