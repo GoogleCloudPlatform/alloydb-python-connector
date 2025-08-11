@@ -37,6 +37,7 @@ from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
 import google.cloud.alloydbconnector.pg8000 as pg8000
+from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
 from google.cloud.alloydbconnector.types import CacheTypes
 from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.utils import strip_http_prefix
@@ -188,6 +189,8 @@ class Connector:
         # use existing connection info if possible
         if instance_uri in self._cache:
             cache = self._cache[instance_uri]
+        elif self._static_conn_info:
+            cache = StaticConnectionInfoCache(instance_uri, self._static_conn_info)
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(

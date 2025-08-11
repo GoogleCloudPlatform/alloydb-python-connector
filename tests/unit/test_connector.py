@@ -321,6 +321,8 @@ def test_Connector_static_connection_info(
             )
         # check connection is returned
         assert connection is True
+        # check that cache is not set
+        assert fake_client.instance.uri() not in connector._cache
 
 
 def test_connect_when_closed(credentials: FakeCredentials) -> None:
