@@ -16,7 +16,6 @@ import asyncio
 from datetime import datetime
 from datetime import timedelta
 
-import aiohttp
 from mocks import FakeAlloyDBClient
 import pytest
 
@@ -71,18 +70,18 @@ async def test_RefreshAheadCache_init() -> None:
     can tell if the instance URI that's passed in is formatted correctly.
     """
     keys = asyncio.create_task(generate_keys())
-    async with aiohttp.ClientSession() as client:
-        cache = RefreshAheadCache(
-            "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
-            client,
-            keys,
-        )
-        assert (
-            cache._project == "test-project"
-            and cache._region == "test-region"
-            and cache._cluster == "test-cluster"
-            and cache._name == "test-instance"
-        )
+    client = FakeAlloyDBClient()
+    cache = RefreshAheadCache(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+    )
+    assert (
+        cache._project == "test-project"
+        and cache._region == "test-region"
+        and cache._cluster == "test-cluster"
+        and cache._name == "test-instance"
+    )
 
 
 @pytest.mark.asyncio
@@ -92,9 +91,9 @@ async def test_RefreshAheadCache_init_invalid_instant_uri() -> None:
     will throw error for invalid instance URI.
     """
     keys = asyncio.create_task(generate_keys())
-    async with aiohttp.ClientSession() as client:
-        with pytest.raises(ValueError):
-            RefreshAheadCache("invalid/instance/uri/", client, keys)
+    client = FakeAlloyDBClient()
+    with pytest.raises(ValueError):
+        RefreshAheadCache("invalid/instance/uri/", client, keys)
 
 
 @pytest.mark.asyncio
