@@ -79,7 +79,7 @@ class ConnectionInfo:
         supplied by ip_type. If no IP addressess with the given preference are found,
         an error is raised."""
         ip_address = self.ip_addrs.get(ip_type.value)
-        if ip_address is None:
+        if not ip_address:
             raise IPTypeNotFoundError(
                 "AlloyDB instance does not have an IP addresses matching "
                 f"type: '{ip_type.value}'"
