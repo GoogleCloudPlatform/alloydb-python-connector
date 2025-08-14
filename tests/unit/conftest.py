@@ -16,6 +16,7 @@ import asyncio
 import socket
 import ssl
 from threading import Thread
+from typing import Generator
 
 from aiofiles.tempfile import TemporaryDirectory
 from mocks import FakeAlloyDBClient
@@ -64,19 +65,23 @@ async def start_proxy_server(instance: FakeInstance) -> None:
             context.load_cert_chain(cert_chain_filename, key_filename)
         # bind socket to AlloyDB proxy server port on localhost
         sock.bind((ip_address, port))
-        # listen for incoming connections
-        sock.listen(5)
 
         with context.wrap_socket(sock, server_side=True) as ssock:
             while True:
+                # listen for incoming connections
+                print(f"RISHABH DEBUG: listening for connection")
+                ssock.listen(5)
+                print(f"RISHABH DEBUG: accepting a connection")
                 conn, _ = ssock.accept()
+                print(f"RISHABH DEBUG: doing metadata exchange")
                 metadata_exchange(conn)
                 conn.sendall(instance.name.encode("utf-8"))
                 conn.close()
+                print(f"RISHABH DEBUG: finished processing a connection")
 
 
 @pytest.fixture(scope="session")
-def proxy_server(fake_instance: FakeInstance) -> None:
+def proxy_server(fake_instance: FakeInstance) -> Generator:
     """Run local proxy server capable of performing metadata exchange"""
     thread = Thread(
         target=asyncio.run,
@@ -88,4 +93,4 @@ def proxy_server(fake_instance: FakeInstance) -> None:
         daemon=True,
     )
     thread.start()
-    thread.join(DELAY)  # add a delay to allow the proxy server to start
+    yield thread
