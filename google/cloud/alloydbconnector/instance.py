@@ -208,7 +208,7 @@ class RefreshAheadCache:
 
         return refresh_result
 
-    async def force_refresh(self) -> None:
+    async def force_refresh(self, block: bool = False) -> None:
         """
         Schedules a new refresh operation immediately to be used
         for future connection attempts.
@@ -218,7 +218,7 @@ class RefreshAheadCache:
             self._next.cancel()
             self._next = self._schedule_refresh(0)
         # block all sequential connection attempts on the next refresh result if current is invalid
-        if not await _is_valid(self._current):
+        if block or not await _is_valid(self._current):
             self._current = self._next
 
     async def connect_info(self) -> ConnectionInfo:
