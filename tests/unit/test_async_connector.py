@@ -398,7 +398,10 @@ async def test_connect_when_closed(credentials: FakeCredentials) -> None:
         == "Connection attempt failed because the connector has already been closed."
     )
 
-async def test_connect_after_force_refresh(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+
+async def test_connect_after_force_refresh(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
     """
     Test that connector.connect can succeed after force refreshing its cache.
     """

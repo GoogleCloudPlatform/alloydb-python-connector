@@ -20,7 +20,6 @@ from google.api_core.exceptions import RetryError
 from google.api_core.retry.retry_unary import Retry
 from mock import patch
 from mocks import FakeAlloyDBClient
-from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 from mocks import write_static_info
 import pytest
@@ -341,7 +340,9 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
 
 
 @pytest.mark.usefixtures("proxy_server")
-def test_connect_after_force_refresh(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+def test_connect_after_force_refresh(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
     """
     Test that connector.connect can succeed after force refreshing its cache.
     """
