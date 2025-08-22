@@ -226,31 +226,34 @@ class Connector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
-        try:
-            conn_info = await cache.connect_info()
-            ip_address = conn_info.get_preferred_ip(ip_type)
-        except Exception:
-            # with an error from AlloyDB API call or IP type, invalidate the
-            # cache and re-raise the error
-            await self._remove_cached(instance_uri)
-            raise
-        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
+        for i in range(2):
+            try:
+                conn_info = await cache.connect_info()
+                ip_address = conn_info.get_preferred_ip(ip_type)
+            except Exception:
+                # with an error from AlloyDB API call or IP type, invalidate the
+                # cache and re-raise the error
+                await self._remove_cached(instance_uri)
+                raise
+            logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
-        # synchronous drivers are blocking and run using executor
-        try:
-            metadata_partial = partial(
-                self.metadata_exchange,
-                ip_address,
-                await conn_info.create_ssl_context(),
-                enable_iam_auth,
-            )
-            sock = await self._loop.run_in_executor(None, metadata_partial)
-            connect_partial = partial(connector, sock, **kwargs)
-            return await self._loop.run_in_executor(None, connect_partial)
-        except Exception:
-            # we attempt a force refresh, then throw the error
-            await cache.force_refresh()
-            raise
+            # synchronous drivers are blocking and run using executor
+            try:
+                metadata_partial = partial(
+                    self.metadata_exchange,
+                    ip_address,
+                    await conn_info.create_ssl_context(),
+                    enable_iam_auth,
+                )
+                sock = await self._loop.run_in_executor(None, metadata_partial)
+                connect_partial = partial(connector, sock, **kwargs)
+                return await self._loop.run_in_executor(None, connect_partial)
+            except Exception:
+                # we attempt a force refresh and retry the connection before
+                # throwing an error
+                if i == 1:
+                    raise
+                await cache.force_refresh(True)
 
     def metadata_exchange(
         self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool

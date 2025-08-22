@@ -81,7 +81,7 @@ class StaticConnectionInfoCache:
             cert_chain, ca_cert, priv_key_bytes, ip_addrs, expiration
         )
 
-    async def force_refresh(self) -> None:
+    async def force_refresh(self, block: bool = False) -> None:
         """
         This is a no-op as the cache holds only static connection information
         and does no refresh.

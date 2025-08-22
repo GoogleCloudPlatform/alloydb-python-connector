@@ -397,3 +397,27 @@ async def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
+
+async def test_connect_after_force_refresh(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
+    """
+    Test that connector.connect can succeed after force refreshing its cache.
+    """
+    async with AsyncConnector(credentials) as connector:
+        fake = FakeConnectionInfo()
+        connector._cache[TEST_INSTANCE_NAME] = fake
+
+        connector._client = fake_client
+        # patch db connection creation
+        with patch("google.cloud.alloydbconnector.asyncpg.connect") as mock_connect:
+            mock_connect.side_effect = [Exception(), True]
+            connection = await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check connection after force refreshing cache
+        assert connection is True
+        assert fake._force_refresh_called is True
+        assert fake._force_refresh_blocking is True
