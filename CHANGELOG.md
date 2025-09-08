@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.9.0...v1.9.1) (2025-09-08)
+
+
+### Bug Fixes
+
+* modify get_preferred_ip to check for empty values ([#479](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/479)) ([2612eb8](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2612eb8bdc0127d01463cbb06d9443520d55e1fb))
+
 ## [1.9.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.8.0...v1.9.0) (2025-05-13)
 
 
