@@ -386,6 +386,7 @@ class FakeConnectionInfo:
     def __init__(self) -> None:
         self._close_called = False
         self._force_refresh_called = False
+        self._force_refresh_blocking = False
 
     def connect_info(self) -> Any:
         f = asyncio.Future()
@@ -400,8 +401,9 @@ class FakeConnectionInfo:
     async def create_ssl_context(self) -> None:
         return None
 
-    async def force_refresh(self) -> None:
+    async def force_refresh(self, block: bool) -> None:
         self._force_refresh_called = True
+        self._force_refresh_blocking = block
 
     async def close(self) -> None:
         self._close_called = True
