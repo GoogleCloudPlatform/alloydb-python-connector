@@ -11,7 +11,7 @@ psycopg2-binary==2.9.9; python_version == "3.9" and sys_platform == "darwin"
 psycopg2-binary==2.9.10; python_version != "3.9" or sys_platform != "darwin"
 
 pytest==8.4.2
-pytest-asyncio==1.1.0
+pytest-asyncio==1.2.0
 pytest-cov==6.3.0
 SQLAlchemy[asyncio]==2.0.43
 aioresponses==0.7.8
