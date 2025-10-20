@@ -1,17 +1,17 @@
 asyncpg==0.30.0
 mock==5.2.0
-pg8000==1.31.4
+pg8000==1.31.5
 
 # psycopg 2.9.10 isn't supported on Python 3.9 for macos-latest GitHub runner.
 # It is supported for macos-12 runner:
 # https://github.com/psycopg/psycopg2/issues/1737. But macos-12 runner is
 # deprecated: https://github.com/actions/runner-images/issues/10721. So we
 # install psycopg 2.9.9 on Python 3.9 for macos-latest runner.
-psycopg2-binary==2.9.9; python_version == "3.9" and sys_platform == "darwin"
-psycopg2-binary==2.9.10; python_version != "3.9" or sys_platform != "darwin"
+psycopg2-binary==2.9.11; python_version == "3.9" and sys_platform == "darwin"
+psycopg2-binary==2.9.11; python_version != "3.9" or sys_platform != "darwin"
 
 pytest==8.4.2
-pytest-asyncio==1.1.0
+pytest-asyncio==1.2.0
 pytest-cov==7.0.0
-SQLAlchemy[asyncio]==2.0.43
+SQLAlchemy[asyncio]==2.0.44
 aioresponses==0.7.8
