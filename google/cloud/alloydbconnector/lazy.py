@@ -63,7 +63,7 @@ class LazyRefreshCache:
         self._cached: Optional[ConnectionInfo] = None
         self._needs_refresh = False
 
-    async def force_refresh(self) -> None:
+    async def force_refresh(self, block: bool = False) -> None:
         """
         Invalidates the cache and configures the next call to
         connect_info() to retrieve a fresh ConnectionInfo instance.

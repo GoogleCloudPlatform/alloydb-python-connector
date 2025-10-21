@@ -337,3 +337,26 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_after_force_refresh(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """
+    Test that connector.connect can succeed after force refreshing its cache.
+    """
+    with Connector(credentials) as connector:
+        connector._client = fake_client
+        # patch db connection creation
+        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
+            mock_connect.side_effect = [Exception(), True]
+            connection = connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check connection is returned after force refreshing cache
+        assert connection is True
