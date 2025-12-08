@@ -22,7 +22,7 @@ name = "google-cloud-alloydb-connector"
 authors = [{ name = "Google LLC", email = "googleapis-packages@google.com" }]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.md"
 classifiers = [
     # Should be one of:
@@ -33,7 +33,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -74,7 +73,7 @@ version = { attr = "google.cloud.alloydbconnector.version.__version__" }
 include = ["google*"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 namespace_packages = true
 ignore_missing_imports = true
 warn_unused_configs = true

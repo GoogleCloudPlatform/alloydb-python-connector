@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.9.1...v1.10.0) (2025-11-11)
+
+
+### Features
+
+* drop support for Python 3.9 ([#499](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/499)) ([25c3d6d](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/25c3d6d7860c461e0edfb297cb1c7b27e22047d3))
+
 ## [1.9.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.9.0...v1.9.1) (2025-09-08)
 
 
