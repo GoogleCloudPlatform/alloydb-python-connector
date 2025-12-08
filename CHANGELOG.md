@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.10.0...v1.11.0) (2025-12-08)
+
+
+### Features
+
+* add support for Python 3.14 ([#493](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/493)) ([12867cc](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/12867cc3b7e75636e2af3dc433920dc6e9aed089))
+
 ## [1.10.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.9.1...v1.10.0) (2025-11-11)
 
 
