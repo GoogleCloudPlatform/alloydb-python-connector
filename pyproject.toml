@@ -59,7 +59,7 @@ Changelog = "https://github.com/GoogleCloudPlatform/alloydb-python-connector/blo
 
 [project.optional-dependencies]
 pg8000 = ["pg8000>=1.31.1"]
-asyncpg = ["asyncpg>=0.30.0"]
+asyncpg = ["asyncpg>=0.31.0"]
 
 [tool.setuptools.dynamic]
 version = { attr = "google.cloud.alloydbconnector.version.__version__" }
