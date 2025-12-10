@@ -246,3 +246,25 @@ async def test_force_refresh_cancels_pending_refresh() -> None:
     assert isinstance(await cache._current, ConnectionInfo)
     # close instance
     await cache.close()
+
+
+@pytest.mark.asyncio
+async def test_force_refresh_after_blocking_sets_current_to_next() -> None:
+    """
+    Test that force_refresh sets the current task to the next task.
+    """
+    keys = asyncio.create_task(generate_keys())
+    client = FakeAlloyDBClient()
+    cache = RefreshAheadCache(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+    )
+    # make sure initial refresh is finished
+    await cache._current
+
+    assert cache._current != cache._next
+    await cache.force_refresh(True)
+    assert cache._current == cache._next
+    # close instance
+    await cache.close()
