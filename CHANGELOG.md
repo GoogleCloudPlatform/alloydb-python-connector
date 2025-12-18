@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.11.0...v1.11.1) (2025-12-18)
+
+
+### Bug Fixes
+
+* run credential refresh in thread ([#508](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/508)) ([8f7bae7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8f7bae74f936061b8330d19e2fdf8dfc31da8146)), closes [#245](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/245)
+
 ## [1.11.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.10.0...v1.11.0) (2025-12-08)
 
 
