@@ -239,9 +239,10 @@ class AlloyDBClient:
         """
         priv_key, pub_key = await keys
 
-        # before making AlloyDB API calls, refresh creds if required
+        # Before making AlloyDB API calls, refresh creds if required
+        # Run refresh in a separate thread to avoid blocking the main thread.
         if not self._credentials.token_state == TokenState.FRESH:
-            self._credentials.refresh(requests.Request())
+            await asyncio.to_thread(self._credentials.refresh, requests.Request())
 
         # fetch metadata
         metadata_task = asyncio.create_task(
