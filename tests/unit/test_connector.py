@@ -21,6 +21,7 @@ from google.api_core.retry.retry_unary import Retry
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
+from mocks import FakeCredentialsRequiresScopes
 from mocks import write_static_info
 import pytest
 
@@ -136,6 +137,34 @@ def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
         alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    connector.close()
+
+
+def test_Connector_init_scopes() -> None:
+    """
+    Test to check whether the __init__ method of Connector
+    properly sets the credential's scopes.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = Connector(credentials)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    connector.close()
+
+
+def test_Connector_init_scopes_with_iam_auth() -> None:
+    """
+    Test to check whether the __init__ method of Connector
+    properly sets the credential's scopes when using IAM auth.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = Connector(credentials, enable_iam_auth=True)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/alloydb.login"
+    ]
     connector.close()
 
 

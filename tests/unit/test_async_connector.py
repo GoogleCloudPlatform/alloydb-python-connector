@@ -21,6 +21,7 @@ from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
+from mocks import FakeCredentialsRequiresScopes
 import pytest
 
 from google.cloud.alloydbconnector import AsyncConnector
@@ -138,6 +139,34 @@ async def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
         alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+    await connector.close()
+
+
+async def test_AsyncConnector_init_scopes() -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector
+    properly sets the credential's scopes.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = AsyncConnector(credentials)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    await connector.close()
+
+
+async def test_AsyncConnector_init_scopes_with_iam_auth() -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector
+    properly sets the credential's scopes when using IAM auth.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = AsyncConnector(credentials, enable_iam_auth=True)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/alloydb.login"
+    ]
     await connector.close()
 
 

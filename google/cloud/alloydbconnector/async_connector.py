@@ -90,6 +90,8 @@ class AsyncConnector:
         self._user_agent = user_agent
         # initialize credentials
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+        if enable_iam_auth:
+            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
         if credentials:
             self._credentials = with_scopes_if_required(credentials, scopes=scopes)
         # otherwise use application default credentials
