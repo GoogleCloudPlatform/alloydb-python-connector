@@ -21,7 +21,7 @@ import ipaddress
 import json
 import ssl
 import struct
-from typing import Any, Callable, Literal, Optional, Self, Sequence
+from typing import Any, Callable, Literal, Optional, Sequence
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -98,7 +98,7 @@ class FakeCredentialsRequiresScopes(Scoped):
 
     def with_scopes(
         self, scopes: Sequence[str], default_scopes: Optional[Sequence[str]] = None
-    ) -> Self:
+    ) -> "FakeCredentialsRequiresScopes":
         """
         Overrides the with_scopes() method of the Scoped class to create a
         copy of these credentials with the specified scopes.
