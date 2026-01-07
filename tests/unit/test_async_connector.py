@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import asyncio
-from typing import Union
+from typing import Any, Union
 
 from google.api_core.exceptions import RetryError
 from google.api_core.retry.retry_unary_async import AsyncRetry
@@ -100,7 +100,9 @@ async def test_AsyncConnector_init_ip_type(
     Test to check whether the __init__ method of AsyncConnector
     properly sets ip_type.
     """
-    connector = AsyncConnector(credentials=credentials, db_credentials=credentials, ip_type=ip_type)
+    connector = AsyncConnector(
+        credentials=credentials, db_credentials=credentials, ip_type=ip_type
+    )
     assert connector._ip_type == expected
     await connector.close()
 
@@ -109,7 +111,9 @@ async def test_AsyncConnector_init_bad_ip_type(credentials: FakeCredentials) -> 
     """Test that AsyncConnector errors due to bad ip_type str."""
     bad_ip_type = "BAD-IP-TYPE"
     with pytest.raises(ValueError) as exc_info:
-        AsyncConnector(ip_type=bad_ip_type, credentials=credentials, db_credentials=credentials)
+        AsyncConnector(
+            ip_type=bad_ip_type, credentials=credentials, db_credentials=credentials
+        )
     assert (
         exc_info.value.args[0]
         == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
@@ -124,7 +128,9 @@ async def test_AsyncConnector_init_alloydb_api_endpoint_with_http_prefix(
     alloydb_api_endpoint when its URL has an 'http://' prefix.
     """
     connector = AsyncConnector(
-        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials
+        alloydb_api_endpoint="http://alloydb.googleapis.com",
+        credentials=credentials,
+        db_credentials=credentials,
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     await connector.close()
@@ -138,7 +144,9 @@ async def test_AsyncConnector_init_alloydb_api_endpoint_with_https_prefix(
     alloydb_api_endpoint when its URL has an 'https://' prefix.
     """
     connector = AsyncConnector(
-        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        credentials=credentials,
+        db_credentials=credentials,
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     await connector.close()
@@ -216,6 +224,41 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
 
         # check connection is returned
         assert connection.result() is True
+
+
+@pytest.mark.asyncio
+async def test_connect_iam_authn(credentials: FakeCredentials) -> None:
+    """
+    Test that connector.connect, with IAM authentication, uses DB credentials
+    when calling asyncpg.connect.
+    """
+    db_credentials = FakeCredentials()
+    async with AsyncConnector(
+        credentials, db_credentials, enable_iam_auth=True
+    ) as connector:
+        connector._client = FakeAlloyDBClient()
+
+        async def custom_connect(*_: Any, **kwargs: Any) -> bool:
+            passwd = kwargs.pop("password")
+            passwd()
+            return True
+
+        # patch db connection creation
+        with patch(
+            "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+        ):
+            connection = await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check connection is returned
+        assert connection is True
+        # check DB authentication refreshed the DB credential's token
+        assert not connector._credentials.token
+        assert connector._db_credentials.token
 
 
 @pytest.mark.asyncio
@@ -330,7 +373,9 @@ async def test_async_connect_bad_ip_type(
     credentials: FakeCredentials, fake_client: FakeAlloyDBClient
 ) -> None:
     """Test that AyncConnector.connect errors due to bad ip_type str."""
-    async with AsyncConnector(credentials=credentials, db_credentials=credentials) as connector:
+    async with AsyncConnector(
+        credentials=credentials, db_credentials=credentials
+    ) as connector:
         connector._client = fake_client
         bad_ip_type = "BAD-IP-TYPE"
         with pytest.raises(ValueError) as exc_info:
@@ -357,7 +402,9 @@ async def test_Connector_remove_cached_bad_instance(
     wasted cycles).
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
-    async with AsyncConnector(credentials=credentials, db_credentials=credentials) as connector:
+    async with AsyncConnector(
+        credentials=credentials, db_credentials=credentials
+    ) as connector:
         # The timeout of AlloyDB API methods is set to 60s by default.
         # We override it to 1s to shorten the duration of the test.
         connector._client = AlloyDBClient(
@@ -385,7 +432,9 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
     # set instance to only have Public IP
     fake_client = FakeAlloyDBClient()
     fake_client.instance.ip_addrs = {"PUBLIC": "127.0.0.1"}
-    async with AsyncConnector(credentials=credentials, db_credentials=credentials) as connector:
+    async with AsyncConnector(
+        credentials=credentials, db_credentials=credentials
+    ) as connector:
         connector._client = fake_client
         # populate cache
         cache = RefreshAheadCache(instance_uri, fake_client, connector._keys)
@@ -401,7 +450,9 @@ async def test_close_sets_connector_as_closed(credentials: FakeCredentials) -> N
     """
     Test that when connector is closed, it marked as closed.
     """
-    async with AsyncConnector(credentials=credentials, db_credentials=credentials) as connector:
+    async with AsyncConnector(
+        credentials=credentials, db_credentials=credentials
+    ) as connector:
         assert connector._closed is False
     assert connector._closed is True
 

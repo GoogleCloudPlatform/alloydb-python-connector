@@ -59,6 +59,11 @@ class FakeCredentials:
         return False if not self.expiry else True
 
     @property
+    def valid(self) -> bool:
+        """Checks if the credentials are valid."""
+        return self.token is not None and not self.expired
+
+    @property
     def token_state(
         self,
     ) -> Literal[TokenState.FRESH, TokenState.STALE, TokenState.INVALID]:

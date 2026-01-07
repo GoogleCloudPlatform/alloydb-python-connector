@@ -105,7 +105,9 @@ class AsyncConnector:
         # initialize credentials for authenticating with the DB
         scopes = ["https://www.googleapis.com/auth/alloydb.login"]
         if db_credentials:
-            self._db_credentials = with_scopes_if_required(db_credentials, scopes=scopes)
+            self._db_credentials = with_scopes_if_required(
+                db_credentials, scopes=scopes
+            )
         # otherwise use application default credentials
         else:
             self._db_credentials, _ = google.auth.default(scopes=scopes)

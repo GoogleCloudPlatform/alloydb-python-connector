@@ -54,7 +54,9 @@ def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
     """Test that Connector errors due to bad ip_type str."""
     bad_ip_type = "BAD-IP-TYPE"
     with pytest.raises(ValueError) as exc_info:
-        Connector(ip_type=bad_ip_type, credentials=credentials, db_credentials=credentials)
+        Connector(
+            ip_type=bad_ip_type, credentials=credentials, db_credentials=credentials
+        )
     assert (
         exc_info.value.args[0]
         == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
@@ -109,7 +111,9 @@ def test_Connector_init_ip_type(
     Test to check whether the __init__ method of Connector
     properly sets ip_type.
     """
-    connector = Connector(credentials=credentials, db_credentials=credentials, ip_type=ip_type)
+    connector = Connector(
+        credentials=credentials, db_credentials=credentials, ip_type=ip_type
+    )
     assert connector._ip_type == expected
     connector.close()
 
@@ -122,7 +126,9 @@ def test_Connector_init_alloydb_api_endpoint_with_http_prefix(
     alloydb_api_endpoint when its URL has an 'http://' prefix.
     """
     connector = Connector(
-        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials,
+        alloydb_api_endpoint="http://alloydb.googleapis.com",
+        credentials=credentials,
+        db_credentials=credentials,
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
@@ -136,7 +142,9 @@ def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
     alloydb_api_endpoint when its URL has an 'https://' prefix.
     """
     connector = Connector(
-        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials
+        alloydb_api_endpoint="https://alloydb.googleapis.com",
+        credentials=credentials,
+        db_credentials=credentials,
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
@@ -194,7 +202,8 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
     Test that connector.connect returns connection object.
     """
     client = fake_client
-    with Connector(credentials, credentials) as connector:
+    db_credentials = FakeCredentials()
+    with Connector(credentials, db_credentials) as connector:
         connector._client = client
         # patch db connection creation
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
@@ -208,6 +217,9 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
             )
         # check connection is returned
         assert connection is True
+        # check DB authentication refreshed the DB credential's token
+        assert not connector._credentials.token
+        assert connector._db_credentials.token
 
 
 def test_connect_bad_ip_type(
@@ -328,7 +340,11 @@ def test_Connector_static_connection_info(
     connect to an instance.
     """
     static_info = write_static_info(fake_client.instance)
-    with Connector(credentials=credentials, db_credentials=credentials, static_conn_info=static_info) as connector:
+    with Connector(
+        credentials=credentials,
+        db_credentials=credentials,
+        static_conn_info=static_info,
+    ) as connector:
         connector._client = fake_client
         # patch db connection creation
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
