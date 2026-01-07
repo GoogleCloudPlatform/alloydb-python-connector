@@ -257,11 +257,13 @@ class Connector:
 
         # synchronous drivers are blocking and run using executor
         try:
-            sock = await self.metadata_exchange(
+            metadata_partial = partial(
+                self.metadata_exchange,
                 ip_address,
                 await conn_info.create_ssl_context(),
                 enable_iam_auth,
             )
+            sock = await self._loop.run_in_executor(None, metadata_partial)
             connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:
@@ -269,7 +271,7 @@ class Connector:
             await cache.force_refresh()
             raise
 
-    async def metadata_exchange(
+    def metadata_exchange(
         self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool
     ) -> ssl.SSLSocket:
         """
@@ -314,7 +316,7 @@ class Connector:
 
         # Ensure the credentials are in fact valid before proceeding.
         if not self._db_credentials.token_state == TokenState.FRESH:
-            await asyncio.to_thread(self._db_credentials.refresh, requests.Request())
+            self._db_credentials.refresh(requests.Request())
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
