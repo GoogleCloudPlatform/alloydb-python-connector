@@ -39,11 +39,13 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     Test to check whether the __init__ method of Connector
     properly sets default attributes.
     """
-    connector = Connector(credentials)
+    db_credentials = FakeCredentials()
+    connector = Connector(credentials, db_credentials)
     assert connector._quota_project is None
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     assert connector._client is None
     assert connector._credentials == credentials
+    assert connector._db_credentials == db_credentials
     assert connector._closed is False
     connector.close()
 
@@ -52,7 +54,7 @@ def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
     """Test that Connector errors due to bad ip_type str."""
     bad_ip_type = "BAD-IP-TYPE"
     with pytest.raises(ValueError) as exc_info:
-        Connector(ip_type=bad_ip_type, credentials=credentials)
+        Connector(ip_type=bad_ip_type, credentials=credentials, db_credentials=credentials)
     assert (
         exc_info.value.args[0]
         == f"Incorrect value for ip_type, got '{bad_ip_type}'. Want one of: 'PUBLIC', 'PRIVATE', 'PSC'."
@@ -107,7 +109,7 @@ def test_Connector_init_ip_type(
     Test to check whether the __init__ method of Connector
     properly sets ip_type.
     """
-    connector = Connector(credentials=credentials, ip_type=ip_type)
+    connector = Connector(credentials=credentials, db_credentials=credentials, ip_type=ip_type)
     assert connector._ip_type == expected
     connector.close()
 
@@ -120,7 +122,7 @@ def test_Connector_init_alloydb_api_endpoint_with_http_prefix(
     alloydb_api_endpoint when its URL has an 'http://' prefix.
     """
     connector = Connector(
-        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials
+        alloydb_api_endpoint="http://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials,
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
@@ -134,7 +136,7 @@ def test_Connector_init_alloydb_api_endpoint_with_https_prefix(
     alloydb_api_endpoint when its URL has an 'https://' prefix.
     """
     connector = Connector(
-        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials
+        alloydb_api_endpoint="https://alloydb.googleapis.com", credentials=credentials, db_credentials=credentials
     )
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     connector.close()
@@ -146,23 +148,13 @@ def test_Connector_init_scopes() -> None:
     properly sets the credential's scopes.
     """
     credentials = FakeCredentialsRequiresScopes()
-    connector = Connector(credentials)
+    connector = Connector(credentials, credentials)
     assert connector._credentials != credentials
     assert connector._credentials._scopes == [
         "https://www.googleapis.com/auth/cloud-platform"
     ]
-    connector.close()
-
-
-def test_Connector_init_scopes_with_iam_auth() -> None:
-    """
-    Test to check whether the __init__ method of Connector
-    properly sets the credential's scopes when using IAM auth.
-    """
-    credentials = FakeCredentialsRequiresScopes()
-    connector = Connector(credentials, enable_iam_auth=True)
-    assert connector._credentials != credentials
-    assert connector._credentials._scopes == [
+    assert connector._db_credentials != credentials
+    assert connector._db_credentials._scopes == [
         "https://www.googleapis.com/auth/alloydb.login"
     ]
     connector.close()
@@ -173,7 +165,7 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
     Test to check whether the __init__ method of Connector
     properly sets defaults as context manager.
     """
-    with Connector(credentials) as connector:
+    with Connector(credentials, credentials) as connector:
         assert connector._quota_project is None
         assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
         assert connector._client is None
@@ -185,7 +177,7 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
     Test that Connector's close method stops event loop and
     background thread, and sets the connector as closed.
     """
-    with Connector(credentials) as connector:
+    with Connector(credentials, credentials) as connector:
         loop: asyncio.AbstractEventLoop = connector._loop
         thread: Thread = connector._thread
         assert loop.is_running() is True
@@ -202,7 +194,7 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
     Test that connector.connect returns connection object.
     """
     client = fake_client
-    with Connector(credentials) as connector:
+    with Connector(credentials, credentials) as connector:
         connector._client = client
         # patch db connection creation
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
@@ -222,7 +214,7 @@ def test_connect_bad_ip_type(
     credentials: FakeCredentials, fake_client: FakeAlloyDBClient
 ) -> None:
     """Test that Connector.connect errors due to bad ip_type str."""
-    with Connector(credentials=credentials) as connector:
+    with Connector(credentials=credentials, db_credentials=credentials) as connector:
         connector._client = fake_client
         bad_ip_type = "BAD-IP-TYPE"
         with pytest.raises(ValueError) as exc_info:
@@ -245,7 +237,7 @@ def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
     Test that connector.connect errors with unsupported database driver.
     """
     client = FakeAlloyDBClient()
-    with Connector(credentials) as connector:
+    with Connector(credentials, credentials) as connector:
         connector._client = client
         # try to connect using unsupported driver, should raise ValueError
         with pytest.raises(ValueError) as exc_info:
@@ -263,7 +255,7 @@ def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
 def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> None:
     """Test that Connector.close can be called multiple times."""
     # open and close Connector object
-    connector = Connector(credentials=credentials)
+    connector = Connector(credentials=credentials, db_credentials=credentials)
     # verify background thread exists
     assert connector._thread
     connector.close()
@@ -282,7 +274,7 @@ def test_Connector_remove_cached_bad_instance(
     wasted cycles).
     """
     instance_uri = "projects/test-project/locations/test-region/clusters/test-cluster/instances/bad-test-instance"
-    with Connector(credentials) as connector:
+    with Connector(credentials, credentials) as connector:
         # The timeout of AlloyDB API methods is set to 60s by default.
         # We override it to 1s to shorten the duration of the test.
         connector._client = AlloyDBClient(
@@ -310,7 +302,7 @@ async def test_Connector_remove_cached_no_ip_type(credentials: FakeCredentials) 
     # set instance to only have Public IP
     fake_client = FakeAlloyDBClient()
     fake_client.instance.ip_addrs = {"PUBLIC": "127.0.0.1"}
-    with Connector(credentials=credentials) as connector:
+    with Connector(credentials=credentials, db_credentials=credentials) as connector:
         connector._client = fake_client
         connector._keys = asyncio.wrap_future(
             asyncio.run_coroutine_threadsafe(
@@ -336,7 +328,7 @@ def test_Connector_static_connection_info(
     connect to an instance.
     """
     static_info = write_static_info(fake_client.instance)
-    with Connector(credentials=credentials, static_conn_info=static_info) as connector:
+    with Connector(credentials=credentials, db_credentials=credentials, static_conn_info=static_info) as connector:
         connector._client = fake_client
         # patch db connection creation
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
@@ -358,7 +350,7 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
     """
     Test that connector.connect errors when the connection is closed.
     """
-    connector = Connector(credentials=credentials)
+    connector = Connector(credentials=credentials, db_credentials=credentials)
     connector.close()
     with pytest.raises(ClosedConnectorError) as exc_info:
         connector.connect("", "")
