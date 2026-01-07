@@ -78,21 +78,6 @@ def test_Connector_init_scopes() -> None:
     connector.close()
 
 
-def test_Connector_init_db_credentials_scopes(credentials: FakeCredentials) -> None:
-    """
-    Test to check whether the __init__ method of Connector
-    properly sets the DB credential's scopes when DB credentials
-    are specified.
-    """
-    db_credentials = FakeCredentialsRequiresScopes()
-    connector = Connector(credentials, db_credentials)
-    assert connector._db_credentials != db_credentials
-    assert connector._db_credentials._scopes == [
-        "https://www.googleapis.com/auth/alloydb.login"
-    ]
-    connector.close()
-
-
 def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:
     """Test that Connector errors due to bad ip_type str."""
     bad_ip_type = "BAD-IP-TYPE"

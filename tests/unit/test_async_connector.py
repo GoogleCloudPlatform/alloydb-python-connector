@@ -81,23 +81,6 @@ async def test_AsyncConnector_init_scopes() -> None:
     await connector.close()
 
 
-async def test_AsyncConnector_init_db_credentials_scopes(
-    credentials: FakeCredentials,
-) -> None:
-    """
-    Test to check whether the __init__ method of AsyncConnector
-    properly sets the DB credential's scopes when DB credentials
-    are specified.
-    """
-    db_credentials = FakeCredentialsRequiresScopes()
-    connector = AsyncConnector(credentials, db_credentials)
-    assert connector._db_credentials != db_credentials
-    assert connector._db_credentials._scopes == [
-        "https://www.googleapis.com/auth/alloydb.login"
-    ]
-    await connector.close()
-
-
 @pytest.mark.parametrize(
     "ip_type, expected",
     [

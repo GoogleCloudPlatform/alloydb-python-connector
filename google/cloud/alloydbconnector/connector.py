@@ -68,6 +68,8 @@ class Connector:
             A credentials object created from the google-auth Python library.
             If not specified, the credentials used for authenticating with the
             AlloyDB Admin API will also be used to authenticate with the DB.
+            If specified, the credential's scope should be
+            "https://www.googleapis.com/auth/alloydb.login".
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.
@@ -128,14 +130,12 @@ class Connector:
         else:
             self._credentials, _ = default(scopes=scopes)
         # initialize credentials for authenticating with the DB
-        scopes = ["https://www.googleapis.com/auth/alloydb.login"]
         if db_credentials:
-            self._db_credentials = with_scopes_if_required(
-                db_credentials, scopes=scopes
-            )
+            self._db_credentials = db_credentials
         # otherwise use the same credentials as the one for authenticating with
         # AlloyDB Admin API
         else:
+            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
             self._db_credentials = with_scopes_if_required(
                 self._credentials, scopes=scopes
             )
