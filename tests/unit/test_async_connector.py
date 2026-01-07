@@ -240,7 +240,7 @@ async def test_connect_iam_authn(credentials: FakeCredentials) -> None:
 
         async def custom_connect(*_: Any, **kwargs: Any) -> bool:
             passwd = kwargs.pop("password")
-            passwd()
+            await passwd()
 
         # patch db connection creation
         with patch(
@@ -272,7 +272,7 @@ async def test_connect_db_credentials_iam_authn(credentials: FakeCredentials) ->
 
         async def custom_connect(*_: Any, **kwargs: Any) -> bool:
             passwd = kwargs.pop("password")
-            passwd()
+            await passwd()
 
         # patch db connection creation
         with patch(
