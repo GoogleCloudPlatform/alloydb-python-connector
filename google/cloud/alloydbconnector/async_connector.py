@@ -52,8 +52,8 @@ class AsyncConnector:
             Admin API.
         db_credentials (google.auth.credentials.Credentials):
             A credentials object created from the google-auth Python library.
-            If not specified, Application Default Credentials are used.
-            These are the credentials used for authenticating with the database.
+            If not specified, the credentials used for authenticating with the
+            AlloyDB Admin API will also be used to authenticate with the DB.
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.
@@ -108,9 +108,12 @@ class AsyncConnector:
             self._db_credentials = with_scopes_if_required(
                 db_credentials, scopes=scopes
             )
-        # otherwise use application default credentials
+        # otherwise use the same credentials as the one for authenticating with
+        # AlloyDB Admin API
         else:
-            self._db_credentials, _ = google.auth.default(scopes=scopes)
+            self._db_credentials = with_scopes_if_required(
+                self._credentials, scopes=scopes
+            )
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
