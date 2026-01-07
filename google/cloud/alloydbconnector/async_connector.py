@@ -215,12 +215,12 @@ class AsyncConnector:
         logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # callable to be used for auto IAM authn
-        def get_authentication_token() -> str:
+        async def get_authentication_token() -> str:
             """Get OAuth2 access token to be used for IAM database authentication"""
             # refresh credentials if expired
             if not self._db_credentials.valid:
                 request = google.auth.transport.requests.Request()
-                self._db_credentials.refresh(request)
+                await asyncio.to_thread(self._db_credentials.refresh, request)
             return self._db_credentials.token
 
         # if enable_iam_auth is set, use auth token as database password
