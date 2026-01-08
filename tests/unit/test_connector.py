@@ -21,6 +21,7 @@ from google.api_core.retry.retry_unary import Retry
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
+from mocks import FakeCredentialsRequiresScopes
 from mocks import write_static_info
 import pytest
 
@@ -43,7 +44,37 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
     assert connector._client is None
     assert connector._credentials == credentials
+    assert connector._db_credentials == credentials
     assert connector._closed is False
+    connector.close()
+
+
+def test_Connector_init_db_credentials(credentials: FakeCredentials) -> None:
+    """
+    Test to check whether the __init__ method of Connector
+    properly sets db_credentials when specified.
+    """
+    db_credentials = FakeCredentials()
+    connector = Connector(credentials, db_credentials)
+    assert connector._db_credentials == db_credentials
+    connector.close()
+
+
+def test_Connector_init_scopes() -> None:
+    """
+    Test to check whether the __init__ method of Connector
+    properly sets the credential's scopes.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = Connector(credentials)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    assert connector._db_credentials != credentials
+    assert connector._db_credentials._scopes == [
+        "https://www.googleapis.com/auth/alloydb.login"
+    ]
     connector.close()
 
 
@@ -149,6 +180,7 @@ def test_Connector_context_manager(credentials: FakeCredentials) -> None:
         assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
         assert connector._client is None
         assert connector._credentials == credentials
+        assert connector._db_credentials == credentials
 
 
 def test_Connector_close(credentials: FakeCredentials) -> None:
@@ -170,7 +202,8 @@ def test_Connector_close(credentials: FakeCredentials) -> None:
 @pytest.mark.usefixtures("proxy_server")
 def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -> None:
     """
-    Test that connector.connect returns connection object.
+    Test that connector.connect returns connection object and refreshes
+    credentials.
     """
     client = fake_client
     with Connector(credentials) as connector:
@@ -187,6 +220,35 @@ def test_connect(credentials: FakeCredentials, fake_client: FakeAlloyDBClient) -
             )
         # check connection is returned
         assert connection is True
+        # check DB authentication refreshed the credentials
+        assert connector._credentials.token
+        assert connector._db_credentials.token
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_db_credentials(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """
+    Test that connector.connect refreshes only the DB credentials when
+    specified.
+    """
+    client = fake_client
+    db_credentials = FakeCredentials()
+    with Connector(credentials, db_credentials) as connector:
+        connector._client = client
+        # patch db connection creation
+        with patch("google.cloud.alloydbconnector.pg8000.connect"):
+            connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check DB authentication refreshed only the DB credential's token
+        assert not connector._credentials.token
+        assert connector._db_credentials.token
 
 
 def test_connect_bad_ip_type(

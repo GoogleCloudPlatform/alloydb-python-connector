@@ -21,7 +21,7 @@ import ipaddress
 import json
 import ssl
 import struct
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Literal, Optional, Sequence
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -29,6 +29,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from google.auth.credentials import _helpers
+from google.auth.credentials import Scoped
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
 
@@ -58,6 +59,11 @@ class FakeCredentials:
         return False if not self.expiry else True
 
     @property
+    def valid(self) -> bool:
+        """Checks if the credentials are valid."""
+        return self.token is not None and not self.expired
+
+    @property
     def token_state(
         self,
     ) -> Literal[TokenState.FRESH, TokenState.STALE, TokenState.INVALID]:
@@ -85,6 +91,26 @@ class FakeCredentials:
             return TokenState.STALE
 
         return TokenState.FRESH
+
+
+class FakeCredentialsRequiresScopes(Scoped):
+    def requires_scopes(self) -> bool:
+        """
+        Overrides the requires_scopes() method of the Scoped class to require
+        scopes for these credentials.
+        """
+        return True
+
+    def with_scopes(
+        self, scopes: Sequence[str], default_scopes: Optional[Sequence[str]] = None
+    ) -> "FakeCredentialsRequiresScopes":
+        """
+        Overrides the with_scopes() method of the Scoped class to create a
+        copy of these credentials with the specified scopes.
+        """
+        f = FakeCredentialsRequiresScopes()
+        f._scopes = scopes
+        return f
 
 
 def generate_cert(

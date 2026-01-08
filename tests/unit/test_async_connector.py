@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import asyncio
-from typing import Union
+from typing import Any, Union
 
 from google.api_core.exceptions import RetryError
 from google.api_core.retry.retry_unary_async import AsyncRetry
@@ -21,6 +21,7 @@ from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
+from mocks import FakeCredentialsRequiresScopes
 import pytest
 
 from google.cloud.alloydbconnector import AsyncConnector
@@ -44,8 +45,39 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     assert connector._alloydb_api_endpoint == ALLOYDB_API_ENDPOINT
     assert connector._client is None
     assert connector._credentials == credentials
+    assert connector._db_credentials == credentials
     assert connector._enable_iam_auth is False
     assert connector._closed is False
+    await connector.close()
+
+
+@pytest.mark.asyncio
+async def test_AsyncConnector_init_db_credentials(credentials: FakeCredentials) -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector
+    properly sets db_credentials when specified.
+    """
+    db_credentials = FakeCredentials()
+    connector = AsyncConnector(credentials, db_credentials)
+    assert connector._db_credentials == db_credentials
+    await connector.close()
+
+
+async def test_AsyncConnector_init_scopes() -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector
+    properly sets the credential's scopes.
+    """
+    credentials = FakeCredentialsRequiresScopes()
+    connector = AsyncConnector(credentials)
+    assert connector._credentials != credentials
+    assert connector._credentials._scopes == [
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    assert connector._db_credentials != credentials
+    assert connector._db_credentials._scopes == [
+        "https://www.googleapis.com/auth/alloydb.login"
+    ]
     await connector.close()
 
 
@@ -154,6 +186,7 @@ async def test_AsyncConnector_context_manager(
         assert connector._alloydb_api_endpoint == ALLOYDB_API_ENDPOINT
         assert connector._client is None
         assert connector._credentials == credentials
+        assert connector._db_credentials == credentials
         assert connector._enable_iam_auth is False
 
 
@@ -195,6 +228,66 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
 
         # check connection is returned
         assert connection.result() is True
+
+
+@pytest.mark.asyncio
+async def test_connect_iam_authn(credentials: FakeCredentials) -> None:
+    """
+    Test that connector.connect, with IAM authentication, refreshes credentials.
+    """
+    async with AsyncConnector(credentials, enable_iam_auth=True) as connector:
+        connector._client = FakeAlloyDBClient()
+
+        async def custom_connect(*_: Any, **kwargs: Any) -> bool:
+            passwd = kwargs.pop("password")
+            await passwd()
+
+        # patch db connection creation
+        with patch(
+            "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+        ):
+            await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check DB authentication refreshed the credentials
+        assert connector._credentials.token
+        assert connector._db_credentials.token
+
+
+@pytest.mark.asyncio
+async def test_connect_db_credentials_iam_authn(credentials: FakeCredentials) -> None:
+    """
+    Test that connector.connect, with IAM authentication, refreshes only the DB
+    credentials when specified.
+    """
+    db_credentials = FakeCredentials()
+    async with AsyncConnector(
+        credentials, db_credentials, enable_iam_auth=True
+    ) as connector:
+        connector._client = FakeAlloyDBClient()
+
+        async def custom_connect(*_: Any, **kwargs: Any) -> bool:
+            passwd = kwargs.pop("password")
+            await passwd()
+
+        # patch db connection creation
+        with patch(
+            "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+        ):
+            await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        # check DB authentication refreshed only the DB credential's token
+        assert not connector._credentials.token
+        assert connector._db_credentials.token
 
 
 @pytest.mark.asyncio

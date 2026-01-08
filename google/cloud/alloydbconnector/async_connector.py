@@ -48,6 +48,15 @@ class AsyncConnector:
         credentials (google.auth.credentials.Credentials):
             A credentials object created from the google-auth Python library.
             If not specified, Application Default Credentials are used.
+            These are the credentials used for authenticating with the AlloyDB
+            Admin API.
+        db_credentials (google.auth.credentials.Credentials):
+            A credentials object created from the google-auth Python library.
+            This is only used when Auto IAM AuthN is enabled.
+            If not specified, the credentials used for authenticating with the
+            AlloyDB Admin API will also be used to authenticate with the DB.
+            If specified, the credential's scope should be
+            "https://www.googleapis.com/auth/alloydb.login".
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.
@@ -67,6 +76,7 @@ class AsyncConnector:
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
+        db_credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
@@ -88,13 +98,23 @@ class AsyncConnector:
             refresh_strategy = RefreshStrategy(refresh_strategy.upper())
         self._refresh_strategy = refresh_strategy
         self._user_agent = user_agent
-        # initialize credentials
+        # initialize credentials for authenticating with AlloyDB Admin API
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
             self._credentials = with_scopes_if_required(credentials, scopes=scopes)
         # otherwise use application default credentials
         else:
             self._credentials, _ = google.auth.default(scopes=scopes)
+        # initialize credentials for authenticating with the DB
+        if db_credentials:
+            self._db_credentials = db_credentials
+        # otherwise use the same credentials as the one for authenticating with
+        # AlloyDB Admin API
+        else:
+            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
+            self._db_credentials = with_scopes_if_required(
+                self._credentials, scopes=scopes
+            )
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
@@ -196,13 +216,13 @@ class AsyncConnector:
         logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # callable to be used for auto IAM authn
-        def get_authentication_token() -> str:
+        async def get_authentication_token() -> str:
             """Get OAuth2 access token to be used for IAM database authentication"""
             # refresh credentials if expired
-            if not self._credentials.valid:
+            if not self._db_credentials.valid:
                 request = google.auth.transport.requests.Request()
-                self._credentials.refresh(request)
-            return self._credentials.token
+                await asyncio.to_thread(self._db_credentials.refresh, request)
+            return self._db_credentials.token
 
         # if enable_iam_auth is set, use auth token as database password
         if enable_iam_auth:

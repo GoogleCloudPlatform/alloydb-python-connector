@@ -62,6 +62,14 @@ class Connector:
         credentials (google.auth.credentials.Credentials):
             A credentials object created from the google-auth Python library.
             If not specified, Application Default Credentials are used.
+            These are the credentials used for authenticating with the AlloyDB
+            Admin API.
+        db_credentials (google.auth.credentials.Credentials):
+            A credentials object created from the google-auth Python library.
+            If not specified, the credentials used for authenticating with the
+            AlloyDB Admin API will also be used to authenticate with the DB.
+            If specified, the credential's scope should be
+            "https://www.googleapis.com/auth/alloydb.login".
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.
@@ -87,6 +95,7 @@ class Connector:
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
+        db_credentials: Optional[Credentials] = None,
         quota_project: Optional[str] = None,
         alloydb_api_endpoint: str = "alloydb.googleapis.com",
         enable_iam_auth: bool = False,
@@ -113,13 +122,23 @@ class Connector:
             refresh_strategy = RefreshStrategy(refresh_strategy.upper())
         self._refresh_strategy = refresh_strategy
         self._user_agent = user_agent
-        # initialize credentials
+        # initialize credentials for authenticating with AlloyDB Admin API
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
             self._credentials = with_scopes_if_required(credentials, scopes=scopes)
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
+        # initialize credentials for authenticating with the DB
+        if db_credentials:
+            self._db_credentials = db_credentials
+        # otherwise use the same credentials as the one for authenticating with
+        # AlloyDB Admin API
+        else:
+            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
+            self._db_credentials = with_scopes_if_required(
+                self._credentials, scopes=scopes
+            )
         self._keys = asyncio.wrap_future(
             asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
             loop=self._loop,
@@ -296,14 +315,14 @@ class Connector:
             auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
 
         # Ensure the credentials are in fact valid before proceeding.
-        if not self._credentials.token_state == TokenState.FRESH:
-            self._credentials.refresh(requests.Request())
+        if not self._db_credentials.token_state == TokenState.FRESH:
+            self._db_credentials.refresh(requests.Request())
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
             user_agent=f"{self._client._user_agent}",  # type: ignore
             auth_type=auth_type,
-            oauth2_token=self._credentials.token,
+            oauth2_token=self._db_credentials.token,
         )
 
         # set I/O timeout
