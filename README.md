@@ -41,7 +41,7 @@ Using an AlloyDB Connector provides the following benefits:
 The AlloyDB Python Connector is a package to be used alongside a database driver.
 Currently supported drivers are:
 
-* [`pg8000`](https://github.com/tlocke/pg8000)
+* [`pg8000`](https://codeberg.org/tlocke/pg8000)
 * [`asyncpg`](https://magicstack.github.io/asyncpg)
 
 ## Installation
