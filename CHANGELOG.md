@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.12.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.11.0...v1.12.0) (2026-01-12)
+
+
+### Features
+
+* add support for specifying separate credentials for authenticating with DB ([#510](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/510)) ([4d6a958](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/4d6a958ca6429a69afebaf8be369a81c143f47de))
+
+
+### Bug Fixes
+
+* run credential refresh in thread ([#508](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/508)) ([8f7bae7](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/8f7bae74f936061b8330d19e2fdf8dfc31da8146)), closes [#245](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/245)
+
+
+### Documentation
+
+* update pg8000 link to new repository location ([#513](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/513)) ([314edc0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/314edc0dfb7608aaa3ddd1dd9559166bf793a41b))
+
 ## [1.11.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.10.0...v1.11.0) (2025-12-08)
 
 
