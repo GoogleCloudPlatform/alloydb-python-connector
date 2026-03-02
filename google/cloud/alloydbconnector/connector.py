@@ -15,6 +15,8 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
+from datetime import timezone
 from functools import partial
 import io
 import logging
@@ -259,6 +261,7 @@ class Connector:
         try:
             metadata_partial = partial(
                 self.metadata_exchange,
+                instance_uri,
                 ip_address,
                 await conn_info.create_ssl_context(),
                 enable_iam_auth,
@@ -272,7 +275,11 @@ class Connector:
             raise
 
     def metadata_exchange(
-        self, ip_address: str, ctx: ssl.SSLContext, enable_iam_auth: bool
+        self,
+        instance_uri: str,
+        ip_address: str,
+        ctx: ssl.SSLContext,
+        enable_iam_auth: bool,
     ) -> ssl.SSLSocket:
         """
         Sends metadata about the connection prior to the database
@@ -317,6 +324,13 @@ class Connector:
         # Ensure the credentials are in fact valid before proceeding.
         if not self._db_credentials.token_state == TokenState.FRESH:
             self._db_credentials.refresh(requests.Request())
+
+        logger.debug(
+            f"['{instance_uri}']: Metadata exchange started "
+            f"now={datetime.now(timezone.utc).isoformat()}, "
+            f"token expiration={self._db_credentials.expiry.replace(tzinfo=timezone.utc).isoformat()}, "
+            f"token size={len(self._db_credentials.token)}"
+        )
 
         # form metadata exchange request
         req = connectorspb.MetadataExchangeRequest(
