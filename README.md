@@ -18,334 +18,77 @@
 [pypi-downloads]: https://img.shields.io/pypi/dm/google-cloud-alloydb-connector
 [python-versions]: https://img.shields.io/pypi/pyversions/google-cloud-alloydb-connector
 
-The _AlloyDB Python Connector_ is an [AlloyDB](https://cloud.google.com/alloydb)
-Connector library designed for use with the Python language.
+The AlloyDB Python Connector is the recommended way to connect to AlloyDB from
+Python applications. It provides:
 
-Using an AlloyDB Connector provides the following benefits:
-
-* **IAM Authorization:** uses IAM permissions to control who/what can connect to
-  your AlloyDB instances
-
-* **Improved Security:** uses robust, updated TLS 1.3 encryption and
-  identity verification between the client connector and the server-side proxy,
-  independent of the database protocol.
-
-* **Convenience:** removes the requirement to use and distribute SSL
-  certificates, as well as manage firewalls or source/destination IP addresses.
-
-* (optionally) **IAM DB Authentication:** provides support for
-  [AlloyDB’s automatic IAM DB AuthN][iam-db-authn] feature.
+- **Secure connections** — TLS 1.3 encryption and identity verification,
+  independent of the database protocol
+- **IAM-based authorization** — controls who can connect to your AlloyDB
+  instances using Google Cloud IAM
+- **No certificate management** — no SSL certificates, firewall rules, or IP
+  allowlisting required
+- **IAM database authentication** — optional support for
+  [automatic IAM DB authentication][iam-db-authn]
 
 [iam-db-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn
 
-The AlloyDB Python Connector is a package to be used alongside a database driver.
-Currently supported drivers are:
+**Supported drivers:** [`pg8000`](https://codeberg.org/tlocke/pg8000) (sync) · [`asyncpg`](https://magicstack.github.io/asyncpg) (async)
 
-* [`pg8000`](https://codeberg.org/tlocke/pg8000)
-* [`asyncpg`](https://magicstack.github.io/asyncpg)
+## Quickstart
 
-## Installation
+### Sync (pg8000 + SQLAlchemy)
 
-You can install this library with `pip install`:
-
-### pg8000
-
+**Install:**
 ```sh
-pip install "google-cloud-alloydb-connector[pg8000]"
+pip install "google-cloud-alloydb-connector[pg8000]" sqlalchemy
 ```
 
-See [Synchronous Driver Usage](#synchronous-driver-usage) for details.
-
-### asyncpg
-
-```sh
-pip install "google-cloud-alloydb-connector[asyncpg]"
-```
-
-See [Async Driver Usage](#async-driver-usage) for details.
-
-### APIs and Services
-
-This package requires the following to connect successfully:
-
-* IAM principal (user, service account, etc.) with the [AlloyDB
-  Client][client-role] role or equivalent. [Credentials](#credentials)
-  for the IAM principal are used to authorize connections to an AlloyDB instance.
-
-* The [AlloyDB API][alloydb-api] to be enabled within your Google Cloud
-  Project. By default, the API will be called in the project associated with the
-  IAM principal.
-
-[alloydb-api]: https://console.cloud.google.com/apis/api/alloydb.googleapis.com
-[client-role]: https://cloud.google.com/alloydb/docs/auth-proxy/overview#how-authorized
-
-### Credentials
-
-This library uses the [Application Default Credentials (ADC)][adc] strategy for
-resolving credentials. Please see [these instructions for how to set your ADC][set-adc]
-(Google Cloud Application vs Local Development, IAM user vs service account credentials),
-or consult the [google.auth][google-auth] package.
-
-[adc]: https://cloud.google.com/docs/authentication#adc
-[set-adc]: https://cloud.google.com/docs/authentication/provide-credentials-adc
-[google-auth]: https://google-auth.readthedocs.io/en/master/reference/google.auth.html
-
-## Usage
-
-This package provides several functions for authorizing and encrypting
-connections. These functions are used with your database driver to connect to
-your AlloyDB instance.
-
-AlloyDB supports network connectivity through public IP addresses and private,
-internal IP addresses, as well as [Private Service Connect][psc] (PSC). 
-By default this package will attempt to connect over a
-private IP connection. When doing so, this package must be run in an
-environment that is connected to the [VPC Network][vpc] that hosts your
-AlloyDB private IP address.
-
-Please see [Configuring AlloyDB Connectivity][alloydb-connectivity] for more details.
-
-There are two ways to import this AlloyDB connector package:
-1. `import google.cloud.alloydbconnector`
-2. `import google.cloud.alloydb.connector`
-
-The preferred way is `import google.cloud.alloydbconnector` to avoid namespace
-collisions with the [google-cloud-alloydb][alloydb-py-lib] package. Meanwhile,
-`import google.cloud.alloydb.connector` will continue to work forever.
-
-[vpc]: https://cloud.google.com/vpc/docs/vpc
-[alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
-[psc]: https://cloud.google.com/vpc/docs/private-service-connect
-[alloydb-py-lib]: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-alloydb
-
-### Synchronous Driver Usage
-
-To connect to AlloyDB using the connector, inititalize a `Connector`
-object and call it's `connect` method with the proper input parameters.
-
-The `Connector` itself creates database connection objects by calling its `connect` method
-but does not manage database connection pooling. For this reason, it is recommended to use
-the connector alongside a library that can create connection pools, such as
-[SQLAlchemy](https://www.sqlalchemy.org/). This will allow for connections to remain open and
- be reused, reducing connection overhead and the number of connections needed.
-
-In the Connector's `connect` method below, input your AlloyDB instance URI as
-the first positional argument and the name of the database driver for the
-second positional argument. Insert the rest of your connection keyword arguments
-like `user`, `password` and `db` etc.
-
-To use this connector with SQLAlchemy, use the `creator` argument for `sqlalchemy.create_engine`:
-
+**Connect:**
 ```python
-from google.cloud.alloydbconnector import Connector
 import sqlalchemy
-
-# initialize Connector object
-connector = Connector()
-
-# initialize SQLAlchemy connection pool with Connector
-pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=lambda: connector.connect(
-        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-        "pg8000",
-        user="my-user",
-        password="my-password",
-        db="my-db-name"
-        # NOTE: this assumes private IP by default.
-        # Add the following keyword arg to use public IP:
-        # ip_type="PUBLIC"
-    ),
-)
-```
-
-The returned connection pool engine can then be used to query and modify the database.
-
-```python
-# insert statement
-insert_stmt = sqlalchemy.text(
-    "INSERT INTO my_table (id, title) VALUES (:id, :title)",
-)
-
-with pool.connect() as db_conn:
-    # insert into database
-    db_conn.execute(insert_stmt, parameters={"id": "book1", "title": "Book One"})
-
-    # query database
-    result = db_conn.execute(sqlalchemy.text("SELECT * from my_table")).fetchall()
-
-    # commit transaction (SQLAlchemy v2.X.X is commit as you go)
-    db_conn.commit()
-
-    # Do something with the results
-    for row in result:
-        print(row)
-```
-
-To close the `Connector` object's background resources, call it's `close()` method as follows:
-
-```python
-connector.close()
-```
-
-### Synchronous Context Manager
-
-The `Connector` object can also be used as a context manager in order to
-automatically close and cleanup resources, removing the need for explicit
-calls to `connector.close()`.
-
-Connector as a context manager:
-
-```python
 from google.cloud.alloydbconnector import Connector
-import sqlalchemy
 
-# initialize Connector as context manager
+INSTANCE_URI = "projects/MY_PROJECT/locations/MY_REGION/clusters/MY_CLUSTER/instances/MY_INSTANCE"
+
 with Connector() as connector:
-    # initialize SQLAlchemy connection pool with Connector
     pool = sqlalchemy.create_engine(
         "postgresql+pg8000://",
         creator=lambda: connector.connect(
-            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
+            INSTANCE_URI,
             "pg8000",
-            user="my-user",
-            password="my-password",
-            db="my-db-name"
-        ),
-    )
-    # insert statement
-    insert_stmt = sqlalchemy.text(
-        "INSERT INTO my_table (id, title) VALUES (:id, :title)",
-    )
-    
-    # interact with AlloyDB database using connection pool
-    with pool.connect() as db_conn:
-        # insert into database
-        db_conn.execute(insert_stmt, parameters={"id": "book1", "title": "Book One"})
-    
-        # commit transaction (SQLAlchemy v2.X.X is commit as you go)
-        db_conn.commit()
-    
-        # query database
-        result = db_conn.execute(sqlalchemy.text("SELECT * from my_table")).fetchall()
-    
-        # Do something with the results
-        for row in result:
-            print(row)
-```
-
-### Async Driver Usage
-
-The AlloyDB Connector is compatible with [asyncio][] to improve the speed and
-efficiency of database connections through concurrency. The `AsyncConnector`
-currently supports the following asyncio database drivers:
-
-- [asyncpg](https://magicstack.github.io/asyncpg)
-
-[asyncio]: https://docs.python.org/3/library/asyncio.html
-
-#### Asyncpg Connection Pool
-
-```python
-import asyncpg
-from google.cloud.alloydbconnector import AsyncConnector
-
-async def main():
-    # initialize AsyncConnector object for connections to AlloyDB
-    connector = AsyncConnector()
-
-    # initialize asyncpg connection pool with AsyncConnector
-    pool = await asyncpg.create_pool(
-        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-        connect=lambda instance_connection_name, **kwargs: connector.connect(
-            instance_connection_name,
-            "asyncpg",
             user="my-user",
             password="my-password",
             db="my-db",
         ),
     )
 
-    # acquire connection and query AlloyDB database
-    async with pool.acquire() as conn:
-        res = await conn.fetch("SELECT NOW()")
-
-    # close AsyncConnector
-    await connector.close()
+    with pool.connect() as conn:
+        result = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        print(result)
 ```
 
-#### SQLAlchemy Async Engine
+### Async (asyncpg + SQLAlchemy)
 
+**Install:**
+```sh
+pip install "google-cloud-alloydb-connector[asyncpg]" sqlalchemy
+```
+
+**Connect:**
 ```python
-import asyncpg
-
+import asyncio
 import sqlalchemy
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-
+from sqlalchemy.ext.asyncio import create_async_engine
 from google.cloud.alloydbconnector import AsyncConnector
 
-async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
-    # 'async_creator' argument to 'create_async_engine'
-    pool = create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=lambda: connector.connect(
-            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-            "asyncpg",
-            user="my-user",
-            password="my-password",
-            db="my-db-name"
-            # NOTE: this assumes private IP by default.
-            # Add the following keyword arg to use public IP:
-            # ip_type="PUBLIC"
-            # ... additional database driver args
-        ),
-    )
-    return pool
+INSTANCE_URI = "projects/MY_PROJECT/locations/MY_REGION/clusters/MY_CLUSTER/instances/MY_INSTANCE"
 
 async def main():
-    connector = AsyncConnector()
-
-    # initialize connection pool
-    pool = await init_connection_pool(connector)
-
-    # example query
-    async with pool.connect() as conn:
-        await conn.execute(sqlalchemy.text("SELECT NOW()"))
-
-    # dispose of connection pool
-    await pool.dispose()
-
-    # close Connector
-    await connector.close()
-
-```
-
-For more details on additional arguments with an `asyncpg.Connection`, please
-visit the [official documentation][asyncpg-docs].
-
-[asyncpg-docs]: https://magicstack.github.io/asyncpg/current/api/index.html
-
-### Async Context Manager
-
-The `AsyncConnector` also may be used as an async context manager, removing the
-need for explicit calls to `connector.close()` to cleanup resources.
-
-#### Asyncpg Connection Pool
-
-```python
-import asyncpg
-from google.cloud.alloydbconnector import AsyncConnector
-
-async def main():
-    # initialize AsyncConnector object for connections to AlloyDB
     async with AsyncConnector() as connector:
-
-        # create connection pool
-        pool = await asyncpg.create_pool(
-            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-            connect=lambda instance_connection_name, **kwargs: connector.connect(
-                instance_connection_name,
+        pool = create_async_engine(
+            "postgresql+asyncpg://",
+            async_creator=lambda: connector.connect(
+                INSTANCE_URI,
                 "asyncpg",
                 user="my-user",
                 password="my-password",
@@ -353,190 +96,166 @@ async def main():
             ),
         )
 
-        # acquire connection and query AlloyDB database
-        async with pool.acquire() as conn:
-            res = await conn.fetch("SELECT NOW()")
+        async with pool.connect() as conn:
+            result = await conn.execute(sqlalchemy.text("SELECT NOW()"))
+            print(result.fetchone())
+
+        await pool.dispose()
+
+asyncio.run(main())
 ```
 
-#### SQLAlchemy Async Engine
+## Prerequisites
+
+1. **Enable the AlloyDB API** in your Google Cloud project:
+   [console.cloud.google.com/apis/api/alloydb.googleapis.com][alloydb-api]
+
+2. **Grant IAM permissions:** your principal needs the [AlloyDB Client][client-role] role
+   (or equivalent) on the instance.
+
+3. **Set up credentials** using [Application Default Credentials (ADC)][adc]:
+   ```sh
+   gcloud auth application-default login
+   ```
+
+[alloydb-api]: https://console.cloud.google.com/apis/api/alloydb.googleapis.com
+[client-role]: https://cloud.google.com/alloydb/docs/auth-proxy/overview#how-authorized
+[adc]: https://cloud.google.com/docs/authentication#adc
+
+> **Note:** By default the connector uses private IP. Run your code from an
+> environment connected to the VPC that hosts your AlloyDB instance, or see
+> [Configuring AlloyDB Connectivity][alloydb-connectivity] for other options.
+
+[alloydb-connectivity]: https://cloud.google.com/alloydb/docs/configure-connectivity
+
+## Configuration
+
+### Connector Lifecycle
+
+Create **one connector per application** and reuse it for the lifetime of the
+process. Each connector maintains a background refresh cycle that keeps
+connection credentials warm, so creating one per request would waste resources
+and cause unnecessary latency.
+
+The recommended approach is a context manager — `close()` is called
+automatically, even if an exception is raised:
 
 ```python
-import asyncio
-import asyncpg
+# Sync
+with Connector() as connector:
+    ...
 
-import sqlalchemy
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-
-from google.cloud.alloydbconnector import AsyncConnector
-
-async def init_connection_pool(connector: AsyncConnector) -> AsyncEngine:
-    # The AlloyDB Python Connector can be used along with SQLAlchemy using the
-    # 'async_creator' argument to 'create_async_engine'
-    pool = create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=lambda: connector.connect(
-            "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-            "asyncpg",
-            user="my-user",
-            password="my-password",
-            db="my-db-name"
-            # ... additional database driver args
-        ),
-    )
-    return pool
-
-async def main():
-    # initialize Connector object for connections to AlloyDB
-    async with AsyncConnector() as connector:
-        # initialize connection pool
-        pool = await init_connection_pool(connector)
-
-        # example query
-        async with pool.connect() as conn:
-            await conn.execute(sqlalchemy.text("SELECT NOW()"))
-
-        # dispose of connection pool
-        await pool.dispose()
+# Async
+async with AsyncConnector() as connector:
+    ...
 ```
 
-### Automatic IAM Database Authentication
+For long-lived applications (e.g. a web server) where the connector outlives
+any single block, call `close()` explicitly at shutdown:
 
-The Python Connector supports [Automatic IAM database authentication][].
+```python
+# Sync
+connector = Connector()
+...
+connector.close()
 
-Make sure to [configure your AlloyDB Instance to allow IAM authentication][configure-iam-authn]
-and [add an IAM database user][add-iam-user].
+# Async
+connector = AsyncConnector()
+...
+await connector.close()
+```
 
-A `Connector` or `AsyncConnector` can be configured to connect to an AlloyDB instance using
-automatic IAM database authentication with the `enable_iam_auth` argument set to `True`.
+### IP Address Type
 
-When configuring the `connector.connect` call for IAM authentication, the `password` field can be
-omitted and the `user` field should be formatted as follows:
+Connect over private IP (default), public IP, or Private Service Connect (PSC):
 
-* For an IAM user account, this is the user's email address.
-* For a service account, it is the service account's email without the
-`.gserviceaccount.com` domain suffix.
+```python
+# At the Connector level (applies to all connections)
+connector = Connector(ip_type="PUBLIC")
 
-For example, to connect with IAM authentication using the
-`test-sa@test-project.iam.gserviceaccount.com` service account:
+# Or per connection
+connector.connect(INSTANCE_URI, "pg8000", ..., ip_type="PSC")
+```
+
+Valid values: `"PRIVATE"` (default), `"PUBLIC"`, `"PSC"`.
+
+### IAM Database Authentication
+
+Skip the password and authenticate using your IAM identity instead. First,
+[enable IAM auth on your instance][configure-iam-authn] and [create an IAM
+database user][add-iam-user].
 
 ```python
 connector.connect(
-    "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-    "pg8000",  # asyncpg for AsyncConnector
-    user="test-sa@test-project.iam",
-    db="my-db-name",
+    INSTANCE_URI,
+    "pg8000",  # or "asyncpg"
+    user="service-account@my-project.iam",  # omit .gserviceaccount.com suffix
+    db="my-db",
     enable_iam_auth=True,
 )
 ```
 
-[Automatic IAM database authentication]: https://cloud.google.com/alloydb/docs/manage-iam-authn
+For IAM user accounts, use the full email address as `user`.
+
 [configure-iam-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn#enable
 [add-iam-user]: https://cloud.google.com/alloydb/docs/manage-iam-authn#create-user
 
-### Configuring a Lazy Refresh (Cloud Run, Cloud Functions etc.)
+### Lazy Refresh (Cloud Run, Cloud Functions)
 
-The Connector's `refresh_strategy` argument can be set to `"lazy"` to configure
-the Python Connector to retrieve connection info lazily and as-needed.
-Otherwise, a background refresh cycle runs to retrive the connection info
-periodically. This setting is useful in environments where the CPU may be
-throttled outside of a request context, e.g., Cloud Run, Cloud Functions, etc.
-
-To set the refresh strategy, set the `refresh_strategy` keyword argument when
-initializing a `Connector`:
+In serverless environments where CPU may be throttled between requests, use
+`refresh_strategy="lazy"` to fetch connection info on demand instead of
+running a background refresh cycle:
 
 ```python
 connector = Connector(refresh_strategy="lazy")
 ```
 
-### Specifying IP Address Type
-
-The AlloyDB Python Connector by default will attempt to establish connections
-to your instance's private IP. To change this, such as connecting to AlloyDB
-over a public IP address or Private Service Connect (PSC), set the `ip_type`
-keyword argument when initializing a `Connector()` or when calling
-`connector.connect()`.
-
-Possible values for `ip_type` are `"PRIVATE"` (default value), `"PUBLIC"`,
-and `"PSC"`.
-
-Example:
-
-```python
-from google.cloud.alloydbconnector import Connector
-
-import sqlalchemy
-
-# initialize Connector object
-connector = Connector()
-
-# create connection pool
-pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=lambda: connector.connect(
-        "projects/<YOUR_PROJECT>/locations/<YOUR_REGION>/clusters/<YOUR_CLUSTER>/instances/<YOUR_INSTANCE>",
-        "pg8000",
-        user="my-user",
-        password="my-password",
-        db="my-db-name",
-        ip_type="PUBLIC",  # use public IP
-    ),
-)
-
-# use connection pool...
-connector.close()
-```
-
 ### Debug Logging
-
-The AlloyDB Python Connector uses the standard [Python logging module][python-logging]
-for debug logging support.
-
-Add the below code to your application to enable debug logging with the AlloyDB
-Python Connector:
 
 ```python
 import logging
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s")
-logger = logging.getLogger(name="google.cloud.alloydbconnector")
-logger.setLevel(logging.DEBUG)
+logging.getLogger("google.cloud.alloydbconnector").setLevel(logging.DEBUG)
 ```
 
-For more details on configuring logging, please refer to the
-[Python logging docs][configure-logging].
+## Import Paths
 
-[python-logging]: https://docs.python.org/3/library/logging.html
-[configure-logging]: https://docs.python.org/3/howto/logging.html#configuring-logging
+This package supports two equivalent import paths:
 
-## Support policy
+```python
+from google.cloud.alloydbconnector import Connector  # preferred
+from google.cloud.alloydb.connector import Connector  # also supported
+```
 
-### Major version lifecycle
+The first is preferred to avoid namespace collisions with the
+[google-cloud-alloydb][alloydb-py-lib] package.
 
-This project uses [semantic versioning](https://semver.org/), and uses the
-following lifecycle regarding support for a major version:
+[alloydb-py-lib]: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-alloydb
 
-**Active** - Active versions get all new features and security fixes (that
-wouldn’t otherwise introduce a breaking change). New major versions are
-guaranteed to be "active" for a minimum of 1 year.
-**Deprecated** - Deprecated versions continue to receive security and critical
-bug fixes, but do not receive new features. Deprecated versions will be publicly
-supported for 1 year.
-**Unsupported** - Any major version that has been deprecated for >=1 year is
-considered publicly unsupported.
+## Support Policy
 
-## Supported Python Versions
+### Major Version Lifecycle
 
-We follow the [Python Version Support Policy][pyver] used by Google Cloud
-Libraries for Python. Changes in supported Python versions will be
-considered a minor change, and will be listed in the release notes.
+This project uses [semantic versioning](https://semver.org/):
+
+- **Active** — receives all new features and security fixes. New major versions are guaranteed active for a minimum of 1 year.
+- **Deprecated** — receives security and critical bug fixes only, for 1 year after deprecation.
+- **Unsupported** — any major version deprecated for ≥1 year.
+
+### Supported Python Versions
+
+Follows the [Python Version Support Policy][pyver] used by Google Cloud
+Libraries for Python. Changes in supported Python versions are treated as
+minor changes and listed in the release notes.
 
 [pyver]: https://cloud.google.com/python/docs/supported-python-versions
 
-### Release cadence
+### Release Cadence
 
-This project aims for a minimum monthly release cadence. If no new
-features or fixes have been added, a new PATCH version with the latest
-dependencies is released.
+This project targets a minimum monthly release cadence. If no new features or
+fixes have been added, a new PATCH version with the latest dependencies is
+released.
 
 ### Contributing
 
