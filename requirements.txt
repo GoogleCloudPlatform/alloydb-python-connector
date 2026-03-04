@@ -1,5 +1,5 @@
 aiofiles==25.1.0
-cryptography==46.0.4
+cryptography==46.0.5
 google-auth==2.48.0
 requests==2.32.5
 protobuf==6.33.5
