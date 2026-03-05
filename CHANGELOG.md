@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.12.0...v1.12.1) (2026-03-05)
+
+
+### Documentation
+
+* rewrite README for usability ([#525](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/525)) ([068e126](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/068e12647c2c6f9d9437120f7e1bf0ac850d90b2))
+
 ## [1.12.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.11.0...v1.12.0) (2026-01-12)
 
 
