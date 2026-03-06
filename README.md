@@ -32,7 +32,11 @@ Python applications. It provides:
 
 [iam-db-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn
 
-**Supported drivers:** [`pg8000`](https://codeberg.org/tlocke/pg8000) (sync) · [`asyncpg`](https://magicstack.github.io/asyncpg) (async)
+**Supported drivers:** [`pg8000`][pg8000] (sync) · [`psycopg`][psycopg] (sync) · [`asyncpg`][asyncpg] (async)
+
+[pg8000]: https://codeberg.org/tlocke/pg8000
+[psycopg]: https://www.psycopg.org/
+[asyncpg]: https://magicstack.github.io/asyncpg
 
 ## Quickstart
 
@@ -56,6 +60,37 @@ with Connector() as connector:
         creator=lambda: connector.connect(
             INSTANCE_URI,
             "pg8000",
+            user="my-user",
+            password="my-password",
+            db="my-db",
+        ),
+    )
+
+    with pool.connect() as conn:
+        result = conn.execute(sqlalchemy.text("SELECT NOW()")).fetchone()
+        print(result)
+```
+
+### Sync (psycopg + SQLAlchemy)
+
+**Install:**
+```sh
+pip install "google-cloud-alloydb-connector[psycopg]" sqlalchemy
+```
+
+**Connect:**
+```python
+import sqlalchemy
+from google.cloud.alloydbconnector import Connector
+
+INSTANCE_URI = "projects/MY_PROJECT/locations/MY_REGION/clusters/MY_CLUSTER/instances/MY_INSTANCE"
+
+with Connector() as connector:
+    pool = sqlalchemy.create_engine(
+        "postgresql+psycopg://",
+        creator=lambda: connector.connect(
+            INSTANCE_URI,
+            "psycopg",
             user="my-user",
             password="my-password",
             db="my-db",
@@ -188,7 +223,7 @@ database user][add-iam-user].
 ```python
 connector.connect(
     INSTANCE_URI,
-    "pg8000",  # or "asyncpg"
+    "pg8000",  # or "psycopg" (sync) / "asyncpg" (async)
     user="service-account@my-project.iam",  # omit .gserviceaccount.com suffix
     db="my-db",
     enable_iam_auth=True,
