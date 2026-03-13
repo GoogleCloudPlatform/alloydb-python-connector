@@ -24,7 +24,7 @@ import socket
 import struct
 from threading import Thread
 from types import TracebackType
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional, TYPE_CHECKING
 
 from google.auth import default
 from google.auth.credentials import TokenState
@@ -39,6 +39,7 @@ from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
 import google.cloud.alloydbconnector.pg8000 as pg8000
+import google.cloud.alloydbconnector.psycopg as psycopg
 from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
 from google.cloud.alloydbconnector.types import CacheTypes
 from google.cloud.alloydbconnector.utils import generate_keys
@@ -227,8 +228,9 @@ class Connector:
             self._cache[instance_uri] = cache
             logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
-        connect_func = {
+        connect_func: dict[str, Callable[..., Any]] = {
             "pg8000": pg8000.connect,
+            "psycopg": psycopg.connect,
         }
         # only accept supported database drivers
         try:
