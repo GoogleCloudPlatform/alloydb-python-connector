@@ -35,19 +35,6 @@ jobs:
 
       - run: pip install nox coverage
 
-      - name: Checkout base branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.base_ref }}
-
-      - name: Calculate base code coverage
-        run: |
-          nox --sessions unit-3.14
-          coverage report --show-missing
-          export CUR_COVER=$(coverage report | awk '$1 == "TOTAL" {print $NF+0}')
-          echo "CUR_COVER=$CUR_COVER" >> $GITHUB_ENV
-          coverage erase
-
       - name: Checkout PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -64,8 +51,7 @@ jobs:
 
       - name: Verify code coverage. If your reading this and the step has failed, please add tests to cover your changes.
         run: |
-          echo "BASE BRANCH CODE COVERAGE is ${{ env.CUR_COVER }}%"
           echo "PULL REQUEST CODE COVERAGE is ${{ env.PR_COVER }}%"
-          if [ "${{ env.PR_COVER }}" -lt "${{ env.CUR_COVER }}"  ]; then
+          if [ "${{ env.PR_COVER }}" -lt "90"  ]; then
             exit 1;
           fi
