@@ -97,7 +97,7 @@ class AlloyDBClient:
         self._is_sync = False
         if client:
             self._client = client
-        elif driver == "pg8000":
+        elif driver == "pg8000" or driver == "psycopg":
             self._client = v1beta.AlloyDBAdminClient(
                 credentials=credentials,
                 transport="grpc",
@@ -126,7 +126,11 @@ class AlloyDBClient:
         self._credentials = credentials
         # asyncpg does not currently support using metadata exchange
         # only use metadata exchange for pg8000 driver
-        self._use_metadata = True if driver == "pg8000" else False
+        use_metadata = True
+        if driver in ("asyncpg", None):
+            use_metadata = False
+
+        self._use_metadata = use_metadata
         self._user_agent = user_agent
 
     async def _get_metadata(

@@ -273,6 +273,27 @@ def test_connect_bad_ip_type(
         )
 
 
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_psycopg(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """
+    Test that connector.connect returns a connection object when using psycopg.
+    """
+    with Connector(credentials) as connector:
+        connector._client = fake_client
+        with patch("google.cloud.alloydbconnector.psycopg.connect") as mock_connect:
+            mock_connect.return_value = True
+            connection = connector.connect(
+                "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                "psycopg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        assert connection is True
+
+
 def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
     """
     Test that connector.connect errors with unsupported database driver.

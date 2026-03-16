@@ -243,7 +243,7 @@ async def test_AlloyDBClient_init_async_client(credentials: FakeCredentials) -> 
 
 @pytest.mark.parametrize(
     "driver",
-    [None, "pg8000", "asyncpg"],
+    [None, "pg8000", "asyncpg", "psycopg"],
 )
 @pytest.mark.asyncio
 async def test_AlloyDBClient_user_agent(
@@ -266,7 +266,7 @@ async def test_AlloyDBClient_user_agent(
 
 @pytest.mark.parametrize(
     "driver, expected",
-    [(None, False), ("pg8000", True), ("asyncpg", False)],
+    [(None, False), ("pg8000", True), ("asyncpg", False), ("psycopg", True)],
 )
 @pytest.mark.asyncio
 async def test_AlloyDBClient_use_metadata(
