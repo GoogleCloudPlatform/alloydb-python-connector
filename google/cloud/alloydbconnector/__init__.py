@@ -15,6 +15,12 @@ from google.cloud.alloydbconnector.async_connector import AsyncConnector
 from google.cloud.alloydbconnector.connector import Connector
 from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.enums import RefreshStrategy
+from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
+from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector.exceptions import MetadataExchangeError
+from google.cloud.alloydbconnector.exceptions import RefreshError
+from google.cloud.alloydbconnector.exceptions import TCPConnectionError
+from google.cloud.alloydbconnector.exceptions import TLSHandshakeError
 from google.cloud.alloydbconnector.version import __version__
 
 __all__ = [
@@ -23,4 +29,10 @@ __all__ = [
     "AsyncConnector",
     "IPTypes",
     "RefreshStrategy",
+    "ClosedConnectorError",
+    "IPTypeNotFoundError",
+    "MetadataExchangeError",
+    "RefreshError",
+    "TCPConnectionError",
+    "TLSHandshakeError",
 ]

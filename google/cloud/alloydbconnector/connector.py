@@ -15,14 +15,17 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import datetime
 from datetime import timezone
 from functools import partial
 import io
 import logging
 import socket
+import ssl
 import struct
 from threading import Thread
+import time
 from types import TracebackType
 from typing import TYPE_CHECKING
 from typing import Any
@@ -38,18 +41,30 @@ from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.enums import RefreshStrategy
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
+from google.cloud.alloydbconnector.exceptions import MetadataExchangeError
+from google.cloud.alloydbconnector.exceptions import TCPConnectionError
+from google.cloud.alloydbconnector.exceptions import TLSHandshakeError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.instrumented_socket import InstrumentedSocket
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
 import google.cloud.alloydbconnector.pg8000 as pg8000
 import google.cloud.alloydbconnector.psycopg as psycopg
 from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
+from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_MDX_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
+from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_TLS_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_USER_ERROR
+from google.cloud.alloydbconnector.telemetry import REFRESH_AHEAD_TYPE
+from google.cloud.alloydbconnector.telemetry import REFRESH_LAZY_TYPE
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
+from google.cloud.alloydbconnector.telemetry import _TelemetryMixin
 from google.cloud.alloydbconnector.types import CacheTypes
 from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.utils import strip_http_prefix
 
 if TYPE_CHECKING:
-    import ssl
-
     from google.auth.credentials import Credentials
 
 logger = logging.getLogger(name=__name__)
@@ -60,7 +75,7 @@ SERVER_PROXY_PORT = 5433
 IO_TIMEOUT = 30
 
 
-class Connector:
+class Connector(_TelemetryMixin):
     """A class to configure and create connections to Cloud SQL instances.
 
     Args:
@@ -95,6 +110,15 @@ class Connector:
             This is a *dev-only* option and should not be used in production as
             it will result in failed connections after the client certificate
             expires.
+        enable_builtin_telemetry (bool): Enable built-in telemetry that
+            reports on the connector's internal operations to the
+            alloydb.googleapis.com/client/connector system metric prefix.
+            These metrics help AlloyDB improve performance and identify
+            client connectivity problems. Presently, these metrics aren't
+            public, but will be made public in the future. Set to False to
+            disable the internal metric export, which is useful in
+            environments where outbound metric exporting is restricted.
+            Default: True.
     """
 
     def __init__(
@@ -108,6 +132,7 @@ class Connector:
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         static_conn_info: Optional[io.TextIOBase] = None,
+        enable_builtin_telemetry: bool = True,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -151,6 +176,8 @@ class Connector:
         self._client: Optional[AlloyDBClient] = None
         self._static_conn_info = static_conn_info
         self._closed = False
+        # built-in telemetry
+        self._init_telemetry(enable_builtin_telemetry, self._credentials)
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
         """
@@ -210,8 +237,23 @@ class Connector:
                 driver=driver,
             )
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
+
+        mr = self._metric_recorder(instance_uri)
+
+        attrs = TelemetryAttributes(
+            iam_authn=enable_iam_auth,
+            refresh_type=(
+                REFRESH_LAZY_TYPE
+                if self._refresh_strategy == RefreshStrategy.LAZY
+                else REFRESH_AHEAD_TYPE
+            ),
+        )
+        start_time = time.monotonic()
+
         # use existing connection info if possible
-        if instance_uri in self._cache:
+        cache_hit = instance_uri in self._cache
+        attrs.cache_hit = cache_hit
+        if cache_hit:
             cache = self._cache[instance_uri]
         elif self._static_conn_info:
             cache = StaticConnectionInfoCache(instance_uri, self._static_conn_info)
@@ -220,12 +262,12 @@ class Connector:
                 logger.debug(
                     f"['{instance_uri}']: Refresh strategy is set to lazy refresh"
                 )
-                cache = LazyRefreshCache(instance_uri, self._client, self._keys)
+                cache = LazyRefreshCache(instance_uri, self._client, self._keys, mr)
             else:
                 logger.debug(
                     f"['{instance_uri}']: Refresh strategy is set to background refresh"
                 )
-                cache = RefreshAheadCache(instance_uri, self._client, self._keys)
+                cache = RefreshAheadCache(instance_uri, self._client, self._keys, mr)
             self._cache[instance_uri] = cache
             logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
@@ -250,32 +292,83 @@ class Connector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
+        # Every exit path below sets attrs.dial_status, and the finally
+        # records exactly one dial_count for the attempt. Recording per
+        # except-branch instead would silently drop the count for any failure
+        # that does not match one of the branches.
         try:
-            conn_info = await cache.connect_info()
-            ip_address = conn_info.get_preferred_ip(ip_type)
-        except Exception:
-            # with an error from AlloyDB API call or IP type, invalidate the
-            # cache and re-raise the error
-            await self._remove_cached(instance_uri)
-            raise
-        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
+            try:
+                conn_info = await cache.connect_info()
+            except Exception:
+                # with an error from the AlloyDB API call, invalidate the
+                # cache and re-raise the error
+                attrs.dial_status = DIAL_CACHE_ERROR
+                await self._remove_cached(instance_uri)
+                raise
+            try:
+                ip_address = conn_info.get_preferred_ip(ip_type)
+            except Exception:
+                # Asking for an IP type the instance does not have is a
+                # caller mistake, not a failure to fetch connection info.
+                attrs.dial_status = DIAL_USER_ERROR
+                await self._remove_cached(instance_uri)
+                raise
+            logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
-        # synchronous drivers are blocking and run using executor
-        try:
-            metadata_partial = partial(
-                self.metadata_exchange,
-                instance_uri,
-                ip_address,
-                await conn_info.create_ssl_context(),
-                enable_iam_auth,
-            )
-            sock = await self._loop.run_in_executor(None, metadata_partial)
-            connect_partial = partial(connector, sock, **kwargs)
-            return await self._loop.run_in_executor(None, connect_partial)
-        except Exception:
-            # we attempt a force refresh, then throw the error
-            await cache.force_refresh()
-            raise
+            # synchronous drivers are blocking and run using executor
+            try:
+                metadata_partial = partial(
+                    self.metadata_exchange,
+                    instance_uri,
+                    ip_address,
+                    await conn_info.create_ssl_context(),
+                    enable_iam_auth,
+                )
+                sock = await self._loop.run_in_executor(None, metadata_partial)
+            except TCPConnectionError:
+                attrs.dial_status = DIAL_TCP_ERROR
+                await cache.force_refresh()
+                raise
+            except TLSHandshakeError:
+                attrs.dial_status = DIAL_TLS_ERROR
+                await cache.force_refresh()
+                raise
+            except MetadataExchangeError:
+                attrs.dial_status = DIAL_MDX_ERROR
+                await cache.force_refresh()
+                raise
+            except Exception:
+                # Anything left is a problem with the cached connection info
+                # itself, e.g. create_ssl_context on a malformed certificate.
+                attrs.dial_status = DIAL_CACHE_ERROR
+                await cache.force_refresh()
+                raise
+
+            try:
+                # Pass a copy: attrs keeps being mutated for the rest of this
+                # dial, while the socket holds its attributes for the lifetime
+                # of the connection.
+                instrumented_sock = InstrumentedSocket(sock, mr, replace(attrs))
+                connect_partial = partial(connector, instrumented_sock, **kwargs)
+                conn = await self._loop.run_in_executor(None, connect_partial)
+            except Exception:
+                attrs.dial_status = DIAL_USER_ERROR
+                await cache.force_refresh()
+                raise
+
+            attrs.dial_status = DIAL_SUCCESS
+        finally:
+            mr.record_dial_count(attrs)
+
+        # record successful dial metrics
+        latency_ms = (time.monotonic() - start_time) * 1000
+        mr.record_dial_latency(latency_ms)
+        # The socket records the open connection itself, so that the matching
+        # closed connection is only recorded for a socket that was counted as
+        # open. A driver that fails its startup sequence closes the socket on
+        # the way out, which would otherwise leave open_connections negative.
+        instrumented_sock.record_open_connection()
+        return conn
 
     def metadata_exchange(
         self,
@@ -314,12 +407,43 @@ class Connector:
         Returns:
             sock (ssl.SSLSocket): mTLS/SSL socket connected to AlloyDB Proxy server.
         """
-        # Create socket and wrap with SSL/TLS context
-        sock = ctx.wrap_socket(
-            socket.create_connection((ip_address, SERVER_PROXY_PORT)),
-            server_hostname=ip_address,
-        )
-        # set auth type for metadata exchange
+        try:
+            raw_sock = socket.create_connection((ip_address, SERVER_PROXY_PORT))
+        except OSError as e:
+            raise TCPConnectionError.from_oserror(e) from e
+        try:
+            sock = ctx.wrap_socket(raw_sock, server_hostname=ip_address)
+        except ssl.SSLError as e:
+            raw_sock.close()
+            raise TLSHandshakeError.from_sslerror(e) from e
+        except OSError as e:
+            raw_sock.close()
+            raise TCPConnectionError.from_oserror(e) from e
+
+        try:
+            return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+        except Exception as e:
+            # Any failure past the TLS handshake belongs to the metadata
+            # exchange: socket timeouts, short reads, malformed responses and
+            # token refresh errors included. Classifying them here keeps them
+            # from escaping as unclassified errors, which would skip both the
+            # dial_count metric and the cache force_refresh in connect_async.
+            sock.close()
+            if isinstance(e, MetadataExchangeError):
+                raise
+            raise MetadataExchangeError(str(e)) from e
+
+    def _metadata_exchange(
+        self,
+        sock: ssl.SSLSocket,
+        instance_uri: str,
+        enable_iam_auth: bool,
+    ) -> ssl.SSLSocket:
+        """Performs the metadata exchange over an established TLS connection.
+
+        See ``metadata_exchange`` for the protocol description. Errors raised
+        here are translated by the caller into MetadataExchangeError.
+        """
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
         if enable_iam_auth:
             auth_type = connectorspb.MetadataExchangeRequest.AUTO_IAM
@@ -360,7 +484,7 @@ class Connector:
         while message_len_buffer_size > 0:
             chunk = sock.recv(message_len_buffer_size)
             if not chunk:
-                raise RuntimeError(
+                raise MetadataExchangeError(
                     "Connection closed while getting metadata exchange length!"
                 )
             message_len_buffer += chunk
@@ -373,7 +497,7 @@ class Connector:
         while message_len > 0:
             chunk = sock.recv(message_len)
             if not chunk:
-                raise RuntimeError(
+                raise MetadataExchangeError(
                     "Connection closed while performing metadata exchange!"
                 )
             buffer += chunk
@@ -387,7 +511,7 @@ class Connector:
 
         # validate metadata exchange response
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
-            raise ValueError(
+            raise MetadataExchangeError(
                 f"Metadata Exchange request has failed with error: {resp.error}"
             )
 
@@ -398,9 +522,12 @@ class Connector:
         info cache from the map of caches.
         """
         logger.debug(f"['{instance_uri}']: Removing connection info from cache")
-        # remove cache from stored caches and close it
-        cache = self._cache.pop(instance_uri)
-        await cache.close()
+        # remove cache from stored caches and close it. The static connection
+        # info path never stores its cache, so a miss here is expected; a
+        # KeyError would replace whatever error sent us down this path.
+        cache = self._cache.pop(instance_uri, None)
+        if cache is not None:
+            await cache.close()
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
@@ -421,8 +548,13 @@ class Connector:
             close_future = asyncio.run_coroutine_threadsafe(
                 self.close_async(), loop=self._loop
             )
-            # Will attempt to gracefully shut down tasks for 3s
-            close_future.result(timeout=3)
+            # Wait for the shutdown sequence to finish. Deliberately
+            # unbounded: the telemetry flush inside it is already bounded by
+            # TELEMETRY_SHUTDOWN_TIMEOUT_S, and a budget covering the whole
+            # sequence would let a slow cache close abandon the connector
+            # half-shut-down. Matches Dialer.Close in the Go connector, which
+            # bounds only the metric shutdown.
+            close_future.result()
         # if background thread exists for Connector, clean it up
         if self._thread.is_alive():
             if self._loop.is_running():
@@ -436,3 +568,4 @@ class Connector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
+        await self._shutdown_telemetry()

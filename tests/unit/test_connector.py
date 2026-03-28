@@ -13,9 +13,14 @@
 # limitations under the License.
 
 import asyncio
+import socket
+import struct
+from threading import Event
 from threading import Thread
+import time
 from typing import Union
 
+from mock import MagicMock
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -30,7 +35,19 @@ from google.cloud.alloydbconnector import IPTypes
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector.exceptions import MetadataExchangeError
+from google.cloud.alloydbconnector.exceptions import TCPConnectionError
+from google.cloud.alloydbconnector.exceptions import TLSHandshakeError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_MDX_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
+from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_TLS_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_USER_ERROR
+from google.cloud.alloydbconnector.telemetry import SHUTDOWN_TIMEOUT_MS
+from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 from google.cloud.alloydbconnector.utils import generate_keys
 
 
@@ -420,3 +437,334 @@ def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
+
+
+INSTANCE_URI = (
+    "projects/test-project/locations/test-region"
+    "/clusters/test-cluster/instances/test-instance"
+)
+
+
+class _RecordingMetricRecorder(NullMetricRecorder):
+    """Captures what the connector reports for a dial attempt."""
+
+    def __init__(self) -> None:
+        self.dial_statuses: list[str] = []
+        self.latencies: list[float] = []
+        self.open_calls = 0
+        self.closed_calls = 0
+
+    def record_dial_count(self, attrs: TelemetryAttributes) -> None:
+        self.dial_statuses.append(attrs.dial_status)
+
+    def record_dial_latency(self, latency_ms: float) -> None:
+        self.latencies.append(latency_ms)
+
+    def record_open_connection(self, attrs: TelemetryAttributes) -> None:
+        self.open_calls += 1
+
+    def record_closed_connection(self, attrs: TelemetryAttributes) -> None:
+        self.closed_calls += 1
+
+
+def _connector_with_recorder(
+    credentials: FakeCredentials, client: FakeAlloyDBClient
+) -> tuple[Connector, _RecordingMetricRecorder]:
+    connector = Connector(credentials, enable_builtin_telemetry=False)
+    connector._client = client
+    mr = _RecordingMetricRecorder()
+    connector._metric_recorders[INSTANCE_URI] = mr
+    return connector, mr
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_records_successful_dial(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """A successful dial reports success exactly once, with a latency and an
+    open connection."""
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    with connector:
+        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
+            mock_connect.return_value = True
+            connector.connect(INSTANCE_URI, "pg8000", user="u", password="p", db="d")
+    assert mr.dial_statuses == [DIAL_SUCCESS]
+    assert len(mr.latencies) == 1
+    assert mr.open_calls == 1
+
+
+@pytest.mark.parametrize(
+    "error,expected_status",
+    [
+        (TCPConnectionError("boom"), DIAL_TCP_ERROR),
+        (TLSHandshakeError("boom"), DIAL_TLS_ERROR),
+        (MetadataExchangeError("boom"), DIAL_MDX_ERROR),
+    ],
+)
+def test_connect_records_dial_error_status(
+    credentials: FakeCredentials,
+    fake_client: FakeAlloyDBClient,
+    error: Exception,
+    expected_status: str,
+) -> None:
+    """Each classified connect failure reports its own status, once."""
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    with connector:
+        with patch.object(Connector, "metadata_exchange", side_effect=error):
+            with pytest.raises(type(error)):
+                connector.connect(
+                    INSTANCE_URI, "pg8000", user="u", password="p", db="d"
+                )
+    assert mr.dial_statuses == [expected_status]
+    assert mr.open_calls == 0
+
+
+def test_connect_records_user_error_for_bad_ip_type(
+    credentials: FakeCredentials,
+) -> None:
+    """Requesting an IP type the instance lacks is a caller mistake, not a
+    failure to fetch connection info."""
+    # Use a dedicated client: the fake_client fixture wraps a session-scoped
+    # instance that other tests share.
+    fake_client = FakeAlloyDBClient()
+    fake_client.instance.ip_addrs = {"PUBLIC": "127.0.0.1"}
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    with connector:
+        with pytest.raises(IPTypeNotFoundError):
+            connector.connect(
+                INSTANCE_URI,
+                "pg8000",
+                user="u",
+                password="p",
+                db="d",
+                ip_type="PRIVATE",
+            )
+    assert mr.dial_statuses == [DIAL_USER_ERROR]
+    # a failed dial must also invalidate the cache
+    assert INSTANCE_URI not in connector._cache
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_records_user_error_when_driver_fails(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    with connector:
+        with patch(
+            "google.cloud.alloydbconnector.pg8000.connect",
+            side_effect=Exception("bad password"),
+        ):
+            with pytest.raises(Exception, match="bad password"):
+                connector.connect(
+                    INSTANCE_URI, "pg8000", user="u", password="p", db="d"
+                )
+    assert mr.dial_statuses == [DIAL_USER_ERROR]
+    assert mr.open_calls == 0
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        socket.timeout("timed out"),
+        OSError("connection reset"),
+        struct.error("unpack requires a buffer of 4 bytes"),
+    ],
+)
+def test_metadata_exchange_classifies_io_errors(
+    credentials: FakeCredentials, error: Exception
+) -> None:
+    """Any failure past the TLS handshake belongs to the metadata exchange.
+    Letting it escape unclassified would skip both the dial_count metric and
+    the cache force_refresh in connect_async."""
+    fake_sock = MagicMock()
+    with Connector(credentials, enable_builtin_telemetry=False) as connector:
+        with patch("socket.create_connection", return_value=MagicMock()):
+            ctx = MagicMock()
+            ctx.wrap_socket.return_value = fake_sock
+            with patch.object(Connector, "_metadata_exchange", side_effect=error):
+                with pytest.raises(MetadataExchangeError):
+                    connector.metadata_exchange(INSTANCE_URI, "127.0.0.1", ctx, False)
+    # The socket must not be leaked when the exchange fails.
+    fake_sock.close.assert_called_once()
+
+
+def test_connect_records_cache_error(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    with connector:
+        with patch.object(
+            RefreshAheadCache, "connect_info", side_effect=Exception("api down")
+        ):
+            with pytest.raises(Exception, match="api down"):
+                connector.connect(
+                    INSTANCE_URI, "pg8000", user="u", password="p", db="d"
+                )
+    assert mr.dial_statuses == [DIAL_CACHE_ERROR]
+
+
+def test_close_survives_slow_telemetry_shutdown(
+    credentials: FakeCredentials,
+) -> None:
+    """A final metric export that uses its full budget must not surface as a
+    TimeoutError out of close()."""
+
+    class SlowProvider:
+        """Stands in for a provider whose final export uses its full budget."""
+
+        def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            time.sleep(timeout_millis / 1000)
+
+    connector = Connector(credentials, enable_builtin_telemetry=False)
+    connector._telemetry_providers["p"] = SlowProvider()  # type: ignore[assignment]
+    connector.close()
+    assert connector._closed is True
+
+
+def test_close_survives_hanging_telemetry_shutdown(
+    credentials: FakeCredentials,
+) -> None:
+    """Neither the Cloud Monitoring exporter nor its write RPC guarantees it
+    returns within the shutdown budget, so the telemetry shutdown bounds its
+    own wait. close() itself is unbounded: bounding the whole sequence would
+    let a slow cache close abandon the connector half-shut-down."""
+    started = Event()
+    release = Event()
+
+    class HangingProvider:
+        """Stands in for a provider whose final export never returns."""
+
+        def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            started.set()
+            release.wait(30)
+
+    connector = Connector(credentials, enable_builtin_telemetry=False)
+    connector._telemetry_providers["p"] = HangingProvider()  # type: ignore[assignment]
+    start = time.monotonic()
+    try:
+        # The real budget leaves room for a final export; shorten it here so
+        # the test spends no longer proving the wait is bounded.
+        with patch(
+            "google.cloud.alloydbconnector.telemetry.TELEMETRY_SHUTDOWN_TIMEOUT_S",
+            0.2,
+        ):
+            connector.close()
+        elapsed = time.monotonic() - start
+
+        assert started.is_set()
+        assert elapsed < 3
+        assert connector._closed is True
+        assert connector._loop.is_running() is False
+        assert connector._thread.is_alive() is False
+    finally:
+        # Let the abandoned executor thread finish so it does not hold up
+        # interpreter shutdown.
+        release.set()
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_with_telemetry_enabled_writes_metrics(
+    credentials: FakeCredentials,
+    fake_client: FakeAlloyDBClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """End to end with telemetry on: the dial is written to Cloud Monitoring
+    under the instance's project, and the client is released on close."""
+    writes: list = []
+    client = MagicMock()
+    client.common_project_path.return_value = "projects/test-project"
+    client.create_service_time_series.side_effect = lambda req, **kw: writes.append(req)
+    monkeypatch.setattr(
+        "google.cloud.monitoring_v3.MetricServiceClient", lambda **kwargs: client
+    )
+
+    with Connector(credentials) as connector:
+        connector._client = fake_client
+        with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
+            mock_connect.return_value = True
+            connector.connect(INSTANCE_URI, "pg8000", user="u", password="p", db="d")
+
+    (request,) = writes
+    assert request.name == "projects/test-project"
+    metric_types = {ts.metric.type for ts in request.time_series}
+    assert "alloydb.googleapis.com/client/connector/dial_count" in metric_types
+    assert "alloydb.googleapis.com/client/connector/open_connections" in metric_types
+    assert {ts.resource.labels["instance_id"] for ts in request.time_series} == {
+        "test-instance"
+    }
+    # The gRPC channel opened in __init__ is released.
+    assert client.close.called
+
+
+def test_telemetry_providers_are_keyed_by_project(
+    credentials: FakeCredentials,
+) -> None:
+    """The exporter writes every time series under the project it was built
+    with, so instances in a second project need their own provider."""
+    connector = Connector(credentials, enable_builtin_telemetry=False)
+    with connector:
+        with patch(
+            "google.cloud.alloydbconnector.telemetry.new_telemetry_provider"
+        ) as new_provider:
+            new_provider.side_effect = lambda **kwargs: MagicMock(
+                name=kwargs["project_id"]
+            )
+            connector._metric_recorder(INSTANCE_URI)
+            connector._metric_recorder(INSTANCE_URI.replace("test-project", "other"))
+            # A second instance in the first project reuses its provider.
+            connector._metric_recorder(INSTANCE_URI.replace("test-instance", "other"))
+            assert sorted(connector._telemetry_providers) == ["other", "test-project"]
+
+    projects = sorted(call.kwargs["project_id"] for call in new_provider.call_args_list)
+    assert projects == ["other", "test-project"]
+    # close() shuts the providers down and drops them.
+    assert connector._telemetry_providers == {}
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_failed_driver_connect_does_not_leave_open_connections_negative(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """Both pg8000 and psycopg close the socket when their startup sequence
+    fails. Recording that close without a matching open would drive
+    open_connections negative, once per failed connect."""
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+
+    def failing_connect(sock: object, **kwargs: object) -> None:
+        # What pg8000 and psycopg both do when startup fails.
+        sock.close()  # type: ignore[attr-defined]
+        raise Exception("password authentication failed")
+
+    with connector:
+        with patch("google.cloud.alloydbconnector.pg8000.connect", failing_connect):
+            with pytest.raises(Exception, match="password authentication failed"):
+                connector.connect(
+                    INSTANCE_URI, "pg8000", user="u", password="p", db="d"
+                )
+
+    assert mr.dial_statuses == [DIAL_USER_ERROR]
+    assert mr.open_calls == 0
+    assert mr.closed_calls == 0
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connection_close_is_recorded(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """A socket the driver took ownership of reports its close, so
+    open_connections returns to zero."""
+    connector, mr = _connector_with_recorder(credentials, fake_client)
+    sockets: list = []
+
+    def capturing_connect(sock: object, **kwargs: object) -> object:
+        sockets.append(sock)
+        return object()
+
+    with connector:
+        with patch("google.cloud.alloydbconnector.pg8000.connect", capturing_connect):
+            connector.connect(INSTANCE_URI, "pg8000", user="u", password="p", db="d")
+        assert mr.open_calls == 1
+        assert mr.closed_calls == 0
+
+        sockets[0].close()
+        assert mr.closed_calls == 1

@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ssl
+import sys
+import time
 from types import TracebackType
 from typing import TYPE_CHECKING
 from typing import Any
@@ -31,6 +34,15 @@ from google.cloud.alloydbconnector.enums import RefreshStrategy
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
+from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_TLS_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_USER_ERROR
+from google.cloud.alloydbconnector.telemetry import REFRESH_AHEAD_TYPE
+from google.cloud.alloydbconnector.telemetry import REFRESH_LAZY_TYPE
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
+from google.cloud.alloydbconnector.telemetry import _TelemetryMixin
 from google.cloud.alloydbconnector.types import CacheTypes
 from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.utils import strip_http_prefix
@@ -41,7 +53,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(name=__name__)
 
 
-class AsyncConnector:
+def _is_server_rejection(e: Exception) -> bool:
+    """Report whether the driver failed because the server rejected the
+    connection, rather than because the network path failed.
+
+    asyncpg is looked up in sys.modules rather than imported: it is an
+    optional dependency, and by the time a connect attempt has failed it has
+    necessarily been imported already.
+    """
+    asyncpg_module = sys.modules.get("asyncpg")
+    if asyncpg_module is None:
+        return False
+    return isinstance(e, asyncpg_module.PostgresError)
+
+
+class AsyncConnector(_TelemetryMixin):
     """A class to configure and create connections to Cloud SQL instances
     asynchronously.
 
@@ -72,6 +98,15 @@ class AsyncConnector:
             of the following: RefreshStrategy.LAZY ("LAZY") or
             RefreshStrategy.BACKGROUND ("BACKGROUND").
             Default: RefreshStrategy.BACKGROUND
+        enable_builtin_telemetry (bool): Enable built-in telemetry that
+            reports on the connector's internal operations to the
+            alloydb.googleapis.com/client/connector system metric prefix.
+            These metrics help AlloyDB improve performance and identify
+            client connectivity problems. Presently, these metrics aren't
+            public, but will be made public in the future. Set to False to
+            disable the internal metric export, which is useful in
+            environments where outbound metric exporting is restricted.
+            Default: True.
     """
 
     def __init__(
@@ -84,6 +119,7 @@ class AsyncConnector:
         ip_type: str | IPTypes = IPTypes.PRIVATE,
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
+        enable_builtin_telemetry: bool = True,
     ) -> None:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
@@ -132,6 +168,8 @@ class AsyncConnector:
             pass
         self._client: Optional[AlloyDBClient] = None
         self._closed = False
+        # built-in telemetry
+        self._init_telemetry(enable_builtin_telemetry, self._credentials)
 
     async def connect(
         self,
@@ -175,20 +213,34 @@ class AsyncConnector:
 
         enable_iam_auth = kwargs.pop("enable_iam_auth", self._enable_iam_auth)
 
+        mr = self._metric_recorder(instance_uri)
+
+        attrs = TelemetryAttributes(
+            iam_authn=enable_iam_auth,
+            refresh_type=(
+                REFRESH_LAZY_TYPE
+                if self._refresh_strategy == RefreshStrategy.LAZY
+                else REFRESH_AHEAD_TYPE
+            ),
+        )
+        start_time = time.monotonic()
+
         # use existing connection info if possible
-        if instance_uri in self._cache:
+        cache_hit = instance_uri in self._cache
+        attrs.cache_hit = cache_hit
+        if cache_hit:
             cache = self._cache[instance_uri]
         else:
             if self._refresh_strategy == RefreshStrategy.LAZY:
                 logger.debug(
                     f"['{instance_uri}']: Refresh strategy is set to lazy refresh"
                 )
-                cache = LazyRefreshCache(instance_uri, self._client, self._keys)
+                cache = LazyRefreshCache(instance_uri, self._client, self._keys, mr)
             else:
                 logger.debug(
                     f"['{instance_uri}']: Refresh strategy is set to background refresh"
                 )
-                cache = RefreshAheadCache(instance_uri, self._client, self._keys)
+                cache = RefreshAheadCache(instance_uri, self._client, self._keys, mr)
             self._cache[instance_uri] = cache
             logger.debug(f"['{instance_uri}']: Connection info added to cache")
 
@@ -212,36 +264,84 @@ class AsyncConnector:
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
             ip_type = IPTypes(ip_type.upper())
+        # Every exit path below sets attrs.dial_status, and the finally
+        # records exactly one dial_count for the attempt. Recording per
+        # except-branch instead would silently drop the count for any failure
+        # that does not match one of the branches.
         try:
-            conn_info = await cache.connect_info()
-            ip_address = conn_info.get_preferred_ip(ip_type)
-        except Exception:
-            # with an error from AlloyDB API call or IP type, invalidate the
-            # cache and re-raise the error
-            await self._remove_cached(instance_uri)
-            raise
-        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
+            try:
+                conn_info = await cache.connect_info()
+            except Exception:
+                # with an error from the AlloyDB API call, invalidate the
+                # cache and re-raise the error
+                attrs.dial_status = DIAL_CACHE_ERROR
+                await self._remove_cached(instance_uri)
+                raise
+            try:
+                ip_address = conn_info.get_preferred_ip(ip_type)
+            except Exception:
+                # Asking for an IP type the instance does not have is a
+                # caller mistake, not a failure to fetch connection info.
+                attrs.dial_status = DIAL_USER_ERROR
+                await self._remove_cached(instance_uri)
+                raise
+            logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
-        # callable to be used for auto IAM authn
-        async def get_authentication_token() -> str:
-            """Get OAuth2 access token to be used for IAM database authentication"""
-            # refresh credentials if expired
-            if not self._db_credentials.valid:
-                request = google.auth.transport.requests.Request()
-                await asyncio.to_thread(self._db_credentials.refresh, request)
-            return self._db_credentials.token
+            # callable to be used for auto IAM authn
+            async def get_authentication_token() -> str:
+                """Get OAuth2 access token to be used for IAM database authentication"""
+                # refresh credentials if expired
+                if not self._db_credentials.valid:
+                    request = google.auth.transport.requests.Request()
+                    await asyncio.to_thread(self._db_credentials.refresh, request)
+                return self._db_credentials.token
 
-        # if enable_iam_auth is set, use auth token as database password
-        if enable_iam_auth:
-            kwargs["password"] = get_authentication_token
-        try:
-            return await connector(
-                ip_address, await conn_info.create_ssl_context(), **kwargs
-            )
-        except Exception:
-            # we attempt a force refresh, then throw the error
-            await cache.force_refresh()
-            raise
+            # if enable_iam_auth is set, use auth token as database password
+            if enable_iam_auth:
+                kwargs["password"] = get_authentication_token
+            try:
+                # Building the context is a problem with the cached connection
+                # info itself, e.g. a malformed certificate, not with the
+                # connection. The synchronous Connector classifies it the same
+                # way.
+                ctx = await conn_info.create_ssl_context()
+            except Exception:
+                attrs.dial_status = DIAL_CACHE_ERROR
+                await cache.force_refresh()
+                raise
+            try:
+                conn = await connector(ip_address, ctx, **kwargs)
+            except ssl.SSLError:
+                attrs.dial_status = DIAL_TLS_ERROR
+                await cache.force_refresh()
+                raise
+            except Exception as e:
+                # asyncpg surfaces a single error for the whole connect. A
+                # PostgresError means the server answered and rejected us
+                # (bad password, missing database), which is a caller mistake
+                # rather than a network failure. Everything else is treated as
+                # a TCP-level error, so that tcp_error does not become a
+                # catch-all that hides user errors.
+                if _is_server_rejection(e):
+                    attrs.dial_status = DIAL_USER_ERROR
+                else:
+                    attrs.dial_status = DIAL_TCP_ERROR
+                await cache.force_refresh()
+                raise
+
+            attrs.dial_status = DIAL_SUCCESS
+        finally:
+            mr.record_dial_count(attrs)
+
+        # record successful dial metrics
+        latency_ms = (time.monotonic() - start_time) * 1000
+        mr.record_dial_latency(latency_ms)
+        mr.record_open_connection(attrs)
+        # asyncpg calls termination listeners from Connection._cleanup, which
+        # runs on both close() and terminate(). Listeners fire at most once, so
+        # the open connection count is decremented exactly once per connection.
+        conn.add_termination_listener(lambda _conn: mr.record_closed_connection(attrs))
+        return conn
 
     async def _remove_cached(self, instance_uri: str) -> None:
         """Stops all background refreshes and deletes the connection
@@ -249,8 +349,9 @@ class AsyncConnector:
         """
         logger.debug(f"['{instance_uri}']: Removing connection info from cache")
         # remove cache from stored caches and close it
-        cache = self._cache.pop(instance_uri)
-        await cache.close()
+        cache = self._cache.pop(instance_uri, None)
+        if cache is not None:
+            await cache.close()
 
     async def __aenter__(self) -> AsyncConnector:
         """Enter async context manager by returning Connector object"""
@@ -269,4 +370,5 @@ class AsyncConnector:
         """Helper function to cancel RefreshAheadCaches' tasks
         and close client."""
         await asyncio.gather(*[cache.close() for cache in self._cache.values()])
+        await self._shutdown_telemetry()
         self._closed = True
