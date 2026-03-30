@@ -102,6 +102,44 @@ with Connector() as connector:
         print(result)
 ```
 
+### Async (asyncpg)
+
+**Install:**
+```sh
+pip install "google-cloud-alloydb-connector[asyncpg]"
+```
+
+**Connect:**
+
+```python
+import asyncio
+import asyncpg
+from google.cloud.alloydbconnector import AsyncConnector
+
+INSTANCE_URI = "projects/MY_PROJECT/locations/MY_REGION/clusters/MY_CLUSTER/instances/MY_INSTANCE"
+
+async def main():
+    async with AsyncConnector() as connector:
+        pool = await asyncpg.create_pool(
+            INSTANCE_URI,
+            connect=lambda instance_connection_name, **kwargs: connector.connect(
+                instance_connection_name,
+                "asyncpg",
+                user="my-user",
+                password="my-password",
+                db="my-db",
+            ),
+        )
+
+        async with pool.acquire() as conn:
+            result = await conn.fetchval("SELECT NOW()")
+            print(result)
+
+        await pool.close()
+
+asyncio.run(main())
+```
+
 ### Async (asyncpg + SQLAlchemy)
 
 **Install:**
