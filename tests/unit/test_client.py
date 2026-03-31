@@ -87,7 +87,6 @@ async def test__get_metadata_with_async_client(credentials: FakeCredentials) -> 
     Test _get_metadata returns successfully for an async client.
     """
     test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
-    test_client._is_sync = False
     assert (
         await test_client._get_metadata(
             "test-project",
@@ -104,7 +103,6 @@ async def test__get_metadata_with_sync_client(credentials: FakeCredentials) -> N
     Test _get_metadata returns successfully for a sync client.
     """
     test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminClient())
-    test_client._is_sync = True
     assert (
         await test_client._get_metadata(
             "test-project",
@@ -140,7 +138,6 @@ async def test__get_client_certificate_with_async_client(
     Test _get_client_certificate returns successfully for an async client.
     """
     test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
-    test_client._is_sync = False
     keys = await generate_keys()
     assert (
         await test_client._get_client_certificate(
@@ -157,7 +154,6 @@ async def test__get_client_certificate_with_sync_client(
     Test _get_client_certificate returns successfully for a sync client.
     """
     test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminClient())
-    test_client._is_sync = True
     keys = await generate_keys()
     assert (
         await test_client._get_client_certificate(
@@ -211,7 +207,6 @@ async def test_AlloyDBClient_init_specified_client(
         credentials,
         FakeAlloyDBAdminAsyncClient(),
     )
-    assert client._is_sync is False
     assert type(client._client) is FakeAlloyDBAdminAsyncClient
 
 
@@ -223,7 +218,6 @@ async def test_AlloyDBClient_init_sync_client(credentials: FakeCredentials) -> N
     client = AlloyDBClient(
         "www.test-endpoint.com", "my-quota-project", credentials, driver="pg8000"
     )
-    assert client._is_sync is True
     assert type(client._client) is v1beta.AlloyDBAdminClient
     assert client._client.transport.kind == "grpc"
 
@@ -236,7 +230,6 @@ async def test_AlloyDBClient_init_async_client(credentials: FakeCredentials) -> 
     client = AlloyDBClient(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=""
     )
-    assert client._is_sync is False
     assert type(client._client) is v1beta.AlloyDBAdminAsyncClient
     assert client._client.transport.kind == "grpc_asyncio"
 

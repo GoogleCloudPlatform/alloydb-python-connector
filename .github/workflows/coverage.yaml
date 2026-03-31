@@ -33,7 +33,8 @@ jobs:
         with:
           python-version: "3.14"
 
-      - run: pip install nox coverage
+      - name: Install uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
 
       - name: Checkout PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -41,17 +42,5 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
-      - name: Calculate PR code coverage
-        run: |
-          nox --sessions unit-3.14
-          coverage report --show-missing
-          export PR_COVER=$(coverage report | awk '$1 == "TOTAL" {print $NF+0}')
-          echo "PR_COVER=$PR_COVER" >> $GITHUB_ENV
-          coverage erase
-
-      - name: Verify code coverage. If your reading this and the step has failed, please add tests to cover your changes.
-        run: |
-          echo "PULL REQUEST CODE COVERAGE is ${{ env.PR_COVER }}%"
-          if [ "${{ env.PR_COVER }}" -lt "90"  ]; then
-            exit 1;
-          fi
+      - name: Verify code coverage
+        run: ./scripts/coverage.sh

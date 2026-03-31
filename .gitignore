@@ -50,6 +50,10 @@ docs.metadata
 
 # Virtual environment
 env/
+.venv
+
+# uv lock file (library — consumers resolve their own deps)
+uv.lock
 
 # Test logs
 coverage.xml

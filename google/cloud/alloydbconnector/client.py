@@ -18,6 +18,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 from typing import Optional
+from typing import Union
 
 from cryptography import x509
 
@@ -95,7 +96,7 @@ class AlloyDBClient:
         # API, even from multiple threads, need to be made to a single-event
         # loop. See https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/435
         # for more details.
-        self._is_sync = False
+        self._client: Union[v1beta.AlloyDBAdminClient, v1beta.AlloyDBAdminAsyncClient]
         if client:
             self._client = client
         elif driver == "pg8000" or driver == "psycopg":
@@ -110,7 +111,6 @@ class AlloyDBClient:
                     user_agent=user_agent,
                 ),
             )
-            self._is_sync = True
         else:
             self._client = v1beta.AlloyDBAdminAsyncClient(
                 credentials=credentials,
@@ -163,7 +163,7 @@ class AlloyDBClient:
         )
 
         req = v1beta.GetConnectionInfoRequest(parent=parent)
-        if self._is_sync:
+        if isinstance(self._client, v1beta.AlloyDBAdminClient):
             resp = self._client.get_connection_info(request=req)
         else:
             resp = await self._client.get_connection_info(request=req)
@@ -213,11 +213,11 @@ class AlloyDBClient:
             public_key=pub_key,
             use_metadata_exchange=self._use_metadata,
         )
-        if self._is_sync:
+        if isinstance(self._client, v1beta.AlloyDBAdminClient):
             resp = self._client.generate_client_certificate(request=req)
         else:
             resp = await self._client.generate_client_certificate(request=req)
-        return (resp.ca_cert, resp.pem_certificate_chain)
+        return (resp.ca_cert, list(resp.pem_certificate_chain))
 
     async def get_connection_info(
         self,

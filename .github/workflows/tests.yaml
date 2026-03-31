@@ -52,8 +52,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install nox
-        run: pip install nox
+      - name: Install uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
 
       - id: 'auth'
         name: Authenticate to Google Cloud
@@ -66,7 +66,8 @@ jobs:
           access_token_lifetime: 600s
 
       - name: Run tests
-        run: nox -s unit-${{ matrix.python-version }}
+        shell: bash
+        run: ./scripts/test_unit.sh
 
       - name: FlakyBot (Linux)
         # only run flakybot on periodic (schedule) and continuous (push) events
@@ -118,8 +119,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install nox
-        run: pip install nox
+      - name: Install uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
@@ -149,7 +150,7 @@ jobs:
           ALLOYDB_INSTANCE_IP: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_IP }}'
           ALLOYDB_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_URI }}'
           ALLOYDB_PSC_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_PSC_INSTANCE_URI }}'
-        run: nox -s system-${{ matrix.python-version }}
+        run: ./scripts/test_system.sh
 
       - name: FlakyBot (Linux)
         # only run flakybot on periodic (schedule) and continuous (push) events

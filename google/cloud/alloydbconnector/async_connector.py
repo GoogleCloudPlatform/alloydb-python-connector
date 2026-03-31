@@ -119,10 +119,17 @@ class AsyncConnector:
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
+        self._keys: Optional[asyncio.Task] = None
         try:
-            self._keys: Optional[asyncio.Task] = asyncio.create_task(generate_keys())
+            # Try to get the running loop before creating a task. The call here
+            # will raise a RuntimeError if no loop is running. Without calling
+            # get_running_loop, a direct call to create_task would also raise
+            # an exception but it would leak the generate_keys coroutine. To
+            # avoid leaking the coroutine, we call get_running_loop first.
+            asyncio.get_running_loop()
+            self._keys = asyncio.create_task(generate_keys())
         except RuntimeError:
-            self._keys = None
+            pass
         self._client: Optional[AlloyDBClient] = None
         self._closed = False
 

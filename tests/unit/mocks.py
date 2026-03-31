@@ -477,7 +477,10 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
     return io.StringIO(json.dumps(static))
 
 
-class FakeAlloyDBAdminAsyncClient:
+class FakeAlloyDBAdminAsyncClient(alloydb_v1beta.AlloyDBAdminAsyncClient):
+    def __init__(self) -> None:
+        pass
+
     async def get_connection_info(
         self, request: alloydb_v1beta.GetConnectionInfoRequest
     ) -> alloydb_v1beta.types.resources.ConnectionInfo:
@@ -510,7 +513,10 @@ class FakeAlloyDBAdminAsyncClient:
         return ccr
 
 
-class FakeAlloyDBAdminClient:
+class FakeAlloyDBAdminClient(alloydb_v1beta.AlloyDBAdminClient):
+    def __init__(self) -> None:
+        pass
+
     def get_connection_info(
         self, request: alloydb_v1beta.GetConnectionInfoRequest
     ) -> alloydb_v1beta.types.resources.ConnectionInfo:
