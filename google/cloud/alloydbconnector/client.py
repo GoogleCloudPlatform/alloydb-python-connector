@@ -16,18 +16,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Optional
 
 from cryptography import x509
+
 from google.api_core.client_options import ClientOptions
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.credentials import TokenState
 from google.auth.transport import requests
 import google.cloud.alloydb_v1beta as v1beta
-from google.protobuf import duration_pb2
-
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 from google.cloud.alloydbconnector.version import __version__ as version
+from google.protobuf import duration_pb2
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials

@@ -91,8 +91,7 @@ class LazyRefreshCache:
                 )
                 return self._cached
             logger.debug(
-                f"['{self._instance_uri}']: Connection info "
-                "refresh operation started"
+                f"['{self._instance_uri}']: Connection info refresh operation started"
             )
             try:
                 conn_info = await self._client.get_connection_info(

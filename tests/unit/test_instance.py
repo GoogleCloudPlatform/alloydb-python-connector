@@ -21,8 +21,8 @@ import pytest
 
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 from google.cloud.alloydbconnector.exceptions import RefreshError
-from google.cloud.alloydbconnector.instance import _parse_instance_uri
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.instance import _parse_instance_uri
 from google.cloud.alloydbconnector.refresh_utils import _is_valid
 from google.cloud.alloydbconnector.utils import generate_keys
 

@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import ssl
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
 
 SERVER_PROXY_PORT = 5433
 

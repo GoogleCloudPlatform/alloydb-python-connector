@@ -17,12 +17,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from types import TracebackType
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Optional
 
 import google.auth
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
-
 import google.cloud.alloydbconnector.asyncpg as asyncpg
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
@@ -178,8 +179,7 @@ class AsyncConnector:
                 cache = LazyRefreshCache(instance_uri, self._client, self._keys)
             else:
                 logger.debug(
-                    f"['{instance_uri}']: Refresh strategy is set to background"
-                    " refresh"
+                    f"['{instance_uri}']: Refresh strategy is set to background refresh"
                 )
                 cache = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._cache[instance_uri] = cache

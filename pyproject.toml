@@ -73,6 +73,39 @@ version = { attr = "google.cloud.alloydbconnector.version.__version__" }
 # benchmarks, etc.
 include = ["google*"]
 
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = [
+    "google/api/*",
+    "google/cloud/alloydb_connectors_v1/*",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "ANN", # flake8-annotations
+]
+ignore = [
+    "E203",
+    "E231",
+    "E266",
+    "E501",
+    "ANN401",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"noxfile.py" = ["ANN"]
+"tests/*" = ["ANN"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = true
+known-first-party = ["google"]
+
 [tool.mypy]
 python_version = "3.10"
 namespace_packages = true

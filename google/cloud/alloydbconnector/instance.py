@@ -121,8 +121,7 @@ class RefreshAheadCache:
                 self._keys,
             )
             logger.debug(
-                f"['{self._instance_uri}']: Connection info refresh operation"
-                " complete"
+                f"['{self._instance_uri}']: Connection info refresh operation complete"
             )
             logger.debug(
                 f"['{self._instance_uri}']: Current certificate expiration = "

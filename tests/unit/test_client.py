@@ -14,12 +14,12 @@
 
 from typing import Optional
 
-import google.cloud.alloydb_v1beta as v1beta
 from mocks import FakeAlloyDBAdminAsyncClient
 from mocks import FakeAlloyDBAdminClient
 from mocks import FakeCredentials
 import pytest
 
+import google.cloud.alloydb_v1beta as v1beta
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.version import __version__ as version

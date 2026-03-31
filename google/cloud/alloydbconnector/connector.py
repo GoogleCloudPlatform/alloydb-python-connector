@@ -24,13 +24,15 @@ import socket
 import struct
 from threading import Thread
 from types import TracebackType
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Callable
+from typing import Optional
 
 from google.auth import default
 from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
 from google.auth.transport import requests
-
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
@@ -221,8 +223,7 @@ class Connector:
                 cache = LazyRefreshCache(instance_uri, self._client, self._keys)
             else:
                 logger.debug(
-                    f"['{instance_uri}']: Refresh strategy is set to background"
-                    " refresh"
+                    f"['{instance_uri}']: Refresh strategy is set to background refresh"
                 )
                 cache = RefreshAheadCache(instance_uri, self._client, self._keys)
             self._cache[instance_uri] = cache

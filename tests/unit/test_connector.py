@@ -16,8 +16,6 @@ import asyncio
 from threading import Thread
 from typing import Union
 
-from google.api_core.exceptions import RetryError
-from google.api_core.retry.retry_unary import Retry
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -25,6 +23,8 @@ from mocks import FakeCredentialsRequiresScopes
 from mocks import write_static_info
 import pytest
 
+from google.api_core.exceptions import RetryError
+from google.api_core.retry.retry_unary import Retry
 from google.cloud.alloydbconnector import Connector
 from google.cloud.alloydbconnector import IPTypes
 from google.cloud.alloydbconnector.client import AlloyDBClient

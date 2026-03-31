@@ -16,13 +16,14 @@
 from datetime import datetime
 import os
 
+import sqlalchemy
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import create_async_engine
+
 # [START alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
 import google.auth
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
-import sqlalchemy
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import create_async_engine
 
 # [END alloydb_sqlalchemy_asyncpg_connect_iam_authn_direct]
 

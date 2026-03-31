@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import ssl
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Optional
 
 from aiofiles.tempfile import TemporaryDirectory
 

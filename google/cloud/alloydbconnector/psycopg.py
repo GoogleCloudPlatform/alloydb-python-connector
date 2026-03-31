@@ -18,7 +18,8 @@ import socket
 import ssl
 import tempfile
 import threading
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from typing import Any
 
 if TYPE_CHECKING:
     import psycopg

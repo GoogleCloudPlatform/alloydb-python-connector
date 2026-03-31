@@ -105,7 +105,9 @@ async def test_ConnectionInfo_get_preferred_ip(ip_type: IPTypes, expected: str) 
     assert ip_address == expected
 
 
-async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_ip_type_not_exist() -> None:
+async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_ip_type_not_exist() -> (
+    None
+):
     """Test that ConnectionInfo.get_preferred_ip throws IPTypeNotFoundError"""
     conn_info = ConnectionInfo(
         ["cert"],
@@ -119,7 +121,9 @@ async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_ip_type_
         conn_info.get_preferred_ip(ip_type=IPTypes.PUBLIC)
 
 
-async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_empty_value() -> None:
+async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_empty_value() -> (
+    None
+):
     """Test that ConnectionInfo.get_preferred_ip throws IPTypeNotFoundError"""
     conn_info = ConnectionInfo(
         ["cert"],

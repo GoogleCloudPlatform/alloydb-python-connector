@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import asyncio
-from typing import Any, Union
+from typing import Any
+from typing import Union
 
-from google.api_core.exceptions import RetryError
-from google.api_core.retry.retry_unary_async import AsyncRetry
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
@@ -24,6 +23,8 @@ from mocks import FakeCredentials
 from mocks import FakeCredentialsRequiresScopes
 import pytest
 
+from google.api_core.exceptions import RetryError
+from google.api_core.retry.retry_unary_async import AsyncRetry
 from google.cloud.alloydbconnector import AsyncConnector
 from google.cloud.alloydbconnector import IPTypes
 from google.cloud.alloydbconnector.client import AlloyDBClient
