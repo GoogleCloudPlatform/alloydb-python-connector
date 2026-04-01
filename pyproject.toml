@@ -115,11 +115,8 @@ select = [
     "ANN", # flake8-annotations
 ]
 ignore = [
-    "E203",
-    "E231",
-    "E266",
-    "E501",
-    "ANN401",
+    "ANN401", # Any is needed for pass-through **kwargs
+    "E501",   # line too long — enforced by ruff format
 ]
 
 [tool.ruff.lint.per-file-ignores]

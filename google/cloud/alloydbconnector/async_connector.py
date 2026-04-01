@@ -252,7 +252,7 @@ class AsyncConnector:
         cache = self._cache.pop(instance_uri)
         await cache.close()
 
-    async def __aenter__(self) -> Any:
+    async def __aenter__(self) -> AsyncConnector:
         """Enter async context manager by returning Connector object"""
         return self
 

@@ -43,7 +43,7 @@ def _proxy(local: socket.socket, remote: "ssl.SSLSocket") -> None:
         remote: The SSL socket connected to the AlloyDB proxy server.
     """
 
-    def forward(src: Any, dst: Any) -> None:
+    def forward(src: socket.socket, dst: socket.socket) -> None:
         buf = bytearray(_CHUNK_SIZE)
         view = memoryview(buf)
         try:
