@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.12.1...v1.13.0) (2026-05-12)
+
+
+### Features
+
+* add support for psycopg ([#529](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/529)) ([2e8dd40](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/2e8dd40b11e5fd10a745fa245879e6624d9527e6))
+
+
+### Documentation
+
+* restore asyncpg pool usage in README ([#538](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/538)) ([eba5aaa](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/eba5aaa1c2221a1962f971e8485700635cbc7e2c))
+
 ## [1.12.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.12.0...v1.12.1) (2026-03-05)
 
 
