@@ -48,6 +48,10 @@ dependencies = [
     "protobuf",
     "google-cloud-alloydb",
     "google-api-core",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-gcp-monitoring",
+    "google-cloud-monitoring",
 ]
 dynamic = ["version"]
 

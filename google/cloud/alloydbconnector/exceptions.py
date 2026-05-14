@@ -23,3 +23,15 @@ class IPTypeNotFoundError(Exception):
 
 class ClosedConnectorError(Exception):
     pass
+
+
+class TCPConnectionError(Exception):
+    pass
+
+
+class TLSHandshakeError(Exception):
+    pass
+
+
+class MetadataExchangeError(Exception):
+    pass
