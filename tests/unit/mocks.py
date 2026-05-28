@@ -459,7 +459,7 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
     )
     priv_pem = priv_key.private_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("UTF-8")
     ca_cert, chain = i.generate_pem_certificate_chain(pub_pem)
