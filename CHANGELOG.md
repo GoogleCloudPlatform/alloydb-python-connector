@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.13.0...v1.13.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* use modern PKCS[#8](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/8) for key serialization ([#547](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/547)) ([c7d3990](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/c7d399001d938a21f037403687e28faa7e49b999))
+
 ## [1.13.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.12.1...v1.13.0) (2026-05-12)
 
 
