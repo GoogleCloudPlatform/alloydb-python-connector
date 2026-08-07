@@ -40,8 +40,6 @@ from google.auth.transport import requests
 from google.cloud import alloydb_v1beta
 import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
-
-
 from google.cloud.alloydbconnector.connector import _DEFAULT_UNIVERSE_DOMAIN
 
 
