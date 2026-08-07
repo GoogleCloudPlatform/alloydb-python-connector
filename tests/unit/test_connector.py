@@ -344,9 +344,9 @@ def test_Connector_remove_cached_bad_instance(
             "alloydb.googleapis.com", "test-project", credentials, driver="pg8000"
         )
         transport = connector._client._client.transport
-        transport._wrapped_methods[transport.get_connection_info]._retry = Retry(
-            timeout=1
-        )
+        transport._wrapped_methods[
+            transport.generate_client_certificate
+        ]._retry = Retry(timeout=1)
         transport._wrapped_methods[transport.generate_client_certificate]._retry = (
             Retry(timeout=1)
         )

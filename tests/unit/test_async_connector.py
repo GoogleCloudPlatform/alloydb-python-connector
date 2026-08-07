@@ -441,9 +441,9 @@ async def test_Connector_remove_cached_bad_instance(
         transport._wrapped_methods[transport.get_connection_info]._retry = AsyncRetry(
             timeout=1
         )
-        transport._wrapped_methods[transport.generate_client_certificate]._retry = (
-            AsyncRetry(timeout=1)
-        )
+        transport._wrapped_methods[
+            transport.generate_client_certificate
+        ]._retry = AsyncRetry(timeout=1)
 
         with pytest.raises(RetryError):
             await connector.connect(instance_uri, "asyncpg")
