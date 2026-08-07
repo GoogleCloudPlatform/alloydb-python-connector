@@ -109,9 +109,9 @@ class AsyncConnector:
         self._user_agent = user_agent
         # check for universe domain arg and then env var
         if universe_domain:
-            self._universe_domain = universe_domain
+            self._universe_domain: Optional[str] = universe_domain
         else:
-            self._universe_domain = os.environ.get("GOOGLE_CLOUD_UNIVERSE_DOMAIN")  # type: ignore
+            self._universe_domain = os.environ.get("GOOGLE_CLOUD_UNIVERSE_DOMAIN")
         # construct service endpoint for AlloyDB API calls
         # if user has not overridden the endpoint, build it from universe domain
         if alloydb_api_endpoint == _DEFAULT_ALLOYDB_API_ENDPOINT:
