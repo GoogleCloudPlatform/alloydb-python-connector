@@ -42,10 +42,14 @@ import google.cloud.alloydb_connectors_v1.proto.resources_pb2 as connectorspb
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 
 
+from google.cloud.alloydbconnector.connector import _DEFAULT_UNIVERSE_DOMAIN
+
+
 class FakeCredentials:
     def __init__(self) -> None:
         self.token: Optional[str] = None
         self.expiry: Optional[datetime] = None
+        self._universe_domain = _DEFAULT_UNIVERSE_DOMAIN
 
     def refresh(self, _: Callable) -> None:
         """Refreshes the access token."""
@@ -66,6 +70,11 @@ class FakeCredentials:
     def valid(self) -> bool:
         """Checks if the credentials are valid."""
         return self.token is not None and not self.expired
+
+    @property
+    def universe_domain(self) -> str:
+        """The universe domain value."""
+        return self._universe_domain
 
     @property
     def token_state(
@@ -98,6 +107,13 @@ class FakeCredentials:
 
 
 class FakeCredentialsRequiresScopes(Scoped):
+    _universe_domain = _DEFAULT_UNIVERSE_DOMAIN
+
+    @property
+    def universe_domain(self) -> str:
+        """The universe domain value."""
+        return self._universe_domain
+
     def requires_scopes(self) -> bool:
         """
         Overrides the requires_scopes() method of the Scoped class to require

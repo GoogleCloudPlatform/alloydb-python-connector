@@ -20,6 +20,7 @@ from datetime import timezone
 from functools import partial
 import io
 import logging
+import os
 import socket
 import struct
 from threading import Thread
@@ -59,6 +60,10 @@ SERVER_PROXY_PORT = 5433
 # the maximum amount of time to wait before aborting a metadata exchange
 IO_TIMEOUT = 30
 
+_DEFAULT_UNIVERSE_DOMAIN = "googleapis.com"
+_DEFAULT_ALLOYDB_API_ENDPOINT = "alloydb.googleapis.com"
+_ALLOYDB_HOST_TEMPLATE = "alloydb.{universe_domain}"
+
 
 class Connector:
     """A class to configure and create connections to Cloud SQL instances.
@@ -80,7 +85,10 @@ class Connector:
             billing purposes.
             Defaults to None, picking up project from environment.
         alloydb_api_endpoint (str): Base URL to use when calling
-            the AlloyDB API endpoint. Defaults to "alloydb.googleapis.com".
+            the AlloyDB API endpoint. Defaults to "alloydb.googleapis.com",
+            this argument should only be used in development.
+        universe_domain (str): The universe domain for AlloyDB API calls.
+            Default: "googleapis.com".
         enable_iam_auth (bool): Enables automatic IAM database authentication.
         ip_type (str | IPTypes): Default IP type for all AlloyDB connections.
             Defaults to IPTypes.PRIVATE ("PRIVATE") for private IP connections.
@@ -108,6 +116,7 @@ class Connector:
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         static_conn_info: Optional[io.TextIOBase] = None,
+        universe_domain: Optional[str] = None,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -116,7 +125,6 @@ class Connector:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
         self._quota_project = quota_project
-        self._alloydb_api_endpoint = strip_http_prefix(alloydb_api_endpoint)
         self._enable_iam_auth = enable_iam_auth
         # if ip_type is str, convert to IPTypes enum
         if isinstance(ip_type, str):
@@ -127,6 +135,20 @@ class Connector:
             refresh_strategy = RefreshStrategy(refresh_strategy.upper())
         self._refresh_strategy = refresh_strategy
         self._user_agent = user_agent
+        # check for universe domain arg and then env var
+        if universe_domain:
+            self._universe_domain = universe_domain
+        else:
+            self._universe_domain = os.environ.get("GOOGLE_CLOUD_UNIVERSE_DOMAIN")
+        # construct service endpoint for AlloyDB API calls
+        # if user has not overridden the endpoint, build it from universe domain
+        if alloydb_api_endpoint == _DEFAULT_ALLOYDB_API_ENDPOINT:
+            self._alloydb_api_endpoint = _ALLOYDB_HOST_TEMPLATE.format(
+                universe_domain=self.universe_domain
+            )
+        else:
+            # user explicitly provided a custom endpoint, use it as-is
+            self._alloydb_api_endpoint = strip_http_prefix(alloydb_api_endpoint)
         # initialize credentials for authenticating with AlloyDB Admin API
         scopes = ["https://www.googleapis.com/auth/cloud-platform"]
         if credentials:
@@ -134,6 +156,18 @@ class Connector:
         # otherwise use application default credentials
         else:
             self._credentials, _ = default(scopes=scopes)
+
+        # validate that the universe domain of the credentials matches the
+        # universe domain of the service endpoint
+        if self._credentials.universe_domain != self.universe_domain:
+            raise ValueError(
+                f"The configured universe domain ({self.universe_domain}) does "
+                "not match the universe domain found in the credentials "
+                f"({self._credentials.universe_domain}). If you haven't "
+                "configured the universe domain explicitly, `googleapis.com` "
+                "is the default."
+            )
+
         # initialize credentials for authenticating with the DB
         if db_credentials:
             self._db_credentials = db_credentials
@@ -151,6 +185,10 @@ class Connector:
         self._client: Optional[AlloyDBClient] = None
         self._static_conn_info = static_conn_info
         self._closed = False
+
+    @property
+    def universe_domain(self) -> str:
+        return self._universe_domain or _DEFAULT_UNIVERSE_DOMAIN
 
     def connect(self, instance_uri: str, driver: str, **kwargs: Any) -> Any:
         """
