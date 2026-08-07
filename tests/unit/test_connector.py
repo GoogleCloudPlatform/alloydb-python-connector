@@ -347,9 +347,9 @@ def test_Connector_remove_cached_bad_instance(
         transport._wrapped_methods[
             transport.generate_client_certificate
         ]._retry = Retry(timeout=1)
-        transport._wrapped_methods[transport.generate_client_certificate]._retry = (
-            Retry(timeout=1)
-        )
+        transport._wrapped_methods[
+            transport.generate_client_certificate
+        ]._retry = Retry(timeout=1)
 
         with pytest.raises(RetryError):
             connector.connect(instance_uri, "pg8000")
