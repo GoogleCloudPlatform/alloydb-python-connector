@@ -23,6 +23,12 @@ from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 from google.cloud.alloydbconnector.instance import _parse_instance_uri
 from google.cloud.alloydbconnector.refresh_utils import _refresh_buffer
+from google.cloud.alloydbconnector.telemetry import REFRESH_FAILURE
+from google.cloud.alloydbconnector.telemetry import REFRESH_LAZY_TYPE
+from google.cloud.alloydbconnector.telemetry import REFRESH_SUCCESS
+from google.cloud.alloydbconnector.telemetry import MetricRecorderType
+from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 
 logger = logging.getLogger(name=__name__)
 
@@ -41,6 +47,7 @@ class LazyRefreshCache:
         instance_uri: str,
         client: AlloyDBClient,
         keys: asyncio.Future,
+        metric_recorder: MetricRecorderType = NullMetricRecorder(),
     ) -> None:
         """Initializes a LazyRefreshCache instance.
 
@@ -50,6 +57,7 @@ class LazyRefreshCache:
             client (AlloyDBClient): The AlloyDB client instance.
             keys (asyncio.Future): A future to the client's public-private key
                 pair.
+            metric_recorder: Recorder for built-in telemetry metrics.
         """
         # validate and parse instance connection name
         self._project, self._region, self._cluster, self._name = _parse_instance_uri(
@@ -59,6 +67,7 @@ class LazyRefreshCache:
 
         self._keys = keys
         self._client = client
+        self._metric_recorder = metric_recorder
         self._lock = asyncio.Lock()
         self._cached: Optional[ConnectionInfo] = None
         self._needs_refresh = False
@@ -106,6 +115,12 @@ class LazyRefreshCache:
                     f"['{self._instance_uri}']: Connection info "
                     f"refresh operation failed: {str(e)}"
                 )
+                self._metric_recorder.record_refresh_count(
+                    TelemetryAttributes(
+                        refresh_status=REFRESH_FAILURE,
+                        refresh_type=REFRESH_LAZY_TYPE,
+                    )
+                )
                 raise
             logger.debug(
                 f"['{self._instance_uri}']: Connection info "
@@ -114,6 +129,12 @@ class LazyRefreshCache:
             logger.debug(
                 f"['{self._instance_uri}']: Current certificate "
                 f"expiration = {str(conn_info.expiration)}"
+            )
+            self._metric_recorder.record_refresh_count(
+                TelemetryAttributes(
+                    refresh_status=REFRESH_SUCCESS,
+                    refresh_type=REFRESH_LAZY_TYPE,
+                )
             )
             self._cached = conn_info
             self._needs_refresh = False

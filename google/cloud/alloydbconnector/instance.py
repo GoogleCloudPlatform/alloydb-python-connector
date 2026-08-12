@@ -27,6 +27,12 @@ from google.cloud.alloydbconnector.exceptions import RefreshError
 from google.cloud.alloydbconnector.rate_limiter import AsyncRateLimiter
 from google.cloud.alloydbconnector.refresh_utils import _is_valid
 from google.cloud.alloydbconnector.refresh_utils import _seconds_until_refresh
+from google.cloud.alloydbconnector.telemetry import REFRESH_AHEAD_TYPE
+from google.cloud.alloydbconnector.telemetry import REFRESH_FAILURE
+from google.cloud.alloydbconnector.telemetry import REFRESH_SUCCESS
+from google.cloud.alloydbconnector.telemetry import MetricRecorderType
+from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric import rsa
@@ -77,6 +83,7 @@ class RefreshAheadCache:
         instance_uri: str,
         client: AlloyDBClient,
         keys: asyncio.Future[tuple[rsa.RSAPrivateKey, str]],
+        metric_recorder: MetricRecorderType = NullMetricRecorder(),
     ) -> None:
         # validate and parse instance_uri
         self._project, self._region, self._cluster, self._name = _parse_instance_uri(
@@ -86,6 +93,7 @@ class RefreshAheadCache:
         self._instance_uri = instance_uri
         self._client = client
         self._keys = keys
+        self._metric_recorder = metric_recorder
         self._refresh_rate_limiter = AsyncRateLimiter(
             max_capacity=2,
             rate=1 / 30,
@@ -127,11 +135,23 @@ class RefreshAheadCache:
                 f"['{self._instance_uri}']: Current certificate expiration = "
                 f"{connection_info.expiration.isoformat()}"
             )
+            self._metric_recorder.record_refresh_count(
+                TelemetryAttributes(
+                    refresh_status=REFRESH_SUCCESS,
+                    refresh_type=REFRESH_AHEAD_TYPE,
+                )
+            )
 
         except Exception as e:
             logger.debug(
                 f"['{self._instance_uri}']: Connection info refresh operation"
                 f" failed: {str(e)}"
+            )
+            self._metric_recorder.record_refresh_count(
+                TelemetryAttributes(
+                    refresh_status=REFRESH_FAILURE,
+                    refresh_type=REFRESH_AHEAD_TYPE,
+                )
             )
             raise
 
