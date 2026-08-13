@@ -279,3 +279,90 @@ def test_connect_cleanup_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     socket_path = os.path.join(tmpdir, ".s.PGSQL.5432")
     assert not os.path.exists(socket_path)
     assert not os.path.exists(tmpdir)
+
+
+def test_proxy_happy_path_sequential() -> None:
+    """Test that _proxy forwards sequential request/response traffic cleanly without errors."""
+    local_a, local_b = _socketpair()
+    remote_a, remote_b = _socketpair()
+
+    t = threading.Thread(target=_proxy, args=(local_b, remote_b), daemon=True)
+    t.start()
+
+    # Step 1: Client sends query
+    local_a.sendall(b"SELECT 1;")
+    received_query = remote_a.recv(1024)
+    assert received_query == b"SELECT 1;"
+
+    # Step 2: Server sends response
+    remote_a.sendall(b"RESULT 1")
+    received_resp = local_a.recv(1024)
+    assert received_resp == b"RESULT 1"
+
+    # Step 3: Client closes connection cleanly
+    local_a.shutdown(socket.SHUT_RDWR)
+    local_a.close()
+    remote_a.close()
+    t.join(timeout=2.0)
+    assert not t.is_alive()
+
+
+def test_proxy_multi_threaded_backpressure_deadlock() -> None:
+    """Demonstrate multi-threaded proxy deadlock under saturated bidirectional load.
+
+    When OS buffers fill simultaneously in both directions (e.g. client sending
+    large payload while server sends data/errors), both forwarder threads block on
+    `sendall()`. Neither thread can drain the other socket, causing a mutual deadlock.
+    """
+    local_client, local_proxy = _socketpair()
+    remote_proxy, remote_server = _socketpair()
+
+    # Set small socket buffers to trigger backpressure quickly
+    for s in (local_client, local_proxy, remote_proxy, remote_server):
+        try:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+        except OSError:
+            pass
+
+    t_proxy = threading.Thread(
+        target=_proxy, args=(local_proxy, remote_proxy), daemon=True
+    )
+    t_proxy.start()
+
+    payload = b"X" * 1048576  # 1 MB
+
+    def client_sender() -> None:
+        try:
+            local_client.sendall(payload)
+        except OSError:
+            pass
+
+    def server_sender() -> None:
+        try:
+            remote_server.sendall(payload)
+        except OSError:
+            pass
+
+    t_client = threading.Thread(target=client_sender, daemon=True)
+    t_server = threading.Thread(target=server_sender, daemon=True)
+
+    t_client.start()
+    t_server.start()
+
+    # Senders will block in sendall() due to backpressure in both proxy threads
+    t_client.join(timeout=1.0)
+    t_server.join(timeout=1.0)
+
+    # Both threads remain blocked (deadlocked) because the dual-threaded proxy cannot drain
+    is_deadlocked = t_client.is_alive() and t_server.is_alive()
+    assert (
+        is_deadlocked
+    ), "Expected both threads to remain deadlocked in sendall() under backpressure"
+
+    # Clean up sockets to release threads
+    local_client.close()
+    local_proxy.close()
+    remote_proxy.close()
+    remote_server.close()
+
