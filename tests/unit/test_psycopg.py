@@ -99,9 +99,7 @@ def test_connect_unsupported_platform(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_remote_sock = MagicMock(spec=ssl.SSLSocket)
     with (
         patch("google.cloud.alloydbconnector.psycopg.hasattr", return_value=False),
-        pytest.raises(
-            NotImplementedError, match="Unix domain sockets \\(AF_UNIX\\)"
-        ),
+        pytest.raises(NotImplementedError, match="Unix domain sockets \\(AF_UNIX\\)"),
     ):
         connect(mock_remote_sock, user="u", db="d", password="p")
 
@@ -372,14 +370,12 @@ def test_proxy_multi_threaded_backpressure_deadlock() -> None:
 
     # Both threads remain blocked (deadlocked) because the dual-threaded proxy cannot drain
     is_deadlocked = t_client.is_alive() and t_server.is_alive()
-    assert (
-        is_deadlocked
-    ), "Expected both threads to remain deadlocked in sendall() under backpressure"
+    assert is_deadlocked, (
+        "Expected both threads to remain deadlocked in sendall() under backpressure"
+    )
 
     # Clean up sockets to release threads
     local_client.close()
     local_proxy.close()
     remote_proxy.close()
     remote_server.close()
-
-
