@@ -14,6 +14,7 @@
 
 import os
 import socket
+import ssl
 import sys
 import threading
 import types
@@ -88,6 +89,21 @@ def test_connect_raises_on_missing_psycopg(monkeypatch: pytest.MonkeyPatch) -> N
         connect(local_b, user="u", db="d", password="p")  # type: ignore[arg-type]
 
     local_a.close()
+
+
+def test_connect_unsupported_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    """connect() raises NotImplementedError when AF_UNIX is not available."""
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+
+    mock_remote_sock = MagicMock(spec=ssl.SSLSocket)
+    with (
+        patch("google.cloud.alloydbconnector.psycopg.hasattr", return_value=False),
+        pytest.raises(
+            NotImplementedError, match="Unix domain sockets \\(AF_UNIX\\)"
+        ),
+    ):
+        connect(mock_remote_sock, user="u", db="d", password="p")
 
 
 def _make_fake_psycopg_module(captured: dict) -> types.ModuleType:
@@ -365,4 +381,5 @@ def test_proxy_multi_threaded_backpressure_deadlock() -> None:
     local_proxy.close()
     remote_proxy.close()
     remote_server.close()
+
 

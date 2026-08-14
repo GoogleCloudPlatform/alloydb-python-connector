@@ -14,11 +14,19 @@
 
 from datetime import datetime
 import os
+import socket
+
+import pytest
 
 # [START alloydb_sqlalchemy_connect_connector_psycopg_public_ip]
 import sqlalchemy
 
 from google.cloud.alloydbconnector import Connector
+
+pytestmark = pytest.mark.skipif(
+    not hasattr(socket, "AF_UNIX"),
+    reason="Unix domain sockets (AF_UNIX) not available on this platform",
+)
 
 
 def create_sqlalchemy_engine(
