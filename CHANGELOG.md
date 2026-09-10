@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.13.1...v1.14.0) (2026-09-10)
+
+
+### Features
+
+* add universe domain support for TPC ([#557](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/557)) ([610cb52](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/610cb5217b09dacb52d206be2cd6cf15529ce309))
+
 ## [1.13.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.13.0...v1.13.1) (2026-06-08)
 
 
