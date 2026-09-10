@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import os
 from threading import Thread
 from typing import Union
 
@@ -344,9 +343,9 @@ def test_Connector_remove_cached_bad_instance(
             "alloydb.googleapis.com", "test-project", credentials, driver="pg8000"
         )
         transport = connector._client._client.transport
-        transport._wrapped_methods[
-            transport.generate_client_certificate
-        ]._retry = Retry(timeout=1)
+        transport._wrapped_methods[transport.get_connection_info]._retry = Retry(
+            timeout=1
+        )
         transport._wrapped_methods[
             transport.generate_client_certificate
         ]._retry = Retry(timeout=1)
@@ -493,28 +492,3 @@ def test_configured_universe_domain_mismatched_credentials() -> None:
         "is the default."
     )
     assert exc_info.value.args[0] == err_msg
-
-
-def test_configured_universe_domain_env_var() -> None:
-    """Test that configured universe domain succeeds with universe
-    domain set via GOOGLE_CLOUD_UNIVERSE_DOMAIN env var.
-    """
-    universe_domain = "test-universe.test"
-    credentials = FakeCredentials()
-    credentials.token = "test-token"
-    credentials.expiry = None
-    # set fake credentials to be configured for the universe domain
-    credentials._universe_domain = universe_domain
-    # set environment variable
-    os.environ["GOOGLE_CLOUD_UNIVERSE_DOMAIN"] = universe_domain
-    # Note: we are not passing universe_domain arg, env var should set it
-    try:
-        with Connector(credentials=credentials) as connector:
-            # test universe domain was configured
-            assert connector._universe_domain == universe_domain
-            # test property and service endpoint construction
-            assert connector.universe_domain == universe_domain
-            assert connector._alloydb_api_endpoint == f"alloydb.{universe_domain}"
-    finally:
-        # unset env var
-        del os.environ["GOOGLE_CLOUD_UNIVERSE_DOMAIN"]

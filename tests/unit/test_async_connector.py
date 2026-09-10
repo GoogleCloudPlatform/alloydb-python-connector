@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import os
 from typing import Any
 from typing import Union
 
@@ -554,22 +553,3 @@ def test_async_configured_universe_domain_mismatched_credentials() -> None:
         "is the default."
     )
     assert exc_info.value.args[0] == err_msg
-
-
-def test_async_configured_universe_domain_env_var() -> None:
-    """Test that configured universe domain succeeds with universe
-    domain set via GOOGLE_CLOUD_UNIVERSE_DOMAIN env var.
-    """
-    universe_domain = "test-universe.test"
-    credentials = FakeCredentials()
-    credentials.token = "test-token"
-    credentials.expiry = None
-    credentials._universe_domain = universe_domain
-    os.environ["GOOGLE_CLOUD_UNIVERSE_DOMAIN"] = universe_domain
-    try:
-        connector = AsyncConnector(credentials=credentials)
-        assert connector._universe_domain == universe_domain
-        assert connector.universe_domain == universe_domain
-        assert connector._alloydb_api_endpoint == f"alloydb.{universe_domain}"
-    finally:
-        del os.environ["GOOGLE_CLOUD_UNIVERSE_DOMAIN"]

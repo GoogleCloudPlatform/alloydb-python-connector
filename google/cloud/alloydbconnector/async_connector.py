@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from types import TracebackType
 from typing import TYPE_CHECKING
 from typing import Any
@@ -107,11 +106,7 @@ class AsyncConnector:
             refresh_strategy = RefreshStrategy(refresh_strategy.upper())
         self._refresh_strategy = refresh_strategy
         self._user_agent = user_agent
-        # check for universe domain arg and then env var
-        if universe_domain:
-            self._universe_domain: Optional[str] = universe_domain
-        else:
-            self._universe_domain = os.environ.get("GOOGLE_CLOUD_UNIVERSE_DOMAIN")
+        self._universe_domain: Optional[str] = universe_domain
         # construct service endpoint for AlloyDB API calls
         # if user has not overridden the endpoint, build it from universe domain
         if alloydb_api_endpoint == _DEFAULT_ALLOYDB_API_ENDPOINT:
