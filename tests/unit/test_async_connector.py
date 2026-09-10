@@ -491,3 +491,65 @@ async def test_connect_when_closed(credentials: FakeCredentials) -> None:
         exc_info.value.args[0]
         == "Connection attempt failed because the connector has already been closed."
     )
+
+
+def test_async_default_universe_domain() -> None:
+    """Test that default universe domain and constructed service endpoint are
+    formatted correctly.
+    """
+    credentials = FakeCredentials()
+    credentials.token = "test-token"
+    credentials.expiry = None
+    connector = AsyncConnector(credentials=credentials)
+    # test universe domain was not configured
+    assert connector._universe_domain is None
+    # test property and service endpoint construction
+    assert connector.universe_domain == "googleapis.com"
+    assert connector._alloydb_api_endpoint == "alloydb.googleapis.com"
+
+
+def test_async_configured_universe_domain_matches_GDU() -> None:
+    """Test that configured universe domain succeeds with matched GDU credentials."""
+    credentials = FakeCredentials()
+    credentials.token = "test-token"
+    credentials.expiry = None
+    universe_domain = "googleapis.com"
+    connector = AsyncConnector(credentials=credentials, universe_domain=universe_domain)
+    assert connector._universe_domain == universe_domain
+    assert connector.universe_domain == universe_domain
+    assert connector._alloydb_api_endpoint == f"alloydb.{universe_domain}"
+
+
+def test_async_configured_universe_domain_matches_credentials() -> None:
+    """Test that configured universe domain succeeds with matching universe
+    domain credentials.
+    """
+    universe_domain = "test-universe.test"
+    credentials = FakeCredentials()
+    credentials.token = "test-token"
+    credentials.expiry = None
+    credentials._universe_domain = universe_domain
+    connector = AsyncConnector(credentials=credentials, universe_domain=universe_domain)
+    assert connector._universe_domain == universe_domain
+    assert connector.universe_domain == universe_domain
+    assert connector._alloydb_api_endpoint == f"alloydb.{universe_domain}"
+
+
+def test_async_configured_universe_domain_mismatched_credentials() -> None:
+    """Test that configured universe domain errors with mismatched universe
+    domain credentials.
+    """
+    universe_domain = "test-universe.test"
+    credentials = FakeCredentials()
+    credentials.token = "test-token"
+    credentials.expiry = None
+    with pytest.raises(ValueError) as exc_info:
+        AsyncConnector(credentials=credentials, universe_domain=universe_domain)
+    err_msg = (
+        f"The configured universe domain ({universe_domain}) does "
+        "not match the universe domain found in the credentials "
+        f"({credentials.universe_domain}). If you haven't "
+        "configured the universe domain explicitly, `googleapis.com` "
+        "is the default."
+    )
+    assert exc_info.value.args[0] == err_msg
