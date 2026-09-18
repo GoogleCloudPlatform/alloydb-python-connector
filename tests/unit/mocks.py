@@ -424,6 +424,31 @@ def metadata_exchange(sock: ssl.SSLSocket) -> None:
     sock.sendall(resp_len + resp.SerializeToString())
 
 
+class FakeAsyncConnection:
+    """Fake asyncpg.Connection that supports termination listeners.
+
+    Mirrors asyncpg's behavior of invoking termination listeners once from
+    Connection._cleanup, which runs on both close() and terminate().
+    """
+
+    def __init__(self) -> None:
+        self.termination_listeners: list[Callable] = []
+
+    def add_termination_listener(self, callback: Callable) -> None:
+        self.termination_listeners.append(callback)
+
+    def _cleanup(self) -> None:
+        for callback in self.termination_listeners:
+            callback(self)
+        self.termination_listeners.clear()
+
+    async def close(self) -> None:
+        self._cleanup()
+
+    def terminate(self) -> None:
+        self._cleanup()
+
+
 class FakeConnectionInfo:
     """Fake connection info class that doesn't perform a refresh"""
 
