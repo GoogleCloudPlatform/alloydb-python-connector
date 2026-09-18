@@ -21,6 +21,7 @@ from functools import partial
 import io
 import logging
 import socket
+import ssl
 import struct
 from threading import Thread
 from types import TracebackType
@@ -38,6 +39,9 @@ from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.enums import RefreshStrategy
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
+from google.cloud.alloydbconnector.exceptions import MetadataExchangeError
+from google.cloud.alloydbconnector.exceptions import TCPConnectionError
+from google.cloud.alloydbconnector.exceptions import TLSHandshakeError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
 import google.cloud.alloydbconnector.pg8000 as pg8000
@@ -48,8 +52,6 @@ from google.cloud.alloydbconnector.utils import generate_keys
 from google.cloud.alloydbconnector.utils import strip_http_prefix
 
 if TYPE_CHECKING:
-    import ssl
-
     from google.auth.credentials import Credentials
 
 logger = logging.getLogger(name=__name__)
@@ -347,12 +349,31 @@ class Connector:
         Returns:
             sock (ssl.SSLSocket): mTLS/SSL socket connected to AlloyDB Proxy server.
         """
-        # Create socket and wrap with SSL/TLS context
-        sock = ctx.wrap_socket(
-            socket.create_connection((ip_address, SERVER_PROXY_PORT)),
-            server_hostname=ip_address,
-        )
-        return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+        try:
+            raw_sock = socket.create_connection((ip_address, SERVER_PROXY_PORT))
+        except OSError as e:
+            raise TCPConnectionError.from_oserror(e) from e
+        try:
+            sock = ctx.wrap_socket(raw_sock, server_hostname=ip_address)
+        except ssl.SSLError as e:
+            raw_sock.close()
+            raise TLSHandshakeError.from_sslerror(e) from e
+        except OSError as e:
+            raw_sock.close()
+            raise TCPConnectionError.from_oserror(e) from e
+
+        try:
+            return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+        except Exception as e:
+            # Any failure past the TLS handshake belongs to the metadata
+            # exchange: socket timeouts, short reads, malformed responses and
+            # token refresh errors included. Classifying them here keeps them
+            # from escaping as unclassified errors, which would leave callers
+            # unable to tell a protocol failure from a network failure.
+            sock.close()
+            if isinstance(e, MetadataExchangeError):
+                raise
+            raise MetadataExchangeError(str(e)) from e
 
     def _metadata_exchange(
         self,
@@ -362,7 +383,8 @@ class Connector:
     ) -> ssl.SSLSocket:
         """Performs the metadata exchange over an established TLS connection.
 
-        See ``metadata_exchange`` for the protocol description.
+        See ``metadata_exchange`` for the protocol description. Errors raised
+        here are translated by the caller into MetadataExchangeError.
         """
         # set auth type for metadata exchange
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
@@ -405,7 +427,7 @@ class Connector:
         while message_len_buffer_size > 0:
             chunk = sock.recv(message_len_buffer_size)
             if not chunk:
-                raise RuntimeError(
+                raise MetadataExchangeError(
                     "Connection closed while getting metadata exchange length!"
                 )
             message_len_buffer += chunk
@@ -418,7 +440,7 @@ class Connector:
         while message_len > 0:
             chunk = sock.recv(message_len)
             if not chunk:
-                raise RuntimeError(
+                raise MetadataExchangeError(
                     "Connection closed while performing metadata exchange!"
                 )
             buffer += chunk
@@ -432,7 +454,7 @@ class Connector:
 
         # validate metadata exchange response
         if resp.response_code != connectorspb.MetadataExchangeResponse.OK:
-            raise ValueError(
+            raise MetadataExchangeError(
                 f"Metadata Exchange request has failed with error: {resp.error}"
             )
 

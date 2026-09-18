@@ -283,6 +283,37 @@ running a background refresh cycle:
 connector = Connector(refresh_strategy="lazy")
 ```
 
+### Connection Errors
+
+Failed connection attempts are classified so callers can tell *where* a dial
+failed. The classification changes the exception type callers see:
+
+| Failure | Exception | Base class |
+| --- | --- | --- |
+| TCP connect | `TCPConnectionError` | `OSError` |
+| TLS handshake | `TLSHandshakeError` | `ssl.SSLError` |
+| Metadata exchange | `MetadataExchangeError` | `Exception` |
+
+`except OSError` and `except ssl.SSLError` keep working, and `errno`,
+`strerror`, and (for TLS) `reason` and `library` are carried over from the
+original error, so retry logic that branches on them is unaffected.
+
+The narrower stdlib subclasses are **not** preserved: a refused connection
+now raises `TCPConnectionError`, not `ConnectionRefusedError`. Code matching
+those specific types should match on `errno` instead, or reach the original
+through `__cause__`:
+
+```python
+import errno
+from google.cloud.alloydbconnector import TCPConnectionError
+
+try:
+    conn = connector.connect(...)
+except TCPConnectionError as e:
+    if e.errno == errno.ECONNREFUSED:
+        ...        # e.__cause__ is the original ConnectionRefusedError
+```
+
 ### Debug Logging
 
 ```python
