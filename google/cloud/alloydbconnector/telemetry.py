@@ -19,8 +19,8 @@ Cloud Monitoring exporter. Metrics are exported to the
 alloydb.googleapis.com/client/connector system metric prefix. Presently,
 these metrics aren't public but will be made public in the future.
 
-The telemetry is enabled by default and can be disabled via the
-"enable_builtin_telemetry" option on the Connector or AsyncConnector.
+The telemetry is wired into the Connector but not yet enabled, and there is
+no public option to turn it on yet.
 
 Architecture
 ------------
@@ -925,7 +925,13 @@ class _TelemetryMixin:
             return self._metric_recorders[instance_uri]
         from google.cloud.alloydbconnector.instance import _parse_instance_uri
 
-        project, region, cluster, name = _parse_instance_uri(instance_uri)
+        try:
+            project, region, cluster, name = _parse_instance_uri(instance_uri)
+        except ValueError:
+            # Static connection info accepts any key the caller supplies.
+            # Telemetry must not reject a URI the cache would have accepted;
+            # the refresh caches still reject a malformed one themselves.
+            return NullMetricRecorder()
         provider = self._get_telemetry_provider(project)
         mr = provider.create_metric_recorder(
             project_id=project,
