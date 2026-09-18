@@ -443,9 +443,12 @@ class Connector:
         info cache from the map of caches.
         """
         logger.debug(f"['{instance_uri}']: Removing connection info from cache")
-        # remove cache from stored caches and close it
-        cache = self._cache.pop(instance_uri)
-        await cache.close()
+        # remove cache from stored caches and close it. The static connection
+        # info path never stores its cache, so a miss here is expected; a
+        # KeyError would replace whatever error sent us down this path.
+        cache = self._cache.pop(instance_uri, None)
+        if cache is not None:
+            await cache.close()
 
     def __enter__(self) -> "Connector":
         """Enter context manager by returning Connector object"""
