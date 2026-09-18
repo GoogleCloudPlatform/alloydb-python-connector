@@ -13,9 +13,13 @@
 # limitations under the License.
 
 import asyncio
+import socket
+import ssl
+import struct
 from threading import Thread
 from typing import Union
 
+from mock import MagicMock
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -30,6 +34,9 @@ from google.cloud.alloydbconnector import IPTypes
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
+from google.cloud.alloydbconnector.exceptions import MetadataExchangeError
+from google.cloud.alloydbconnector.exceptions import TCPConnectionError
+from google.cloud.alloydbconnector.exceptions import TLSHandshakeError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
 from google.cloud.alloydbconnector.utils import generate_keys
@@ -513,3 +520,66 @@ def test_static_connection_info_dial_error_is_not_masked(
         ):
             with pytest.raises(Exception, match="boom"):
                 connector.connect(fake_client.instance.uri(), "pg8000")
+
+
+INSTANCE_URI = (
+    "projects/test-project/locations/test-region"
+    "/clusters/test-cluster/instances/test-instance"
+)
+
+
+def test_metadata_exchange_classifies_tcp_errors(
+    credentials: FakeCredentials,
+) -> None:
+    """A failure to reach the server is a TCP error, and keeps its errno so
+    retry logic that branches on it is unaffected."""
+    with Connector(credentials) as connector:
+        with patch(
+            "socket.create_connection", side_effect=ConnectionRefusedError(111, "nope")
+        ):
+            with pytest.raises(TCPConnectionError) as exc_info:
+                connector.metadata_exchange(
+                    INSTANCE_URI, "127.0.0.1", MagicMock(), False
+                )
+    assert exc_info.value.errno == 111
+    assert isinstance(exc_info.value.__cause__, ConnectionRefusedError)
+
+
+def test_metadata_exchange_classifies_tls_errors(
+    credentials: FakeCredentials,
+) -> None:
+    """A handshake failure is a TLS error, and does not leak the socket."""
+    raw_sock = MagicMock()
+    with Connector(credentials) as connector:
+        with patch("socket.create_connection", return_value=raw_sock):
+            ctx = MagicMock()
+            ctx.wrap_socket.side_effect = ssl.SSLError("bad handshake")
+            with pytest.raises(TLSHandshakeError):
+                connector.metadata_exchange(INSTANCE_URI, "127.0.0.1", ctx, False)
+    raw_sock.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        socket.timeout("timed out"),
+        OSError("connection reset"),
+        struct.error("unpack requires a buffer of 4 bytes"),
+    ],
+)
+def test_metadata_exchange_classifies_io_errors(
+    credentials: FakeCredentials, error: Exception
+) -> None:
+    """Any failure past the TLS handshake belongs to the metadata exchange.
+    Letting it escape unclassified would leave callers unable to tell a
+    protocol failure from a network failure."""
+    fake_sock = MagicMock()
+    with Connector(credentials) as connector:
+        with patch("socket.create_connection", return_value=MagicMock()):
+            ctx = MagicMock()
+            ctx.wrap_socket.return_value = fake_sock
+            with patch.object(Connector, "_metadata_exchange", side_effect=error):
+                with pytest.raises(MetadataExchangeError):
+                    connector.metadata_exchange(INSTANCE_URI, "127.0.0.1", ctx, False)
+    # The socket must not be leaked when the exchange fails.
+    fake_sock.close.assert_called_once()
