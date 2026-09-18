@@ -110,9 +110,10 @@ class AsyncConnector(_TelemetryMixin):
             alloydb.googleapis.com/client/connector system metric prefix.
             These metrics help AlloyDB improve performance and identify
             client connectivity problems. Presently, these metrics aren't
-            public, but will be made public in the future. Not yet enabled by
-            default; pass True to opt in.
-            Default: False.
+            public, but will be made public in the future. Set to False to
+            disable the internal metric export, which is useful in
+            environments where outbound metric exporting is restricted.
+            Default: True.
     """
 
     def __init__(
@@ -126,7 +127,7 @@ class AsyncConnector(_TelemetryMixin):
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         universe_domain: Optional[str] = None,
-        enable_builtin_telemetry: bool = False,
+        enable_builtin_telemetry: bool = True,
     ) -> None:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
