@@ -352,6 +352,18 @@ class Connector:
             socket.create_connection((ip_address, SERVER_PROXY_PORT)),
             server_hostname=ip_address,
         )
+        return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+
+    def _metadata_exchange(
+        self,
+        sock: ssl.SSLSocket,
+        instance_uri: str,
+        enable_iam_auth: bool,
+    ) -> ssl.SSLSocket:
+        """Performs the metadata exchange over an established TLS connection.
+
+        See ``metadata_exchange`` for the protocol description.
+        """
         # set auth type for metadata exchange
         auth_type = connectorspb.MetadataExchangeRequest.DB_NATIVE
         if enable_iam_auth:
