@@ -14,12 +14,14 @@
 
 import asyncio
 from threading import Thread
+from typing import Any
 from typing import Union
 
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
 from mocks import FakeCredentialsRequiresScopes
+from mocks import FakeInstance
 from mocks import write_static_info
 import pytest
 
@@ -312,6 +314,130 @@ def test_connect_unsupported_driver(credentials: FakeCredentials) -> None:
             exc_info.value.args[0]
             == "Driver 'bad_driver' is not a supported database driver."
         )
+
+
+def test_connect_psc_fallback(credentials: FakeCredentials) -> None:
+    """
+    Test that a failed metadata exchange with the manual PSC DNS name falls
+    back to the automatic PSC DNS name.
+    """
+    client = FakeAlloyDBClient(
+        FakeInstance(
+            ip_addrs={
+                "PRIVATE": "127.0.0.1",
+                "PUBLIC": "0.0.0.0",
+                "PSC": "x.y.alloydb.goog",
+                "PSCAuto": "auto.x.y.alloydb.goog",
+            }
+        )
+    )
+    attempted = []
+
+    def fake_metadata_exchange(
+        instance_uri: str, ip_address: str, *_: Any, **__: Any
+    ) -> str:
+        attempted.append(ip_address)
+        if ip_address == "x.y.alloydb.goog":
+            raise OSError("connection refused")
+        return "fake-socket"
+
+    with Connector(credentials, ip_type=IPTypes.PSC) as connector:
+        connector._client = client
+        with patch.object(
+            Connector, "metadata_exchange", side_effect=fake_metadata_exchange
+        ):
+            with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
+                mock_connect.return_value = True
+                connection = connector.connect(
+                    "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                    "pg8000",
+                    user="test-user",
+                    password="test-password",
+                    db="test-db",
+                )
+        # check both addresses were attempted, in priority order
+        assert attempted == ["x.y.alloydb.goog", "auto.x.y.alloydb.goog"]
+        # check the driver was handed the socket of the successful attempt
+        assert mock_connect.call_args.args[0] == "fake-socket"
+        assert connection is True
+
+
+def test_connect_psc_fallback_all_fail(credentials: FakeCredentials) -> None:
+    """
+    Test that when both the manual and the automatic PSC DNS names fail, the
+    last error is raised with the earlier error chained onto it.
+    """
+    client = FakeAlloyDBClient(
+        FakeInstance(
+            ip_addrs={
+                "PRIVATE": "127.0.0.1",
+                "PUBLIC": "0.0.0.0",
+                "PSC": "x.y.alloydb.goog",
+                "PSCAuto": "auto.x.y.alloydb.goog",
+            }
+        )
+    )
+
+    def fake_metadata_exchange(
+        instance_uri: str, ip_address: str, *_: Any, **__: Any
+    ) -> None:
+        raise OSError(f"{ip_address} failed")
+
+    with Connector(credentials, ip_type=IPTypes.PSC) as connector:
+        connector._client = client
+        with patch.object(
+            Connector, "metadata_exchange", side_effect=fake_metadata_exchange
+        ):
+            with pytest.raises(OSError) as exc_info:
+                connector.connect(
+                    "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                    "pg8000",
+                    user="test-user",
+                    password="test-password",
+                    db="test-db",
+                )
+        # the error of the last attempt is raised, chained to the first one
+        assert exc_info.value.args[0] == "auto.x.y.alloydb.goog failed"
+        assert exc_info.value.__cause__.args[0] == "x.y.alloydb.goog failed"
+
+
+def test_connect_no_psc_fallback(credentials: FakeCredentials) -> None:
+    """
+    Test that a failed metadata exchange is not retried when there is no
+    automatic PSC DNS name to fall back to.
+    """
+    client = FakeAlloyDBClient(
+        FakeInstance(
+            ip_addrs={
+                "PRIVATE": "127.0.0.1",
+                "PUBLIC": "0.0.0.0",
+                "PSC": "x.y.alloydb.goog",
+            }
+        )
+    )
+    attempted = []
+
+    def fake_metadata_exchange(
+        instance_uri: str, ip_address: str, *_: Any, **__: Any
+    ) -> None:
+        attempted.append(ip_address)
+        raise OSError("connection refused")
+
+    with Connector(credentials, ip_type=IPTypes.PSC) as connector:
+        connector._client = client
+        with patch.object(
+            Connector, "metadata_exchange", side_effect=fake_metadata_exchange
+        ):
+            with pytest.raises(OSError) as exc_info:
+                connector.connect(
+                    "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+                    "pg8000",
+                    user="test-user",
+                    password="test-password",
+                    db="test-db",
+                )
+        assert attempted == ["x.y.alloydb.goog"]
+        assert exc_info.value.args[0] == "connection refused"
 
 
 def test_Connector_close_called_multiple_times(credentials: FakeCredentials) -> None:

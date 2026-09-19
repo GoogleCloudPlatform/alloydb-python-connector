@@ -285,24 +285,47 @@ class Connector:
             ip_type = IPTypes(ip_type.upper())
         try:
             conn_info = await cache.connect_info()
-            ip_address = conn_info.get_preferred_ip(ip_type)
+            ip_addresses = conn_info.get_preferred_ips(ip_type)
         except Exception:
             # with an error from AlloyDB API call or IP type, invalidate the
             # cache and re-raise the error
             await self._remove_cached(instance_uri)
             raise
-        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # synchronous drivers are blocking and run using executor
         try:
-            metadata_partial = partial(
-                self.metadata_exchange,
-                instance_uri,
-                ip_address,
-                await conn_info.create_ssl_context(),
-                enable_iam_auth,
-            )
-            sock = await self._loop.run_in_executor(None, metadata_partial)
+            ctx = await conn_info.create_ssl_context()
+            sock = None
+            last_exc: Optional[Exception] = None
+            # Attempt each candidate address in priority order. For PSC, this
+            # falls back to the automatic PSC DNS name when the manual PSC DNS
+            # name is unreachable.
+            for ip_address in ip_addresses:
+                logger.debug(
+                    f"['{instance_uri}']: Connecting to {ip_address}:{SERVER_PROXY_PORT}"
+                )
+                metadata_partial = partial(
+                    self.metadata_exchange,
+                    instance_uri,
+                    ip_address,
+                    ctx,
+                    enable_iam_auth,
+                )
+                try:
+                    sock = await self._loop.run_in_executor(None, metadata_partial)
+                    break
+                except Exception as e:
+                    logger.debug(
+                        f"['{instance_uri}']: Connecting to "
+                        f"{ip_address}:{SERVER_PROXY_PORT} failed: {e}"
+                    )
+                    # chain the failures so every attempt shows up in the
+                    # traceback of the error that is ultimately raised
+                    if last_exc is not None:
+                        e.__cause__ = last_exc
+                    last_exc = e
+            if sock is None:
+                raise last_exc  # type: ignore[misc]
             connect_partial = partial(connector, sock, **kwargs)
             return await self._loop.run_in_executor(None, connect_partial)
         except Exception:

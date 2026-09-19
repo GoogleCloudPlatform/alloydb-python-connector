@@ -427,9 +427,10 @@ def metadata_exchange(sock: ssl.SSLSocket) -> None:
 class FakeConnectionInfo:
     """Fake connection info class that doesn't perform a refresh"""
 
-    def __init__(self) -> None:
+    def __init__(self, ips: Optional[list[str]] = None) -> None:
         self._close_called = False
         self._force_refresh_called = False
+        self._ips = ips if ips else ["10.0.0.1"]
 
     def connect_info(self) -> Any:
         f = asyncio.Future()
@@ -438,8 +439,11 @@ class FakeConnectionInfo:
 
     def get_preferred_ip(self, ip_type: Any) -> tuple[str, Any]:
         f = asyncio.Future()
-        f.set_result("10.0.0.1")
+        f.set_result(self._ips[0])
         return f
+
+    def get_preferred_ips(self, ip_type: Any) -> list[str]:
+        return list(self._ips)
 
     async def create_ssl_context(self) -> None:
         return None
@@ -486,7 +490,10 @@ def write_static_info(i: FakeInstance) -> io.StringIO:
         "caCert": ca_cert,
         "ipAddress": i.ip_addrs["PRIVATE"],
         "publicIpAddress": i.ip_addrs["PUBLIC"],
-        "pscInstanceConfig": {"pscDnsName": i.ip_addrs["PSC"]},
+        "pscInstanceConfig": {
+            "pscDnsName": i.ip_addrs["PSC"],
+            "pscAutoDnsName": i.ip_addrs.get("PSCAuto", ""),
+        },
     }
     return io.StringIO(json.dumps(static))
 
@@ -511,6 +518,10 @@ class FakeAlloyDBAdminAsyncClient(alloydb_v1beta.AlloyDBAdminAsyncClient):
             ci.psc_dns_name = ""
         elif instance == "public-instance":
             ci.psc_dns_name = ""
+        elif instance == "psc-auto-instance":
+            ci.ip_address = ""
+            ci.public_ip_address = ""
+            ci.psc_auto_dns_name = "auto.x.y.alloydb.goog."
         else:
             ci.ip_address = ""
             ci.public_ip_address = ""
@@ -547,6 +558,10 @@ class FakeAlloyDBAdminClient(alloydb_v1beta.AlloyDBAdminClient):
             ci.psc_dns_name = ""
         elif instance == "public-instance":
             ci.psc_dns_name = ""
+        elif instance == "psc-auto-instance":
+            ci.ip_address = ""
+            ci.public_ip_address = ""
+            ci.psc_auto_dns_name = "auto.x.y.alloydb.goog."
         else:
             ci.ip_address = ""
             ci.public_ip_address = ""

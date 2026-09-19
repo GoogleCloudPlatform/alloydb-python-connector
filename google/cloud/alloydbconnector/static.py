@@ -41,7 +41,8 @@ class StaticConnectionInfoCache:
                 "ipAddress": "<PSA-based private IP address>",
                 "publicIpAddress": "<public IP address>",
                 "pscInstanceConfig": {
-                    "pscDnsName": "<PSC DNS name>"
+                    "pscDnsName": "<PSC DNS name>",
+                    "pscAutoDnsName": "<automatic PSC DNS name>"
                 },
                 "pemCertificateChain": [
                     "<client cert>", "<intermediate cert>", "<CA cert>"
@@ -63,14 +64,16 @@ class StaticConnectionInfoCache:
         ca_cert = static_info[instance_uri]["caCert"]
         cert_chain = static_info[instance_uri]["pemCertificateChain"]
         dns = ""
+        auto_dns = ""
         if static_info[instance_uri]["pscInstanceConfig"]:
-            dns = static_info[instance_uri]["pscInstanceConfig"]["pscDnsName"].rstrip(
-                "."
-            )
+            psc_config = static_info[instance_uri]["pscInstanceConfig"]
+            dns = psc_config["pscDnsName"].rstrip(".")
+            auto_dns = (psc_config.get("pscAutoDnsName") or "").rstrip(".")
         ip_addrs = {
             "PRIVATE": static_info[instance_uri]["ipAddress"],
             "PUBLIC": static_info[instance_uri]["publicIpAddress"],
             "PSC": dns,
+            "PSCAuto": auto_dns,
         }
         expiration = datetime.now(timezone.utc) + timedelta(hours=1)
         priv_key = static_info["privateKey"]
