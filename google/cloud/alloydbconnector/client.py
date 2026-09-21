@@ -168,15 +168,19 @@ class AlloyDBClient:
         else:
             resp = await self._client.get_connection_info(request=req)
 
-        # Remove trailing period from PSC DNS name.
+        # Remove trailing period from PSC DNS names.
         psc_dns = resp.psc_dns_name
         if psc_dns:
             psc_dns = psc_dns.rstrip(".")
+        psc_auto_dns = resp.psc_auto_dns_name
+        if psc_auto_dns:
+            psc_auto_dns = psc_auto_dns.rstrip(".")
 
         return {
             "PRIVATE": resp.ip_address,
             "PUBLIC": resp.public_ip_address,
             "PSC": psc_dns,
+            "PSCAuto": psc_auto_dns,
         }
 
     async def _get_client_certificate(

@@ -41,6 +41,7 @@ async def test__get_metadata(credentials: FakeCredentials) -> None:
         "PRIVATE": "10.0.0.1",
         "PUBLIC": "",
         "PSC": "",
+        "PSCAuto": "",
     }
 
 
@@ -60,6 +61,7 @@ async def test__get_metadata_with_public_ip(credentials: FakeCredentials) -> Non
         "PRIVATE": "10.0.0.1",
         "PUBLIC": "127.0.0.1",
         "PSC": "",
+        "PSCAuto": "",
     }
 
 
@@ -79,6 +81,27 @@ async def test__get_metadata_with_psc(credentials: FakeCredentials) -> None:
         "PRIVATE": "",
         "PUBLIC": "",
         "PSC": "x.y.alloydb.goog",
+        "PSCAuto": "",
+    }
+
+
+@pytest.mark.asyncio
+async def test__get_metadata_with_psc_auto(credentials: FakeCredentials) -> None:
+    """
+    Test _get_metadata returns successfully with an automatic PSC DNS name.
+    """
+    test_client = AlloyDBClient("", "", credentials, FakeAlloyDBAdminAsyncClient())
+    ip_addrs = await test_client._get_metadata(
+        "test-project",
+        "test-region",
+        "test-cluster",
+        "psc-auto-instance",
+    )
+    assert ip_addrs == {
+        "PRIVATE": "",
+        "PUBLIC": "",
+        "PSC": "x.y.alloydb.goog",
+        "PSCAuto": "auto.x.y.alloydb.goog",
     }
 
 
