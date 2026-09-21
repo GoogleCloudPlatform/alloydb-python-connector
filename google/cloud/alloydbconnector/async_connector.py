@@ -282,8 +282,9 @@ class AsyncConnector:
         """
         logger.debug(f"['{instance_uri}']: Removing connection info from cache")
         # remove cache from stored caches and close it
-        cache = self._cache.pop(instance_uri)
-        await cache.close()
+        cache = self._cache.pop(instance_uri, None)
+        if cache is not None:
+            await cache.close()
 
     async def __aenter__(self) -> AsyncConnector:
         """Enter async context manager by returning Connector object"""

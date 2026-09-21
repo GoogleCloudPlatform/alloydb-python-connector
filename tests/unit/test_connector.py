@@ -31,6 +31,7 @@ from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.static import StaticConnectionInfoCache
 from google.cloud.alloydbconnector.utils import generate_keys
 
 
@@ -492,3 +493,23 @@ def test_configured_universe_domain_mismatched_credentials() -> None:
         "is the default."
     )
     assert exc_info.value.args[0] == err_msg
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_static_connection_info_dial_error_is_not_masked(
+    credentials: FakeCredentials, fake_client: FakeAlloyDBClient
+) -> None:
+    """
+    Test that a failed dial against static connection info surfaces its own
+    error. The static path never stores its cache, so removing the cache on
+    failure must tolerate a miss rather than raising KeyError over the top of
+    the real error.
+    """
+    static_info = write_static_info(fake_client.instance)
+    with Connector(credentials=credentials, static_conn_info=static_info) as connector:
+        connector._client = fake_client
+        with patch.object(
+            StaticConnectionInfoCache, "connect_info", side_effect=Exception("boom")
+        ):
+            with pytest.raises(Exception, match="boom"):
+                connector.connect(fake_client.instance.uri(), "pg8000")
