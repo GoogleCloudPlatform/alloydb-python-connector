@@ -16,6 +16,7 @@ import asyncio
 from threading import Thread
 from typing import Union
 
+from mock import MagicMock
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -513,3 +514,29 @@ def test_static_connection_info_dial_error_is_not_masked(
         ):
             with pytest.raises(Exception, match="boom"):
                 connector.connect(fake_client.instance.uri(), "pg8000")
+
+
+def test_metadata_exchange_closes_socket_on_failure(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that a failed metadata exchange closes the socket. The exchange runs
+    on an established TLS socket that nothing else holds a reference to, so
+    leaving it open on the error path leaks the connection until the garbage
+    collector gets to it.
+    """
+    instance_uri = (
+        "projects/test-project/locations/test-region"
+        "/clusters/test-cluster/instances/test-instance"
+    )
+    sock = MagicMock()
+    ctx = MagicMock()
+    ctx.wrap_socket.return_value = sock
+    with Connector(credentials) as connector:
+        with patch("socket.create_connection", return_value=MagicMock()):
+            with patch.object(
+                Connector, "_metadata_exchange", side_effect=OSError("connection reset")
+            ):
+                with pytest.raises(OSError, match="connection reset"):
+                    connector.metadata_exchange(instance_uri, "127.0.0.1", ctx, False)
+    sock.close.assert_called_once()
