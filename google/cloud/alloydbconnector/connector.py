@@ -352,7 +352,15 @@ class Connector:
             socket.create_connection((ip_address, SERVER_PROXY_PORT)),
             server_hostname=ip_address,
         )
-        return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+        try:
+            return self._metadata_exchange(sock, instance_uri, enable_iam_auth)
+        except Exception:
+            # Once the handshake is done, this socket is only reachable from
+            # here, so a failed exchange has to close it. wrap_socket closes
+            # the file descriptor itself when the handshake fails, but nothing
+            # closes an established socket on the way out.
+            sock.close()
+            raise
 
     def _metadata_exchange(
         self,
