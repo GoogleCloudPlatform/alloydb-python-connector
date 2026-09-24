@@ -283,14 +283,45 @@ running a background refresh cycle:
 connector = Connector(refresh_strategy="lazy")
 ```
 
+### Built-in Telemetry
+
+The connector can report metrics about its own operations (dial counts and
+latencies, open connections, certificate refreshes, and bytes transferred) to
+the `alloydb.googleapis.com/client/connector` system metric prefix. These
+metrics help AlloyDB improve performance and identify client connectivity
+problems. They are not yet publicly queryable, but will be in the future.
+
+Telemetry is not yet enabled by default. To turn it on, set
+`enable_builtin_telemetry=True`:
+
+```python
+connector = Connector(enable_builtin_telemetry=True)
+```
+
+The same option is available on `AsyncConnector`. Note that byte counts are
+only reported for the synchronous `Connector`; asyncpg provides no hook for
+observing bytes on the wire, so `AsyncConnector` reports every other metric
+but contributes no byte counts.
+
+Exporting requires the `monitoring.timeSeries.create` permission (granted by
+`roles/monitoring.metricWriter`) on the project that owns the instance. When
+the permission is missing, or the export fails for any other reason, the
+connector keeps working and reports the failure at debug level — see [Debug
+Logging](#debug-logging) — rather than failing the connection.
+
 ### Debug Logging
 
 ```python
 import logging
 
-logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s")
-logging.getLogger("google.cloud.alloydbconnector").setLevel(logging.DEBUG)
+logger = logging.getLogger("google.cloud.alloydbconnector")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 ```
+
+The handler matters: google-api-core stops the `google` logger from
+propagating to the root logger as soon as any Google client is built, so
+`logging.basicConfig()` on its own never shows these records.
 
 ## Import Paths
 
