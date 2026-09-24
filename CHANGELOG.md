@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.14.0...v1.14.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* close the socket when the metadata exchange fails ([#568](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/568)) ([0f3dd8f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/0f3dd8f71229d980b59521377d60d6f94332a74b))
+* do not mask dial errors with KeyError ([#567](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/567)) ([6b0f51f](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/6b0f51f8ca5a739f2763a0b03a1d89c3c742dfd7))
+
 ## [1.14.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.13.1...v1.14.0) (2026-09-10)
 
 
