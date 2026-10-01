@@ -74,6 +74,7 @@ def create_sqlalchemy_engine(
             user=user,
             password=password,
             db=db,
+            ip_type=os.environ.get("ALLOYDB_IP_TYPE", "PUBLIC"),
         ),
     )
     engine.dialect.description_encoding = None

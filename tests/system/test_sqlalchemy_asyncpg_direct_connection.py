@@ -16,6 +16,7 @@
 from datetime import datetime
 import os
 
+import pytest
 import sqlalchemy
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -103,6 +104,10 @@ def create_sqlalchemy_engine(
     return engine
 
 
+@pytest.mark.skipif(
+    os.environ.get("ALLOYDB_IP_TYPE", "PUBLIC") == "PUBLIC",
+    reason="needs VPC access, run with ALLOYDB_IP_TYPE=PRIVATE",
+)
 async def test_sqlalchemy_asyncpg_time() -> None:
     """Basic test to get time from database using asyncpg with SQLAlchemy."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance

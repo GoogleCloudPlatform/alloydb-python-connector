@@ -68,6 +68,7 @@ def create_sqlalchemy_engine(
             user=user,
             db=db,
             enable_iam_auth=True,
+            ip_type=os.environ.get("ALLOYDB_IP_TYPE", "PUBLIC"),
         ),
     )
     return engine, connector

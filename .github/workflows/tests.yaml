@@ -150,6 +150,8 @@ jobs:
           ALLOYDB_INSTANCE_IP: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_IP }}'
           ALLOYDB_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_INSTANCE_URI }}'
           ALLOYDB_PSC_INSTANCE_URI: '${{ steps.secrets.outputs.ALLOYDB_PSC_INSTANCE_URI }}'
+          # CI runs inside the VPC, so keep testing the private IP path
+          ALLOYDB_IP_TYPE: 'PRIVATE'
         run: ./scripts/test_system.sh
 
       - name: FlakyBot (Linux)

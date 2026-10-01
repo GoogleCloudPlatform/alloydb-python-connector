@@ -74,6 +74,7 @@ async def create_sqlalchemy_engine(
             user=user,
             password=password,
             db=db,
+            ip_type=os.environ.get("ALLOYDB_IP_TYPE", "PUBLIC"),
         ),
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
@@ -133,6 +134,7 @@ async def create_asyncpg_pool(
             user=user,
             password=password,
             db=db,
+            ip_type=os.environ.get("ALLOYDB_IP_TYPE", "PUBLIC"),
         ),
     )
     return pool, connector
