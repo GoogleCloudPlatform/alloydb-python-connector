@@ -324,6 +324,115 @@ async def test_force_refresh(credentials: FakeCredentials) -> None:
 
 
 @pytest.mark.asyncio
+async def test_connect_psc_fallback(credentials: FakeCredentials) -> None:
+    """
+    Test that a failed connection to the manual PSC DNS name falls back to the
+    automatic PSC DNS name.
+    """
+    attempted = []
+
+    async def custom_connect(ip_address: str, *_: Any, **__: Any) -> str:
+        attempted.append(ip_address)
+        if ip_address == "x.y.alloydb.goog":
+            raise Exception("connection failed")
+        return ip_address
+
+    with patch(
+        "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+    ):
+        connector = AsyncConnector(credentials, ip_type=IPTypes.PSC)
+        connector._client = FakeAlloyDBClient()
+        fake = FakeConnectionInfo(["x.y.alloydb.goog", "auto.x.y.alloydb.goog"])
+        connector._cache[TEST_INSTANCE_NAME] = fake
+
+        connection = await connector.connect(
+            TEST_INSTANCE_NAME,
+            "asyncpg",
+            user="test-user",
+            password="test-password",
+            db="test-db",
+        )
+
+        # check both addresses were attempted, in priority order
+        assert attempted == ["x.y.alloydb.goog", "auto.x.y.alloydb.goog"]
+        # check the connection to the automatic PSC DNS name is returned
+        assert connection == "auto.x.y.alloydb.goog"
+        # a successful fallback should not force a refresh
+        assert fake._force_refresh_called is False
+
+        await connector.close()
+
+
+@pytest.mark.asyncio
+async def test_connect_psc_fallback_all_fail(credentials: FakeCredentials) -> None:
+    """
+    Test that when both the manual and the automatic PSC DNS names fail, the
+    last error is raised with the earlier error chained onto it.
+    """
+
+    async def custom_connect(ip_address: str, *_: Any, **__: Any) -> None:
+        raise Exception(f"{ip_address} failed")
+
+    with patch(
+        "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+    ):
+        connector = AsyncConnector(credentials, ip_type=IPTypes.PSC)
+        connector._client = FakeAlloyDBClient()
+        fake = FakeConnectionInfo(["x.y.alloydb.goog", "auto.x.y.alloydb.goog"])
+        connector._cache[TEST_INSTANCE_NAME] = fake
+
+        with pytest.raises(Exception) as exc_info:
+            await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+
+        # the error of the last attempt is raised, chained to the first one
+        assert exc_info.value.args[0] == "auto.x.y.alloydb.goog failed"
+        assert exc_info.value.__cause__.args[0] == "x.y.alloydb.goog failed"
+        assert fake._force_refresh_called is True
+
+        await connector.close()
+
+
+@pytest.mark.asyncio
+async def test_connect_no_psc_fallback(credentials: FakeCredentials) -> None:
+    """
+    Test that a failed connection is not retried when there is no automatic
+    PSC DNS name to fall back to.
+    """
+    attempted = []
+
+    async def custom_connect(ip_address: str, *_: Any, **__: Any) -> None:
+        attempted.append(ip_address)
+        raise Exception("connection failed")
+
+    with patch(
+        "google.cloud.alloydbconnector.asyncpg.connect", side_effect=custom_connect
+    ):
+        connector = AsyncConnector(credentials, ip_type=IPTypes.PSC)
+        connector._client = FakeAlloyDBClient()
+        connector._cache[TEST_INSTANCE_NAME] = FakeConnectionInfo(["x.y.alloydb.goog"])
+
+        with pytest.raises(Exception) as exc_info:
+            await connector.connect(
+                TEST_INSTANCE_NAME,
+                "asyncpg",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+
+        assert attempted == ["x.y.alloydb.goog"]
+        assert exc_info.value.args[0] == "connection failed"
+
+        await connector.close()
+
+
+@pytest.mark.asyncio
 async def test_close_stops_instance(credentials: FakeCredentials) -> None:
     """
     Test that any connected instances are closed when the connector is

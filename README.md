@@ -252,6 +252,10 @@ connector.connect(INSTANCE_URI, "pg8000", ..., ip_type="PSC")
 
 Valid values: `"PRIVATE"` (default), `"PUBLIC"`, `"PSC"`.
 
+When `"PSC"` is specified, the Connector attempts to connect using the
+instance's manual PSC DNS name first, and automatically falls back to the
+instance's automatic PSC DNS name if the manual one is unreachable.
+
 ### IAM Database Authentication
 
 Skip the password and authenticate using your IAM identity instead. First,
