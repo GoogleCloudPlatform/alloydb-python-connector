@@ -34,6 +34,24 @@ def credentials() -> FakeCredentials:
     return FakeCredentials()
 
 
+@pytest.fixture(autouse=True)
+def no_monitoring_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep unit tests from building a real Cloud Monitoring client.
+
+    Connector and AsyncConnector build one in __init__ whenever built-in
+    telemetry is enabled, which is the default, and each one holds a gRPC
+    channel. Failing here exercises the same degradation path as an
+    environment without monitoring access: the connector falls back to the
+    null telemetry provider. Tests that exercise the exporter build a
+    _TelemetryProvider directly with a fake client.
+    """
+
+    def _no_client(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("no Cloud Monitoring client in unit tests")
+
+    monkeypatch.setattr("google.cloud.monitoring_v3.MetricServiceClient", _no_client)
+
+
 @pytest.fixture(scope="session")
 def fake_instance() -> FakeInstance:
     return FakeInstance()
