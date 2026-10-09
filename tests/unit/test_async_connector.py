@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
+import ssl
+from threading import Event
+import time
 from typing import Any
 from typing import Union
 
+import asyncpg
 from mock import patch
 from mocks import FakeAlloyDBClient
+from mocks import FakeAsyncConnection
 from mocks import FakeConnectionInfo
 from mocks import FakeCredentials
 from mocks import FakeCredentialsRequiresScopes
@@ -28,11 +32,35 @@ from google.api_core.retry.retry_unary_async import AsyncRetry
 from google.cloud.alloydbconnector import AsyncConnector
 from google.cloud.alloydbconnector import IPTypes
 from google.cloud.alloydbconnector.client import AlloyDBClient
+from google.cloud.alloydbconnector.connection_info import ConnectionInfo
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
+from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_TLS_ERROR
+from google.cloud.alloydbconnector.telemetry import DIAL_USER_ERROR
+from google.cloud.alloydbconnector.telemetry import TELEMETRY_SHUTDOWN_TIMEOUT_S
+from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 
 ALLOYDB_API_ENDPOINT = "alloydb.googleapis.com"
+
+
+class _RecordingMetricRecorder(NullMetricRecorder):
+    def __init__(self) -> None:
+        self.open_calls = 0
+        self.closed_calls = 0
+        self.dial_statuses: list[str] = []
+
+    def record_dial_count(self, attrs: TelemetryAttributes) -> None:
+        self.dial_statuses.append(attrs.dial_status)
+
+    def record_open_connection(self, attrs: TelemetryAttributes) -> None:
+        self.open_calls += 1
+
+    def record_closed_connection(self, attrs: TelemetryAttributes) -> None:
+        self.closed_calls += 1
 
 
 @pytest.mark.asyncio
@@ -211,10 +239,9 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
     Test that connector.connect calls asyncpg.connect and cleans up
     """
     with patch("google.cloud.alloydbconnector.asyncpg.connect") as connect:
-        # patch db connection creation and return plain future
-        future = asyncio.Future()
-        future.set_result(True)
-        connect.return_value = future
+        # patch db connection creation
+        fake_connection = FakeAsyncConnection()
+        connect.return_value = fake_connection
 
         connector = AsyncConnector(credentials)
         connector._client = FakeAlloyDBClient()
@@ -228,7 +255,140 @@ async def test_connect_and_close(credentials: FakeCredentials) -> None:
         await connector.close()
 
         # check connection is returned
-        assert connection.result() is True
+        assert connection is fake_connection
+
+
+@pytest.mark.asyncio
+async def test_connect_records_open_and_closed_connections(
+    credentials: FakeCredentials,
+) -> None:
+    """
+    Test that connector.connect records an open connection and registers a
+    termination listener that records the connection as closed.
+    """
+    with patch("google.cloud.alloydbconnector.asyncpg.connect") as connect:
+        fake_connection = FakeAsyncConnection()
+        connect.return_value = fake_connection
+
+        connector = AsyncConnector(credentials)
+        connector._client = FakeAlloyDBClient()
+        mr = _RecordingMetricRecorder()
+        connector._metric_recorders[TEST_INSTANCE_NAME] = mr
+
+        await connector.connect(
+            TEST_INSTANCE_NAME,
+            "asyncpg",
+            user="test-user",
+            password="test-password",
+            db="test-db",
+        )
+        assert mr.open_calls == 1
+        assert mr.closed_calls == 0
+
+        # closing the connection fires the termination listener exactly once
+        await fake_connection.close()
+        assert mr.closed_calls == 1
+        await fake_connection.close()
+        assert mr.closed_calls == 1
+
+        await connector.close()
+
+
+@pytest.mark.parametrize(
+    "error,expected_status",
+    [
+        # The server answered and rejected the connection: a caller mistake,
+        # not a network failure.
+        (asyncpg.InvalidPasswordError("bad password"), DIAL_USER_ERROR),
+        (asyncpg.InvalidCatalogNameError("no such database"), DIAL_USER_ERROR),
+        (ssl.SSLError("handshake failed"), DIAL_TLS_ERROR),
+        (OSError("connection refused"), DIAL_TCP_ERROR),
+        (TimeoutError("timed out"), DIAL_TCP_ERROR),
+    ],
+)
+@pytest.mark.asyncio
+async def test_connect_classifies_driver_errors(
+    credentials: FakeCredentials, error: Exception, expected_status: str
+) -> None:
+    """tcp_error must not become a catch-all: the same failure is reported as
+    user_error by the synchronous Connector."""
+    async with AsyncConnector(credentials) as connector:
+        connector._client = FakeAlloyDBClient()
+        mr = _RecordingMetricRecorder()
+        connector._metric_recorders[TEST_INSTANCE_NAME] = mr
+
+        with patch("google.cloud.alloydbconnector.asyncpg.connect", side_effect=error):
+            with pytest.raises(type(error)):
+                await connector.connect(
+                    TEST_INSTANCE_NAME,
+                    "asyncpg",
+                    user="test-user",
+                    password="test-password",
+                    db="test-db",
+                )
+    assert mr.dial_statuses == [expected_status]
+    assert mr.open_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_connect_records_cache_error_for_bad_ssl_context(
+    credentials: FakeCredentials,
+) -> None:
+    """A context that cannot be built is a problem with the cached connection
+    info, not with the connection. The synchronous Connector agrees."""
+    async with AsyncConnector(credentials) as connector:
+        connector._client = FakeAlloyDBClient()
+        mr = _RecordingMetricRecorder()
+        connector._metric_recorders[TEST_INSTANCE_NAME] = mr
+
+        with patch.object(
+            ConnectionInfo,
+            "create_ssl_context",
+            side_effect=Exception("malformed certificate"),
+        ):
+            with pytest.raises(Exception, match="malformed certificate"):
+                await connector.connect(
+                    TEST_INSTANCE_NAME,
+                    "asyncpg",
+                    user="test-user",
+                    password="test-password",
+                    db="test-db",
+                )
+    assert mr.dial_statuses == [DIAL_CACHE_ERROR]
+
+
+@pytest.mark.asyncio
+async def test_close_survives_hanging_telemetry_shutdown(
+    credentials: FakeCredentials,
+) -> None:
+    """Neither the Cloud Monitoring exporter nor its write RPC guarantees it
+    returns within the shutdown budget, so close() bounds the wait itself."""
+
+    release = Event()
+
+    class HangingProvider:
+        def shutdown(self, timeout_millis: float = 2_000) -> None:
+            release.wait(30)
+
+    connector = AsyncConnector(credentials)
+    connector._telemetry_providers["p"] = HangingProvider()  # type: ignore[assignment]
+    start = time.monotonic()
+    try:
+        # Shorten the real budget so the test spends no longer proving the
+        # wait is bounded.
+        with patch(
+            "google.cloud.alloydbconnector.telemetry.TELEMETRY_SHUTDOWN_TIMEOUT_S",
+            0.2,
+        ):
+            await connector.close()
+        elapsed = time.monotonic() - start
+
+        assert elapsed < TELEMETRY_SHUTDOWN_TIMEOUT_S
+        assert connector._closed is True
+    finally:
+        # Let the abandoned executor thread finish so it does not hold up the
+        # event loop's shutdown.
+        release.set()
 
 
 @pytest.mark.asyncio
@@ -239,9 +399,10 @@ async def test_connect_iam_authn(credentials: FakeCredentials) -> None:
     async with AsyncConnector(credentials, enable_iam_auth=True) as connector:
         connector._client = FakeAlloyDBClient()
 
-        async def custom_connect(*_: Any, **kwargs: Any) -> bool:
+        async def custom_connect(*_: Any, **kwargs: Any) -> FakeAsyncConnection:
             passwd = kwargs.pop("password")
             await passwd()
+            return FakeAsyncConnection()
 
         # patch db connection creation
         with patch(
@@ -271,9 +432,10 @@ async def test_connect_db_credentials_iam_authn(credentials: FakeCredentials) ->
     ) as connector:
         connector._client = FakeAlloyDBClient()
 
-        async def custom_connect(*_: Any, **kwargs: Any) -> bool:
+        async def custom_connect(*_: Any, **kwargs: Any) -> FakeAsyncConnection:
             passwd = kwargs.pop("password")
             await passwd()
+            return FakeAsyncConnection()
 
         # patch db connection creation
         with patch(
@@ -354,9 +516,8 @@ async def test_context_manager_connect_and_close(
             connector._client = fake_client
 
             # patch db connection creation
-            future = asyncio.Future()
-            future.set_result(True)
-            connect.return_value = future
+            fake_connection = FakeAsyncConnection()
+            connect.return_value = fake_connection
 
             connection = await connector.connect(
                 TEST_INSTANCE_NAME,
@@ -367,7 +528,7 @@ async def test_context_manager_connect_and_close(
             )
 
             # check connection is returned
-            assert connection.result() is True
+            assert connection is fake_connection
 
 
 @pytest.mark.asyncio
