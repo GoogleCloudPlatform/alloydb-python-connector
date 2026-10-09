@@ -285,17 +285,18 @@ connector = Connector(refresh_strategy="lazy")
 
 ### Built-in Telemetry
 
-The connector can report metrics about its own operations (dial counts and
+The connector reports metrics about its own operations (dial counts and
 latencies, open connections, certificate refreshes, and bytes transferred) to
 the `alloydb.googleapis.com/client/connector` system metric prefix. These
 metrics help AlloyDB improve performance and identify client connectivity
 problems. They are not yet publicly queryable, but will be in the future.
 
-Telemetry is not yet enabled by default. To turn it on, set
-`enable_builtin_telemetry=True`:
+Telemetry is enabled by default. To turn it off — for example in an
+environment where outbound metric export is blocked — set
+`enable_builtin_telemetry=False`:
 
 ```python
-connector = Connector(enable_builtin_telemetry=True)
+connector = Connector(enable_builtin_telemetry=False)
 ```
 
 The same option is available on `AsyncConnector`. Note that byte counts are
