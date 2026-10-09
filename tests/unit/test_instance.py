@@ -15,6 +15,7 @@
 import asyncio
 from datetime import datetime
 from datetime import timedelta
+from unittest.mock import patch
 
 from mocks import FakeAlloyDBClient
 import pytest
@@ -24,6 +25,11 @@ from google.cloud.alloydbconnector.exceptions import RefreshError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.instance import _parse_instance_uri
 from google.cloud.alloydbconnector.refresh_utils import _is_valid
+from google.cloud.alloydbconnector.telemetry import REFRESH_AHEAD_TYPE
+from google.cloud.alloydbconnector.telemetry import REFRESH_FAILURE
+from google.cloud.alloydbconnector.telemetry import REFRESH_SUCCESS
+from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
+from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 from google.cloud.alloydbconnector.utils import generate_keys
 
 
@@ -245,4 +251,67 @@ async def test_force_refresh_cancels_pending_refresh() -> None:
     assert pending_refresh.cancelled() is True
     assert isinstance(await cache._current, ConnectionInfo)
     # close instance
+    await cache.close()
+
+
+class _RecordingMetricRecorder(NullMetricRecorder):
+    """Captures refresh_count recordings for assertion."""
+
+    def __init__(self) -> None:
+        self.refreshes: list[TelemetryAttributes] = []
+
+    def record_refresh_count(self, attrs: TelemetryAttributes) -> None:
+        self.refreshes.append(attrs)
+
+
+async def test_RefreshAheadCache_records_successful_refresh() -> None:
+    """The background refresh reports its outcome as refresh_count with the
+    refresh_ahead type."""
+    client = FakeAlloyDBClient()
+    keys = asyncio.create_task(generate_keys())
+    mr = _RecordingMetricRecorder()
+    cache = RefreshAheadCache(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+        mr,
+    )
+    await cache.connect_info()
+
+    assert [(a.refresh_status, a.refresh_type) for a in mr.refreshes] == [
+        (REFRESH_SUCCESS, REFRESH_AHEAD_TYPE)
+    ]
+    await cache.close()
+
+
+async def test_RefreshAheadCache_records_failed_refresh() -> None:
+    client = FakeAlloyDBClient()
+    keys = asyncio.create_task(generate_keys())
+    mr = _RecordingMetricRecorder()
+    with patch.object(client, "get_connection_info", side_effect=RefreshError("boom")):
+        cache = RefreshAheadCache(
+            "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+            client,
+            keys,
+            mr,
+        )
+        with pytest.raises(RefreshError):
+            await cache.connect_info()
+
+    assert [(a.refresh_status, a.refresh_type) for a in mr.refreshes] == [
+        (REFRESH_FAILURE, REFRESH_AHEAD_TYPE)
+    ]
+    await cache.close()
+
+
+async def test_RefreshAheadCache_without_recorder_does_not_fail() -> None:
+    """metric_recorder is optional; omitting it must not break refreshes."""
+    client = FakeAlloyDBClient()
+    keys = asyncio.create_task(generate_keys())
+    cache = RefreshAheadCache(
+        "projects/test-project/locations/test-region/clusters/test-cluster/instances/test-instance",
+        client,
+        keys,
+    )
+    assert await cache.connect_info() is not None
     await cache.close()
