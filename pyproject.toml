@@ -48,6 +48,17 @@ dependencies = [
     "protobuf",
     "google-cloud-alloydb",
     "google-api-core",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    # Built-in telemetry subclasses this exporter and overrides private hooks
+    # (_batch_write, _get_metric_descriptor) to write system metrics with
+    # CreateServiceTimeSeries. This package has never cut a stable release,
+    # so its minor versions carry no API guarantee at all -- pin to the
+    # tested minor rather than the major. Widen only after re-checking that
+    # both hooks still exist with the same shape; telemetry.py fails closed
+    # to NullTelemetryProvider if they do not, which is silent.
+    "opentelemetry-exporter-gcp-monitoring>=1.11.0a0,<1.12",
+    "google-cloud-monitoring",
 ]
 dynamic = ["version"]
 
