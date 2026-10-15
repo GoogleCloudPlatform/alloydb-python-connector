@@ -25,6 +25,7 @@ import google.auth
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
 import google.cloud.alloydbconnector.asyncpg as asyncpg
+from google.cloud.alloydbconnector.asyncpg import SERVER_PROXY_PORT
 from google.cloud.alloydbconnector.client import AlloyDBClient
 from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.enums import RefreshStrategy
@@ -247,13 +248,12 @@ class AsyncConnector:
             ip_type = IPTypes(ip_type.upper())
         try:
             conn_info = await cache.connect_info()
-            ip_address = conn_info.get_preferred_ip(ip_type)
+            ip_addresses = conn_info.get_preferred_ips(ip_type)
         except Exception:
             # with an error from AlloyDB API call or IP type, invalidate the
             # cache and re-raise the error
             await self._remove_cached(instance_uri)
             raise
-        logger.debug(f"['{instance_uri}']: Connecting to {ip_address}:5433")
 
         # callable to be used for auto IAM authn
         async def get_authentication_token() -> str:
@@ -267,14 +267,31 @@ class AsyncConnector:
         # if enable_iam_auth is set, use auth token as database password
         if enable_iam_auth:
             kwargs["password"] = get_authentication_token
-        try:
-            return await connector(
-                ip_address, await conn_info.create_ssl_context(), **kwargs
+
+        ctx = await conn_info.create_ssl_context()
+        last_exc: Optional[Exception] = None
+        # Attempt each candidate address in priority order. For PSC, this falls
+        # back to the automatic PSC DNS name when the manual PSC DNS name is
+        # unreachable.
+        for ip_address in ip_addresses:
+            logger.debug(
+                f"['{instance_uri}']: Connecting to {ip_address}:{SERVER_PROXY_PORT}"
             )
-        except Exception:
-            # we attempt a force refresh, then throw the error
-            await cache.force_refresh()
-            raise
+            try:
+                return await connector(ip_address, ctx, **kwargs)
+            except Exception as e:
+                logger.debug(
+                    f"['{instance_uri}']: Connecting to "
+                    f"{ip_address}:{SERVER_PROXY_PORT} failed: {e}"
+                )
+                # chain the failures so every attempt shows up in the traceback
+                # of the error that is ultimately raised
+                if last_exc is not None:
+                    e.__cause__ = last_exc
+                last_exc = e
+        # we attempt a force refresh, then throw the error
+        await cache.force_refresh()
+        raise last_exc  # type: ignore[misc]
 
     async def _remove_cached(self, instance_uri: str) -> None:
         """Stops all background refreshes and deletes the connection
