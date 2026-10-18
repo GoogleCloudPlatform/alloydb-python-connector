@@ -15,6 +15,7 @@
 from datetime import datetime
 import os
 
+import pytest
 import sqlalchemy
 
 from google.cloud.alloydbconnector import Connector
@@ -74,6 +75,7 @@ def create_sqlalchemy_engine(
     return engine, connector
 
 
+@pytest.mark.private_ip
 def test_psycopg_time() -> None:
     """Basic test to get time from database."""
     inst_uri = os.environ["ALLOYDB_PSC_INSTANCE_URI"]
