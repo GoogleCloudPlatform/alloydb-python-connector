@@ -16,6 +16,7 @@
 from datetime import datetime
 import os
 
+import pytest
 import sqlalchemy
 from sqlalchemy import event
 
@@ -97,6 +98,7 @@ def create_sqlalchemy_engine(
     return engine
 
 
+@pytest.mark.private_ip
 def test_psycopg2_time() -> None:
     """Basic test to get time from database."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance

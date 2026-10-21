@@ -23,7 +23,11 @@ from google.cloud.alloydbconnector import AsyncConnector
 
 
 async def create_sqlalchemy_engine(
-    inst_uri: str, user: str, db: str, refresh_strategy: str = "background"
+    inst_uri: str,
+    user: str,
+    db: str,
+    refresh_strategy: str = "background",
+    ip_type: str = "PRIVATE",
 ) -> tuple[sqlalchemy.ext.asyncio.engine.AsyncEngine, AsyncConnector]:
     """Creates a connection pool for an AlloyDB instance and returns the pool
     and the connector. Callers are responsible for closing the pool and the
@@ -57,6 +61,8 @@ async def create_sqlalchemy_engine(
             Refresh strategy for the AlloyDB Connector. Can be one of "lazy"
             or "background". For serverless environments use "lazy" to avoid
             errors resulting from CPU being throttled.
+        ip_type (str):
+            IP type used to connect. One of "PUBLIC", "PRIVATE" or "PSC".
     """
     connector = AsyncConnector(refresh_strategy=refresh_strategy)
 
@@ -69,6 +75,7 @@ async def create_sqlalchemy_engine(
             user=user,
             db=db,
             enable_iam_auth=True,
+            ip_type=ip_type,
         ),
         execution_options={"isolation_level": "AUTOCOMMIT"},
     )
@@ -84,7 +91,9 @@ async def test_asyncpg_iam_authn_time() -> None:
     user = os.environ["ALLOYDB_IAM_USER"]
     db = os.environ["ALLOYDB_DB"]
 
-    pool, connector = await create_sqlalchemy_engine(inst_uri, user, db)
+    pool, connector = await create_sqlalchemy_engine(
+        inst_uri, user, db, ip_type="PUBLIC"
+    )
     async with pool.connect() as conn:
         time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
         curr_time = time[0]
@@ -100,7 +109,9 @@ async def test_asyncpg_iam_authn_lazy() -> None:
     user = os.environ["ALLOYDB_IAM_USER"]
     db = os.environ["ALLOYDB_DB"]
 
-    pool, connector = await create_sqlalchemy_engine(inst_uri, user, db, "lazy")
+    pool, connector = await create_sqlalchemy_engine(
+        inst_uri, user, db, "lazy", ip_type="PUBLIC"
+    )
     async with pool.connect() as conn:
         time = (await conn.execute(sqlalchemy.text("SELECT NOW()"))).fetchone()
         curr_time = time[0]

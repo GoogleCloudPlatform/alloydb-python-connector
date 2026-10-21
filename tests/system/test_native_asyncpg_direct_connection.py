@@ -16,6 +16,8 @@
 from datetime import datetime
 import os
 
+import pytest  # isort: skip
+
 # [START alloydb_native_asyncpg_connect_iam_authn_direct]
 import asyncpg
 
@@ -25,6 +27,7 @@ from google.auth.transport.requests import Request
 # [END alloydb_native_asyncpg_connect_iam_authn_direct]
 
 
+@pytest.mark.private_ip
 async def test_native_asyncpg_time() -> None:
     """Basic test to get time from database using native asyncpg connection."""
     ip_address = os.environ["ALLOYDB_INSTANCE_IP"]  # Private IP for AlloyDB instance
