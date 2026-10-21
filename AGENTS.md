@@ -181,8 +181,7 @@ fake success: say so explicitly and rely on unit tests, lint and mypy instead.
   docs: clarify integration test prerequisites
   ```
 
-  Mark breaking changes with `!` before the colon or a `BREAKING CHANGE:`
-  footer and explain the migration. Do not hand-edit `CHANGELOG.md` or
+  Do not hand-edit `CHANGELOG.md` or
   `google/cloud/alloydbconnector/version.py`.
 - Keep PRs small and atomic: one logical change per PR, with its tests and doc
   updates. Split unrelated fixes, refactors and formatting churn into separate
@@ -220,9 +219,9 @@ fake success: say so explicitly and rely on unit tests, lint and mypy instead.
   with `Copyright <year> Google LLC`, enforced by
   `.github/header-checker-lint.yml`. Copy it from a neighboring file, using the
   current year for new files. Do not add `noxfile.py`; extend `scripts/*.sh`.
-- Manage dependencies with `uv`: use `uv add` or edit `pyproject.toml` then
-  `uv lock`. Never hand-edit `uv.lock` or `.venv`. Keep credentials, tokens,
-  passwords and local `.envrc` values out of commits and logs.
+- Manage dependencies with `uv` by declaring them in `pyproject.toml`. Keep
+  credentials, tokens, passwords and local `.envrc` values out of commits and
+  logs.
 - Submit changes through a reviewed pull request and satisfy the Google
   Contributor License Agreement described in `CONTRIBUTING.md`. Explain the
   behavior change and report the checks run, including any integration

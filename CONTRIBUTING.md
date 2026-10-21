@@ -27,7 +27,7 @@ information on using pull requests.
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google/conduct/).
 
-### Testing
+## Testing
 - Unit tests (no AlloyDB instance required): `./scripts/test_unit.sh`.
 - Integration tests with private-network tests skipped: `./scripts/test_system.sh --skip-private-ip`.
 - Full test suite, including private IP, PSC, and direct connections (requires access to the AlloyDB instance's VPC): `./scripts/test_system.sh`.
