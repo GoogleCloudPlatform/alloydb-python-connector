@@ -48,6 +48,28 @@ dependencies = [
     "protobuf",
     "google-cloud-alloydb",
     "google-api-core",
+    # The exporter below requires ~=1.30 of both; state the floor here too so
+    # it survives that requirement being relaxed.
+    "opentelemetry-api>=1.30",
+    "opentelemetry-sdk>=1.30",
+    # Built-in telemetry subclasses this exporter and overrides private hooks
+    # (_batch_write, _get_metric_descriptor) to write system metrics with
+    # CreateServiceTimeSeries. The package has never cut a stable release, so
+    # the a0 floor is what makes pip consider it at all.
+    #
+    # No upper bound: built-in telemetry is on by default, so a cap would make
+    # the connector uninstallable alongside an application that uses the
+    # exporter directly. Both hooks and every attribute in _EXPORTER_ATTRS are
+    # unchanged from 1.11 through 1.15, and telemetry.py re-checks them at
+    # runtime, falling back to NullTelemetryProvider with a logged warning if
+    # a release renames them -- which TestExporterCompatibilityGuard turns
+    # into a failing build, since CI resolves to the newest release.
+    #
+    # 1.13 deprecates the exporter in favor of OTLP, which cannot write a
+    # Google-owned metric prefix at all, so there is nothing to migrate to for
+    # system metrics; telemetry.py absorbs that warning where it subclasses.
+    "opentelemetry-exporter-gcp-monitoring>=1.11.0a0",
+    "google-cloud-monitoring>=2.0",
 ]
 dynamic = ["version"]
 
