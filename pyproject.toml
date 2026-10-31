@@ -78,7 +78,7 @@ test = [
     "coverage",
 ]
 lint = [
-    "ruff==0.17.0",
+    "ruff==0.17.3",
     "mypy",
     "types-aiofiles",
     "types-requests",
