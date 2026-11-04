@@ -142,9 +142,7 @@ class AsyncConnector:
         # AlloyDB Admin API
         else:
             scopes = ["https://www.googleapis.com/auth/alloydb.login"]
-            self._db_credentials = with_scopes_if_required(
-                self._credentials, scopes=scopes
-            )
+            self._db_credentials = self._credentials.with_scopes(scopes=scopes)
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys

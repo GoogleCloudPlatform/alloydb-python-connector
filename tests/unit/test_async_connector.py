@@ -76,10 +76,37 @@ async def test_AsyncConnector_init_scopes() -> None:
         "https://www.googleapis.com/auth/cloud-platform"
     ]
     assert connector._db_credentials != credentials
+    assert connector._db_credentials != connector._credentials
     assert connector._db_credentials._scopes == [
         "https://www.googleapis.com/auth/alloydb.login"
     ]
     await connector.close()
+
+
+async def test_AsyncConnector_init_default_credentials_scopes() -> None:
+    """
+    Test to check whether the __init__ method of AsyncConnector properly sets
+    the scopes for default credentials and db_credentials.
+    """
+    with patch(
+        "google.auth.default",
+        side_effect=lambda scopes: (
+            FakeCredentialsRequiresScopes().with_scopes(scopes),
+            "test-project",
+        ),
+    ) as mock_default:
+        connector = AsyncConnector()
+        mock_default.assert_called_once_with(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        assert connector._credentials._scopes == [
+            "https://www.googleapis.com/auth/cloud-platform"
+        ]
+        assert connector._db_credentials != connector._credentials
+        assert connector._db_credentials._scopes == [
+            "https://www.googleapis.com/auth/alloydb.login"
+        ]
+        await connector.close()
 
 
 @pytest.mark.parametrize(
