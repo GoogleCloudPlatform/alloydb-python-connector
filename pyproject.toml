@@ -75,7 +75,7 @@ dependencies = [
     # Resolving below 2.12 leaves the exporter unimportable and so disables
     # metrics, with nothing but a debug log to say so.
     #
-    # Not higher, either. 2.12 is the lowest that works on 3.10 through 3.13.
+    # Not higher, either. 2.12 is the lowest that works on 3.11 through 3.13.
     # On 3.14 it is 2.23, where the protobuf cap moves off <5, but that gap
     # needs no pin here: the protobuf 2.12 resolves to on 3.14 breaks
     # google-cloud-alloydb and google-api-core outright, so no such install
