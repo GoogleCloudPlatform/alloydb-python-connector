@@ -23,10 +23,15 @@ from unittest.mock import patch
 import warnings
 
 from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
+from opentelemetry.sdk.metrics.export import MetricsData
 import pytest
 
+from google.cloud.alloydbconnector.telemetry import _CLIENT_WRITE_METHOD
 from google.cloud.alloydbconnector.telemetry import _EXPORT_TIMEOUT_MS
+from google.cloud.alloydbconnector.telemetry import _EXPORTED_METRIC_TYPES
 from google.cloud.alloydbconnector.telemetry import _EXPORTER_ATTRS
+from google.cloud.alloydbconnector.telemetry import _MONITORED_RESOURCE
+from google.cloud.alloydbconnector.telemetry import _RESOURCE_TYPE_KEY
 from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
 from google.cloud.alloydbconnector.telemetry import REFRESH_AHEAD_TYPE
 from google.cloud.alloydbconnector.telemetry import REFRESH_SUCCESS
@@ -41,6 +46,23 @@ from google.cloud.alloydbconnector.telemetry import _system_metrics_exporter_cla
 from google.cloud.alloydbconnector.telemetry import _TelemetryMixin
 from google.cloud.alloydbconnector.telemetry import _TelemetryProvider
 from google.cloud.alloydbconnector.telemetry import new_telemetry_provider
+
+try:
+    from opentelemetry.sdk.environment_variables import (
+        OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED,
+    )
+except ImportError:  # opentelemetry-sdk at this project's floor
+    OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED = ""
+
+# Whether the installed SDK has self-observability instruments to be dropped.
+# They arrived after the floor pyproject.toml allows, so the tests that prove
+# they get dropped have nothing to work with there. The production guard is
+# unconditional either way; it is only these tests that need the feature to
+# exist in order to mean anything.
+_requires_sdk_self_metrics = pytest.mark.skipif(
+    not OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED,
+    reason="installed opentelemetry-sdk has no self-observability metrics",
+)
 
 
 @contextmanager
@@ -336,23 +358,21 @@ class TestTelemetryProviderExport:
         assert 0 < kwargs["timeout"] <= SHUTDOWN_TIMEOUT_MS / 1000
 
     def test_every_write_is_capped_not_only_the_last_one(self) -> None:
-        """MeterProvider registers an atexit handler that calls shutdown()
-        with OTel's 30s default, and the reader hands the export interval --
-        not the shutdown deadline -- to that final export. A connector that
-        is never closed must still not sit in a 60s write at exit."""
-        provider, _, writes = self._provider_and_client()
+        """The reader hands the export interval, not the shutdown deadline,
+        to its final export, so a periodic export must carry a ceiling of its
+        own and not wait out a 60s write."""
+        provider, _, _ = self._provider_and_client()
         assert provider._exporter._max_write_timeout_s == _EXPORT_TIMEOUT_MS / 1000
-
-        mr = provider.create_metric_recorder(
-            "my-proj", "us-central1", "my-cluster", "my-inst"
-        )
-        mr.record_dial_count(TelemetryAttributes(dial_status=DIAL_SUCCESS))
-        # Go through MeterProvider.shutdown directly, as the atexit handler
-        # does, rather than through _TelemetryProvider.shutdown.
-        provider._provider.shutdown(timeout_millis=30_000)
-
-        ((_, _, kwargs),) = writes
-        assert 0 < kwargs["timeout"] <= _EXPORT_TIMEOUT_MS / 1000
+        try:
+            # What the reader does on its final collect: hand export() the
+            # export *interval* as the budget. The ceiling has to bring that
+            # back down before it reaches the write.
+            provider._exporter.export(
+                MetricsData(resource_metrics=[]), timeout_millis=60_000
+            )
+            assert provider._exporter._write_timeout_s == _EXPORT_TIMEOUT_MS / 1000
+        finally:
+            provider.shutdown()
 
     def test_one_deadline_covers_every_chunk(self) -> None:
         """Cloud Monitoring takes at most MAX_BATCH_WRITE series per call, so
@@ -431,7 +451,7 @@ class TestForeignMetricsAreNotExported:
         tests pass whether or not the exporter filters anything, because no
         foreign metric is ever produced.
         """
-        monkeypatch.setenv("OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED", "true")
+        monkeypatch.setenv(OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED, "true")
         provider, _, writes = TestTelemetryProviderExport._provider_and_client()
         # What the exporter was handed, before it dropped anything.
         collected: list[str] = []
@@ -450,6 +470,7 @@ class TestForeignMetricsAreNotExported:
         exporter.export = spy  # type: ignore[method-assign]
         return provider, writes, collected
 
+    @_requires_sdk_self_metrics
     def test_sdk_self_metrics_are_dropped(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -481,6 +502,7 @@ class TestForeignMetricsAreNotExported:
             f"an opentelemetry-sdk self-metric was exported: {sorted(written)}"
         )
 
+    @_requires_sdk_self_metrics
     def test_every_written_series_has_instance_labels(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -653,6 +675,29 @@ class TestExporterCompatibilityGuard:
         for attr in _EXPORTER_ATTRS:
             assert hasattr(exporter, attr), attr
 
+    def test_missing_client_write_method_falls_back_to_null(self) -> None:
+        """_batch_write calls create_service_time_series in place of
+        super()._batch_write, so a monitoring client without it would leave
+        every export failing at the write, once a minute, at debug."""
+        client = MagicMock(spec=["common_project_path", "close"])
+        client.common_project_path.return_value = "projects/proj"
+        provider = new_telemetry_provider(
+            enabled=True,
+            project_id="proj",
+            client_uid="uid",
+            version="1.0.0",
+            monitoring_client=client,
+        )
+        assert isinstance(provider, NullTelemetryProvider)
+
+    def test_the_installed_client_has_the_write_method(self) -> None:
+        """The other half of the CI canary. google-cloud-monitoring carries no
+        upper bound either, and this is the one method of it this module calls
+        directly."""
+        from google.cloud.monitoring_v3 import MetricServiceClient
+
+        assert hasattr(MetricServiceClient, _CLIENT_WRITE_METHOD)
+
     def test_the_installed_exporter_is_supported(self) -> None:
         """The CI canary for this dependency.
 
@@ -775,9 +820,10 @@ class TestTelemetryShutdown:
             def __init__(self) -> None:
                 self.flushed = False
 
-            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
                 time.sleep(SHUTDOWN_TIMEOUT_MS / 1000)
                 self.flushed = True
+                return True
 
         a, b, c = SlowProvider(), SlowProvider(), SlowProvider()
         mixin = self._mixin({"a": a, "b": b, "c": c})
@@ -795,8 +841,9 @@ class TestTelemetryShutdown:
         release = threading.Event()
 
         class HangingProvider:
-            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
                 release.wait(30)
+                return True
 
         client = MagicMock()
         mixin = self._mixin({"a": HangingProvider()}, monitoring_client=client)
@@ -818,15 +865,16 @@ class TestTelemetryShutdown:
         not keep the channel open either."""
 
         class FailingProvider:
-            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
                 raise RuntimeError("reader failed during shutdown")
 
         class RecordingProvider:
             def __init__(self) -> None:
                 self.flushed = False
 
-            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
                 self.flushed = True
+                return True
 
         other = RecordingProvider()
         client = MagicMock()
@@ -840,10 +888,29 @@ class TestTelemetryShutdown:
         assert client.close.called
         assert [r for r in ours if "reader failed during shutdown" in r.getMessage()]
 
+    async def test_a_provider_that_gave_up_keeps_the_client_open(self) -> None:
+        """A provider can return well inside the budget and still have a
+        write on the wire: the metric reader joins its export thread with a
+        timeout and does not raise when that join expires. Closing the
+        channel then fails the write the deadline was meant to let finish."""
+
+        class GaveUpProvider:
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
+                return False
+
+        client = MagicMock()
+        mixin = self._mixin({"a": GaveUpProvider()}, monitoring_client=client)
+        with _captured_logs("google.cloud.alloydbconnector.telemetry") as ours:
+            await mixin._shutdown_telemetry()
+
+        assert not client.close.called
+        assert mixin._monitoring_client is None
+        assert [r for r in ours if "still in flight" in r.getMessage()]
+
     async def test_client_is_released_once_the_flush_lands(self) -> None:
         class FastProvider:
-            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
-                pass
+            def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
+                return True
 
         client = MagicMock()
         mixin = self._mixin({"a": FastProvider()}, monitoring_client=client)
@@ -852,3 +919,206 @@ class TestTelemetryShutdown:
         assert client.close.called
         assert mixin._monitoring_client is None
         assert mixin._telemetry_providers == {}
+
+
+def _fake_monitoring_client(writes: list) -> MagicMock:
+    client = MagicMock()
+    client.common_project_path.return_value = "projects/proj"
+    client.create_service_time_series.side_effect = lambda req, **kw: writes.append(kw)
+    return client
+
+
+def _provider(client: Any) -> Any:
+    return _TelemetryProvider(
+        project_id="proj",
+        client_uid="uid-1",
+        version="1.0.0",
+        monitoring_client=client,
+    )
+
+
+class TestAtExitFlush:
+    """A connector that is never closed -- the common case for a script, with
+    metrics on by default -- still flushes at interpreter exit, and on the
+    budget close() would have allowed rather than ten times it.
+
+    MeterProvider's own atexit handler calls shutdown() with OTel's 30s
+    default, and the metric reader hands the export interval to that final
+    export, so the only ceiling left would be _EXPORT_TIMEOUT_MS. This module
+    registers its own handler instead, which goes through
+    _TelemetryProvider.shutdown and so gets SHUTDOWN_TIMEOUT_MS.
+    """
+
+    def test_the_meter_provider_registers_nothing_of_its_own(self) -> None:
+        provider = _provider(_fake_monitoring_client([]))
+        try:
+            assert provider._provider._atexit_handler is None
+            assert provider._atexit_handler is not None
+        finally:
+            provider.shutdown()
+
+    def test_the_at_exit_flush_uses_the_shutdown_budget(self) -> None:
+        writes: list = []
+        provider = _provider(_fake_monitoring_client(writes))
+        mr = provider.create_metric_recorder("proj", "us-central1", "clus", "inst")
+        mr.record_dial_count(TelemetryAttributes(dial_status=DIAL_SUCCESS))
+
+        handler = provider._atexit_handler
+        assert handler is not None
+        handler()  # exactly what the interpreter will call
+
+        (kwargs,) = writes
+        assert 0 < kwargs["timeout"] <= SHUTDOWN_TIMEOUT_MS / 1000
+
+    def test_shutdown_unregisters_the_flush(self) -> None:
+        """A connector that is closed must not flush again at exit.
+        MeterProvider.shutdown only warns on a second call, so the symptom
+        would be a stray warning on an unrelated logger at interpreter
+        exit."""
+        provider = _provider(_fake_monitoring_client([]))
+        assert provider.shutdown() is True
+        assert provider._atexit_handler is None
+
+
+class TestInFlightWritesAreReported:
+    """shutdown() returning in time does not mean the final write landed.
+
+    The metric reader joins its export thread with a *timeout* and does not
+    raise when that join expires, and MeterProvider.shutdown only reports
+    exceptions, so a shutdown that gave up on a stalled write is otherwise
+    indistinguishable from one that flushed. _shutdown_telemetry needs the
+    difference to decide whether it can close the channel.
+    """
+
+    def test_a_clean_flush_is_reported_as_flushed(self) -> None:
+        writes: list = []
+        provider = _provider(_fake_monitoring_client(writes))
+        mr = provider.create_metric_recorder("proj", "us-central1", "clus", "inst")
+        mr.record_dial_count(TelemetryAttributes(dial_status=DIAL_SUCCESS))
+
+        assert provider.shutdown() is True
+        assert writes
+
+    def test_a_stalled_write_is_reported_as_unflushed(self) -> None:
+        from google.cloud.monitoring_v3 import TimeSeries
+
+        started, release = threading.Event(), threading.Event()
+
+        def hang(req: Any, **kwargs: Any) -> None:
+            started.set()
+            release.wait(30)
+
+        client = _fake_monitoring_client([])
+        client.create_service_time_series.side_effect = hang
+        provider = _provider(client)
+
+        series = TimeSeries()
+        series.metric.type = next(iter(_EXPORTED_METRIC_TYPES))
+        writer = threading.Thread(
+            target=provider._exporter._batch_write, args=([series],), daemon=True
+        )
+        writer.start()
+        try:
+            assert started.wait(5), "the write never got issued"
+            assert provider._exporter.write_in_flight
+            assert provider.shutdown() is False
+        finally:
+            release.set()
+            writer.join(30)
+        assert not provider._exporter.write_in_flight
+
+
+class TestResourceDoesNotAbsorbConsumerConfig:
+    """The resource is carried for parity with the Go connector and changes
+    nothing about what is written -- _batch_write replaces ts.resource
+    wholesale -- so building it must not reach for the consumer's OTel
+    configuration. Resource.create() does: it reads OTEL_SERVICE_NAME and
+    OTEL_RESOURCE_ATTRIBUTES, mints a service.instance.id, and under
+    OTEL_EXPERIMENTAL_RESOURCE_DETECTORS runs third-party detectors that
+    reach for the metadata server, all on the first dial.
+    """
+
+    def test_consumer_otel_env_does_not_reach_the_resource(self, monkeypatch) -> None:
+        monkeypatch.setenv("OTEL_SERVICE_NAME", "some-consumers-app")
+        monkeypatch.setenv("OTEL_RESOURCE_ATTRIBUTES", "deployment.environment=prod")
+
+        provider = _provider(_fake_monitoring_client([]))
+        try:
+            attributes = dict(provider._provider._sdk_config.resource.attributes)
+        finally:
+            provider.shutdown()
+
+        assert attributes == {_RESOURCE_TYPE_KEY: _MONITORED_RESOURCE}
+
+
+class TestTelemetryStartsAtTheFirstDial:
+    """The client identity and the monitoring channel are minted on the first
+    dial rather than in __init__, so that both land after any fork.
+
+    AsyncConnector.__init__ needs no running event loop, so building one at
+    module scope and forking workers -- gunicorn or uvicorn with --preload --
+    is a supported pattern. A client_uid inherited across that fork would put
+    every worker on the same cumulative time series, each overwriting the
+    others' points, and a channel opened before the fork would be used after
+    it.
+    """
+
+    class _Mixin(_TelemetryMixin):
+        pass
+
+    def test_nothing_is_built_during_init(self) -> None:
+        mixin = self._Mixin()
+        with patch("google.cloud.monitoring_v3.MetricServiceClient") as client_cls:
+            mixin._init_telemetry(True, None)
+
+        assert not client_cls.called
+        assert mixin._monitoring_client is None
+        assert mixin._client_uid == ""
+        assert mixin._telemetry_started is False
+
+    def test_the_first_dial_mints_the_identity_and_the_channel(self) -> None:
+        mixin = self._Mixin()
+        mixin._init_telemetry(True, None)
+        with (
+            patch("google.cloud.monitoring_v3.MetricServiceClient") as client_cls,
+            patch(
+                "google.cloud.alloydbconnector.telemetry.new_telemetry_provider",
+                return_value=NullTelemetryProvider(),
+            ),
+        ):
+            mixin._get_telemetry_provider("proj")
+
+        assert client_cls.call_count == 1
+        assert mixin._client_uid
+        assert mixin._telemetry_started is True
+
+    def test_a_second_project_reuses_both(self) -> None:
+        """One channel and one identity per connector, however many projects
+        it dials. The provider, not the identity, is what is per project."""
+        mixin = self._Mixin()
+        mixin._init_telemetry(True, None)
+        with (
+            patch("google.cloud.monitoring_v3.MetricServiceClient") as client_cls,
+            patch(
+                "google.cloud.alloydbconnector.telemetry.new_telemetry_provider",
+                return_value=NullTelemetryProvider(),
+            ),
+        ):
+            mixin._get_telemetry_provider("proj-a")
+            uid = mixin._client_uid
+            mixin._get_telemetry_provider("proj-b")
+
+        assert client_cls.call_count == 1
+        assert mixin._client_uid == uid
+
+    def test_a_disabled_connector_opens_no_channel(self) -> None:
+        mixin = self._Mixin()
+        mixin._init_telemetry(False, None)
+        with patch("google.cloud.monitoring_v3.MetricServiceClient") as client_cls:
+            provider = mixin._get_telemetry_provider("proj")
+
+        assert not client_cls.called
+        assert isinstance(provider, NullTelemetryProvider)
+        # The identity is still minted, so that nothing downstream has to
+        # cope with it being absent when metrics are off.
+        assert mixin._client_uid
