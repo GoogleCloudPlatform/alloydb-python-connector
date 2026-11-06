@@ -112,12 +112,13 @@ class FakeCredentialsRequiresScopes(Scoped):
         """The universe domain value."""
         return self._universe_domain
 
+    @property
     def requires_scopes(self) -> bool:
         """
-        Overrides the requires_scopes() method of the Scoped class to require
-        scopes for these credentials.
+        Overrides the requires_scopes property of the Scoped class to require
+        scopes for these credentials when scopes are not yet set.
         """
-        return True
+        return not self._scopes
 
     def with_scopes(
         self, scopes: Sequence[str], default_scopes: Optional[Sequence[str]] = None

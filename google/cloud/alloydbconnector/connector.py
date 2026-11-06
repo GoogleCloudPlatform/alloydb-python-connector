@@ -30,6 +30,7 @@ from typing import Callable
 from typing import Optional
 
 from google.auth import default
+from google.auth.credentials import Scoped
 from google.auth.credentials import TokenState
 from google.auth.credentials import with_scopes_if_required
 from google.auth.transport import requests
@@ -170,9 +171,16 @@ class Connector:
         # AlloyDB Admin API
         else:
             scopes = ["https://www.googleapis.com/auth/alloydb.login"]
-            self._db_credentials = with_scopes_if_required(
-                self._credentials, scopes=scopes
-            )
+            if credentials:
+                # caller handed us an object, so there is no ADC to re-resolve
+                self._db_credentials = (
+                    credentials.with_scopes(scopes=scopes)
+                    if isinstance(credentials, Scoped)
+                    else credentials
+                )
+            else:
+                # let google-auth resolve ADC at the narrower scope
+                self._db_credentials, _ = default(scopes=scopes)
         self._keys = asyncio.wrap_future(
             asyncio.run_coroutine_threadsafe(generate_keys(), self._loop),
             loop=self._loop,
