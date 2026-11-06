@@ -17,6 +17,7 @@ from threading import Thread
 from typing import Union
 
 from mock import MagicMock
+from mock import call
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeCredentials
@@ -62,14 +63,21 @@ def test_Connector_init_db_credentials(credentials: FakeCredentials) -> None:
     connector.close()
 
 
-def test_Connector_init_scopes() -> None:
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        FakeCredentialsRequiresScopes(),
+        FakeCredentialsRequiresScopes().with_scopes(
+            ["https://www.googleapis.com/auth/cloud-platform"]
+        ),
+    ],
+)
+def test_Connector_init_scopes(credentials: FakeCredentialsRequiresScopes) -> None:
     """
     Test to check whether the __init__ method of Connector
     properly sets the credential's scopes.
     """
-    credentials = FakeCredentialsRequiresScopes()
     connector = Connector(credentials)
-    assert connector._credentials != credentials
     assert connector._credentials._scopes == [
         "https://www.googleapis.com/auth/cloud-platform"
     ]
@@ -94,9 +102,10 @@ def test_Connector_init_default_credentials_scopes() -> None:
         ),
     ) as mock_default:
         connector = Connector()
-        mock_default.assert_called_once_with(
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
+        assert mock_default.call_args_list == [
+            call(scopes=["https://www.googleapis.com/auth/cloud-platform"]),
+            call(scopes=["https://www.googleapis.com/auth/alloydb.login"]),
+        ]
         assert connector._credentials._scopes == [
             "https://www.googleapis.com/auth/cloud-platform"
         ]

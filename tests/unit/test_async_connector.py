@@ -16,6 +16,7 @@ import asyncio
 from typing import Any
 from typing import Union
 
+from mock import call
 from mock import patch
 from mocks import FakeAlloyDBClient
 from mocks import FakeConnectionInfo
@@ -64,14 +65,23 @@ async def test_AsyncConnector_init_db_credentials(credentials: FakeCredentials) 
     await connector.close()
 
 
-async def test_AsyncConnector_init_scopes() -> None:
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        FakeCredentialsRequiresScopes(),
+        FakeCredentialsRequiresScopes().with_scopes(
+            ["https://www.googleapis.com/auth/cloud-platform"]
+        ),
+    ],
+)
+async def test_AsyncConnector_init_scopes(
+    credentials: FakeCredentialsRequiresScopes,
+) -> None:
     """
     Test to check whether the __init__ method of AsyncConnector
     properly sets the credential's scopes.
     """
-    credentials = FakeCredentialsRequiresScopes()
     connector = AsyncConnector(credentials)
-    assert connector._credentials != credentials
     assert connector._credentials._scopes == [
         "https://www.googleapis.com/auth/cloud-platform"
     ]
@@ -96,9 +106,10 @@ async def test_AsyncConnector_init_default_credentials_scopes() -> None:
         ),
     ) as mock_default:
         connector = AsyncConnector()
-        mock_default.assert_called_once_with(
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
+        assert mock_default.call_args_list == [
+            call(scopes=["https://www.googleapis.com/auth/cloud-platform"]),
+            call(scopes=["https://www.googleapis.com/auth/alloydb.login"]),
+        ]
         assert connector._credentials._scopes == [
             "https://www.googleapis.com/auth/cloud-platform"
         ]

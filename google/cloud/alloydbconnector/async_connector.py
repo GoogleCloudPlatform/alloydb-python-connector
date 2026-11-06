@@ -22,6 +22,7 @@ from typing import Any
 from typing import Optional
 
 import google.auth
+from google.auth.credentials import Scoped
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
 import google.cloud.alloydbconnector.asyncpg as asyncpg
@@ -142,7 +143,16 @@ class AsyncConnector:
         # AlloyDB Admin API
         else:
             scopes = ["https://www.googleapis.com/auth/alloydb.login"]
-            self._db_credentials = self._credentials.with_scopes(scopes=scopes)
+            if credentials:
+                # caller handed us an object, so there is no ADC to re-resolve
+                self._db_credentials = (
+                    credentials.with_scopes(scopes=scopes)
+                    if isinstance(credentials, Scoped)
+                    else credentials
+                )
+            else:
+                # let google-auth resolve ADC at the narrower scope
+                self._db_credentials, _ = google.auth.default(scopes=scopes)
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys

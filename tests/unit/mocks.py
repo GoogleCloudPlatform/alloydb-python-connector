@@ -54,11 +54,6 @@ class FakeCredentials:
         self.token = "12345"
         self.expiry = datetime.now(timezone.utc) + timedelta(minutes=60)
 
-    def with_scopes(
-        self, scopes: Sequence[str], default_scopes: Optional[Sequence[str]] = None
-    ) -> "FakeCredentials":
-        return self
-
     @property
     def expired(self) -> bool:
         """Checks if the credentials are expired.
