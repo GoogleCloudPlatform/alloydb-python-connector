@@ -73,6 +73,7 @@ path performs no metadata exchange, so the status cannot arise there.
 from __future__ import annotations
 
 import asyncio
+import atexit
 from dataclasses import dataclass
 from functools import lru_cache
 import logging
@@ -202,19 +203,24 @@ def _version() -> str:
 
 
 class _UnsupportedExporter(Exception):
-    """A release has renamed a private hook or attribute the overrides need.
+    """A dependency no longer has something the exporter overrides need.
 
-    Separated from any other startup failure because it is the one worth
-    telling the operator about: metrics stay off until the dependency changes,
-    rather than being a transient problem that may fix itself.
+    Either a release renamed a private hook or attribute, or the monitoring
+    client predates the write method _batch_write calls. Separated from any
+    other startup failure because it is the one worth telling the operator
+    about: metrics stay off until the dependency changes, rather than being a
+    transient problem that may fix itself.
+
+    The message carries its own remediation, because which package to change
+    depends on which check failed.
     """
 
 
 class NullTelemetryProvider:
     """A no-op TelemetryProvider for when telemetry is disabled."""
 
-    def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
-        pass
+    def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
+        return True
 
     @staticmethod
     def create_metric_recorder(
@@ -275,6 +281,13 @@ class _Instruments:
 # __init__, so the constructed exporter is checked against this list.
 _EXPORTER_ATTRS = ("client", "project_name", "_prefix", "_metric_descriptors")
 
+# The write method _batch_write calls in place of super()._batch_write. It
+# lives on the monitoring client rather than the exporter, so the
+# _EXPORTER_ATTRS loop cannot see it, but it is just as load bearing: a client
+# too old to have it would surface only as a debug log out of every export,
+# once a minute, for the life of the process.
+_CLIENT_WRITE_METHOD = "create_service_time_series"
+
 
 # The cache memoizes the class, so every provider in the process subclasses
 # the same object and the imports and hook checks below run once. lru_cache
@@ -311,8 +324,9 @@ def _system_metrics_exporter_class() -> Any:
     for _hook in ("_batch_write", "_get_metric_descriptor"):
         if not hasattr(CloudMonitoringMetricsExporter, _hook):
             raise _UnsupportedExporter(
-                f"cloud monitoring exporter is missing {_hook}; "
-                "the installed version is not supported"
+                f"cloud monitoring exporter is missing {_hook}. Install a "
+                "supported version of opentelemetry-exporter-gcp-monitoring "
+                "to re-enable them"
             )
 
     class _SystemMetricsExporter(CloudMonitoringMetricsExporter):
@@ -332,10 +346,26 @@ def _system_metrics_exporter_class() -> Any:
         # to be applied here.
         _max_write_timeout_s: Optional[float] = None
 
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            # Whether a write RPC is outstanding. Only the metric reader's
+            # export thread ever changes it -- the reader holds its own lock
+            # across export() -- but _TelemetryProvider.shutdown reads it from
+            # another thread, so the lock is what makes that read well
+            # defined.
+            self._write_lock = threading.Lock()
+            self._writes_in_flight = 0
+
+        @property
+        def write_in_flight(self) -> bool:
+            """Whether a write RPC has been issued and has not returned."""
+            with self._write_lock:
+                return self._writes_in_flight > 0
+
         def export(
             self,
             metrics_data: Any,
-            timeout_millis: float = 10_000,
+            timeout_millis: float = _EXPORT_TIMEOUT_MS,
             **kwargs: Any,
         ) -> Any:
             self._write_error = None
@@ -365,15 +395,16 @@ def _system_metrics_exporter_class() -> Any:
             return result
 
         def _batch_write(self, series: Any) -> None:
-            # Drop anything this connector did not define. The OTel SDK
-            # registers its own self-observability instruments (e.g.
-            # otel.sdk.metric_reader.collection.duration) on whichever
-            # MeterProvider owns the reader, so from the second export
-            # onward they arrive here wearing this exporter's
-            # alloydb.googleapis.com prefix and carrying none of the
-            # instance labels. Writing an undefined type under a
-            # Google-owned prefix fails the whole batch, which would take
-            # every real metric down with it.
+            # Drop anything this connector did not define. A consumer who
+            # sets OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED gets the SDK's
+            # own self-observability instruments (e.g.
+            # otel.sdk.metric_reader.collection.duration) registered on
+            # whichever MeterProvider owns the reader, so they arrive here
+            # wearing this exporter's alloydb.googleapis.com prefix and
+            # carrying none of the instance labels. Writing an undefined type
+            # under a Google-owned prefix fails the whole batch, which would
+            # take every real metric down with it. That env var is global, so
+            # an application that opts itself in opts this connector in too.
             #
             # _get_metric_descriptor already drops these upstream of here.
             # This is the backstop for a series that reaches the write by
@@ -409,6 +440,11 @@ def _system_metrics_exporter_class() -> Any:
             budget_s = self._write_timeout_s
             deadline = None if budget_s is None else monotonic() + budget_s
             write_ind = 0
+            # Published for the whole loop, not per RPC: what shutdown needs to
+            # know is whether this thread is still somewhere inside the write,
+            # since that is what makes closing the channel unsafe.
+            with self._write_lock:
+                self._writes_in_flight += 1
             try:
                 while write_ind < len(series):
                     timeout_s = None
@@ -434,6 +470,9 @@ def _system_metrics_exporter_class() -> Any:
                 # turn a missing IAM permission into an ERROR and a stack
                 # trace every export interval.
                 self._write_error = e
+            finally:
+                with self._write_lock:
+                    self._writes_in_flight -= 1
 
         def _get_metric_descriptor(self, metric: Any) -> Any:
             descriptor_type = f"{self._prefix}/{metric.name}"
@@ -500,12 +539,26 @@ class _TelemetryProvider:
         # instances the Connector dials in this project.
         self._recorders: list[_MetricRecorder] = []
 
+        # Set once the provider is fully built; see the MeterProvider
+        # construction below for why this module registers its own.
+        self._atexit_handler: Optional[Any] = None
+
         # Carried for parity with the Go connector, where the exporter reads
         # gcp.resource_type to pick the monitored resource. The Python
         # exporter ignores it -- it maps from cloud.platform -- and
         # _batch_write overwrites ts.resource wholesale anyway, so this
         # attribute has no effect on what is written.
-        resource = Resource.create({_RESOURCE_TYPE_KEY: _MONITORED_RESOURCE})
+        #
+        # Deliberately the constructor and not Resource.create(), which is not
+        # inert: it reads the consumer's OTEL_SERVICE_NAME and
+        # OTEL_RESOURCE_ATTRIBUTES, mints a service.instance.id, and under
+        # OTEL_EXPERIMENTAL_RESOURCE_DETECTORS scans entry points and runs
+        # third-party detectors -- opentelemetry-resourcedetector-gcp arrives
+        # as a transitive dependency of the exporter and registers two, which
+        # reach for the metadata server and log a traceback on the OTel logger
+        # when they fail. All of that would land on the first dial, in service
+        # of a resource that changes nothing about the write.
+        resource = Resource(attributes={_RESOURCE_TYPE_KEY: _MONITORED_RESOURCE})
 
         # Upstream marks CloudMonitoringMetricsExporter @deprecated as of
         # 1.13, which warns both when it is subclassed (the first call below
@@ -531,16 +584,19 @@ class _TelemetryProvider:
         for attr in _EXPORTER_ATTRS:
             if not hasattr(exporter, attr):
                 raise _UnsupportedExporter(
-                    f"cloud monitoring exporter is missing {attr}; "
-                    "the installed version is not supported"
+                    f"cloud monitoring exporter is missing {attr}. Install a "
+                    "supported version of opentelemetry-exporter-gcp-monitoring "
+                    "to re-enable them"
                 )
+        if not hasattr(exporter.client, _CLIENT_WRITE_METHOD):
+            raise _UnsupportedExporter(
+                f"monitoring client is missing {_CLIENT_WRITE_METHOD}. "
+                "Upgrade google-cloud-monitoring to re-enable them"
+            )
 
-        # Cap every write, not just the one on shutdown. MeterProvider
-        # registers an atexit handler that calls shutdown() with OTel's 30s
-        # default, and the metric reader hands the *export interval* to that
-        # final export, so without a ceiling set here a connector that is
-        # never closed -- the common case for a script, with metrics on by
-        # default -- can sit in a 60s-deadline write at interpreter exit.
+        # Cap every write, not just the one on shutdown. The metric reader
+        # hands the *export interval* to its final export, so without a
+        # ceiling set here any export could sit in a 60s-deadline write.
         # _TelemetryProvider.shutdown only tightens this.
         exporter._max_write_timeout_s = _EXPORT_TIMEOUT_MS / 1000
 
@@ -558,9 +614,20 @@ class _TelemetryProvider:
         try:
             self._exporter = exporter
 
+            # shutdown_on_exit=False and an atexit handler of this module's
+            # own, because MeterProvider's calls shutdown() with OTel's 30s
+            # default and the reader hands the export interval to that last
+            # export: a connector that is never closed -- the common case for
+            # a script, with metrics on by default -- would hang for the full
+            # _EXPORT_TIMEOUT_MS at interpreter exit on a stalled write, ten
+            # times the budget close() allows for the same flush. Registering
+            # it here means the at-exit path gets SHUTDOWN_TIMEOUT_MS, the
+            # same as every other path. shutdown() unregisters it, so a
+            # connector that *is* closed does not flush twice.
             provider = MeterProvider(
                 resource=resource,
                 metric_readers=[reader],
+                shutdown_on_exit=False,
             )
             self._provider = provider
 
@@ -598,10 +665,13 @@ class _TelemetryProvider:
             )
 
             self._client_uid = client_uid
+
+            # Last, so a provider that failed to build leaves nothing
+            # registered against it.
+            self._atexit_handler = atexit.register(self.shutdown)
         except BaseException:
-            # Stop the export thread this __init__ started. Shut down the
-            # MeterProvider once it exists, so its atexit hook does not run
-            # a second shutdown at interpreter exit.
+            # Stop the export thread this __init__ started, shutting down the
+            # MeterProvider once it exists rather than just the reader.
             try:
                 if provider is not None:
                     provider.shutdown()
@@ -633,13 +703,27 @@ class _TelemetryProvider:
     def _observe_bytes_tx(self, options: Any) -> list[Any]:
         return self._observe_bytes(received=False)
 
-    def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> None:
+    def shutdown(self, timeout_millis: float = SHUTDOWN_TIMEOUT_MS) -> bool:
+        """Flush and stop, reporting whether the final write finished.
+
+        A False return means a write may still be in flight on the reader's
+        export thread, which is what decides whether the monitoring channel
+        can be closed. Returning cleanly does not imply it: the metric reader
+        joins its export thread with a *timeout* and does not raise when that
+        join expires, and MeterProvider.shutdown only reports exceptions, so a
+        shutdown that gives up on a stalled write is indistinguishable from
+        one that flushed. The exporter knows, so ask it.
+        """
+        if self._atexit_handler is not None:
+            atexit.unregister(self._atexit_handler)
+            self._atexit_handler = None
         # Tighten the cap set in __init__ to the budget close() allows. The
         # metric reader hands the export interval, not the shutdown deadline,
         # to that last export, so the RPC has to be capped from here for the
         # flush to actually fit in the budget.
         self._exporter._max_write_timeout_s = max(timeout_millis, 0) / 1000
         self._provider.shutdown(timeout_millis=timeout_millis)
+        return not self._exporter.write_in_flight
 
     def create_metric_recorder(
         self,
@@ -809,16 +893,43 @@ class _TelemetryMixin:
 
     def _init_telemetry(self, enabled: bool, credentials: Any) -> None:
         self._enable_builtin_telemetry = enabled
-        self._client_uid = str(uuid.uuid4())
+        self._telemetry_credentials = credentials
+        self._client_uid = ""
+        self._telemetry_started = False
         self._metric_recorders: dict[str, MetricRecorderType] = {}
         self._telemetry_providers: dict[str, TelemetryProviderType] = {}
         self._monitoring_client: Any = None
-        if not enabled:
+
+    def _start_telemetry(self) -> None:
+        """Mint the client identity and open the monitoring channel.
+
+        Deferred to the first dial rather than done in __init__ so that both
+        land after any fork. AsyncConnector.__init__ needs no running event
+        loop, so building one at module scope and forking workers -- gunicorn
+        or uvicorn with --preload -- is a supported pattern, and a client_uid
+        inherited across that fork would put every worker on the same
+        cumulative time series, each overwriting the others' points. The gRPC
+        channel has the same problem in reverse: opened before the fork, used
+        after it.
+
+        It also keeps the google.cloud.monitoring_v3 import, which costs more
+        than the rest of this package put together, off the constructor for a
+        connector that is never dialed.
+
+        Both connectors create recorders from a single thread -- the sync
+        Connector's background event loop, or the caller's -- so this needs no
+        lock.
+        """
+        self._telemetry_started = True
+        self._client_uid = str(uuid.uuid4())
+        if not self._enable_builtin_telemetry:
             return
         try:
             from google.cloud.monitoring_v3 import MetricServiceClient
 
-            self._monitoring_client = MetricServiceClient(credentials=credentials)
+            self._monitoring_client = MetricServiceClient(
+                credentials=self._telemetry_credentials
+            )
         except Exception as e:
             logger.debug(f"Built-in metrics exporter failed to initialize: {e}")
 
@@ -833,6 +944,8 @@ class _TelemetryMixin:
         provider = self._telemetry_providers.get(project_id)
         if provider is not None:
             return provider
+        if not self._telemetry_started:
+            self._start_telemetry()
         provider = new_telemetry_provider(
             enabled=self._enable_builtin_telemetry,
             project_id=project_id,
@@ -875,6 +988,9 @@ class _TelemetryMixin:
         projects dialed; concurrently, TELEMETRY_SHUTDOWN_TIMEOUT_S covers
         any number of them.
 
+        A provider reports whether its own flush finished, because returning
+        in time does not mean it did; see _TelemetryProvider.shutdown.
+
         Bounding the wait does not bound the work. The default executor's
         threads are joined at interpreter exit, so a wedged export would
         block process teardown even though close() returned. What actually
@@ -902,9 +1018,10 @@ class _TelemetryMixin:
                     timeout=TELEMETRY_SHUTDOWN_TIMEOUT_S,
                 )
             except asyncio.TimeoutError as e:
-                # Only a timeout leaves a write possibly still in flight,
-                # which is what decides whether the channel can be closed
-                # below. A provider that raised has finished.
+                # A write may still be in flight, which is what decides
+                # whether the channel can be closed below. A provider that
+                # raised has finished; one that returned False has not, and is
+                # handled with the results.
                 flushed = False
                 logger.debug(f"Built-in metrics failed to shut down cleanly: {e}")
             else:
@@ -913,9 +1030,17 @@ class _TelemetryMixin:
                         logger.debug(
                             f"Built-in metrics failed to shut down cleanly: {result}"
                         )
+                    elif result is False:
+                        # Returned within the budget, but gave up on a write
+                        # that is still going. Same conclusion as a timeout as
+                        # far as the channel below is concerned.
+                        flushed = False
+                        logger.debug(
+                            "Built-in metrics gave up on a write still in flight"
+                        )
         if self._monitoring_client is not None:
-            # Release the gRPC channel opened in __init__, but only once no
-            # export is still using it. An abandoned flush keeps running on
+            # Release the gRPC channel opened on the first dial, but only once
+            # no export is still using it. An abandoned flush keeps running on
             # its executor thread after the wait above gives up, and closing
             # the channel under its in-flight write would fail the write
             # that the deadline was meant to let finish. Leaving the channel
@@ -960,10 +1085,7 @@ def new_telemetry_provider(
         # falling back quietly would drop every metric with no signal.
         # Bounded by _get_telemetry_provider, which caches the resulting
         # NullTelemetryProvider, so this is once per project, not per dial.
-        logger.warning(
-            f"Disabling built-in metrics: {e}. Install a supported version "
-            "of opentelemetry-exporter-gcp-monitoring to re-enable them."
-        )
+        logger.warning(f"Disabling built-in metrics: {e}.")
         return NullTelemetryProvider()
     except Exception as e:
         logger.debug(f"Built-in metrics exporter failed to initialize: {e}")
