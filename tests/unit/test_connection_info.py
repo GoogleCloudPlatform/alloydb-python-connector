@@ -16,6 +16,7 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 import ssl
+from typing import Optional
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -135,3 +136,59 @@ async def test_ConnectionInfo_get_preferred_ip_IPTypeNotFoundError_when_empty_va
     # check error is thrown
     with pytest.raises(IPTypeNotFoundError):
         conn_info.get_preferred_ip(ip_type=IPTypes.PUBLIC)
+
+
+@pytest.mark.parametrize(
+    "ip_type, expected",
+    [
+        (IPTypes.PRIVATE, ["127.0.0.1"]),
+        (IPTypes.PUBLIC, ["0.0.0.0"]),
+        (IPTypes.PSC, ["x.y.alloydb.goog", "auto.x.y.alloydb.goog"]),
+    ],
+)
+async def test_ConnectionInfo_get_preferred_ips(
+    ip_type: IPTypes, expected: list[str]
+) -> None:
+    """Test that ConnectionInfo.get_preferred_ips returns the automatic PSC
+    DNS name as a fallback for the manual PSC DNS name, and only for PSC."""
+    ip_addrs = {
+        "PRIVATE": "127.0.0.1",
+        "PUBLIC": "0.0.0.0",
+        "PSC": "x.y.alloydb.goog",
+        "PSCAuto": "auto.x.y.alloydb.goog",
+    }
+    conn_info = ConnectionInfo(
+        ["cert"], "cert", "key", ip_addrs, datetime.now(timezone.utc)
+    )
+    assert conn_info.get_preferred_ips(ip_type) == expected
+
+
+@pytest.mark.parametrize("psc_auto", ["", None])
+async def test_ConnectionInfo_get_preferred_ips_without_psc_auto(
+    psc_auto: Optional[str],
+) -> None:
+    """Test that ConnectionInfo.get_preferred_ips omits the automatic PSC DNS
+    name when the API does not populate one."""
+    ip_addrs = {"PSC": "x.y.alloydb.goog"}
+    if psc_auto is not None:
+        ip_addrs["PSCAuto"] = psc_auto
+    conn_info = ConnectionInfo(
+        ["cert"], "cert", "key", ip_addrs, datetime.now(timezone.utc)
+    )
+    assert conn_info.get_preferred_ips(IPTypes.PSC) == ["x.y.alloydb.goog"]
+
+
+async def test_ConnectionInfo_get_preferred_ips_IPTypeNotFoundError() -> None:
+    """Test that ConnectionInfo.get_preferred_ips throws IPTypeNotFoundError
+    when the manual PSC DNS name is missing, even if an automatic PSC DNS name
+    is present."""
+    conn_info = ConnectionInfo(
+        ["cert"],
+        "cert",
+        "key",
+        {"PSCAuto": "auto.x.y.alloydb.goog"},
+        datetime.now(timezone.utc),
+    )
+    # check error is thrown
+    with pytest.raises(IPTypeNotFoundError):
+        conn_info.get_preferred_ips(ip_type=IPTypes.PSC)
