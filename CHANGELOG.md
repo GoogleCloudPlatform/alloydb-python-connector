@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.15.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.14.1...v1.15.0) (2026-11-10)
+
+
+### Features
+
+* drop support for py3.10 and add support for py3.15 ([#589](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/589)) ([d910832](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/d91083237cd82d5c3567d286e43fd67a3fd1af4c))
+
+
+### Bug Fixes
+
+* force down scoping to alloydb.login for db_credentials ([#591](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/591)) ([e7e5f4a](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e7e5f4a86a6098f017cf66b73b1a00a71b37e4b9))
+
+
+### Documentation
+
+* add AGENTS.md and point CONTRIBUTING.md testing to it ([#587](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/587)) ([9056f9c](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/9056f9c78ec8882fe9c154bf25312efbcb15c484))
+
 ## [1.14.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.14.0...v1.14.1) (2026-10-13)
 
 
