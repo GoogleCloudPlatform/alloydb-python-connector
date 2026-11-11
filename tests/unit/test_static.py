@@ -34,6 +34,7 @@ def test_StaticConnectionInfoCache_init() -> None:
         "PRIVATE": i.ip_addrs["PRIVATE"],
         "PUBLIC": i.ip_addrs["PUBLIC"],
         "PSC": i.ip_addrs["PSC"],
+        "PSCAuto": "",
     }
     assert cache._info.expiration
 
@@ -55,8 +56,32 @@ def test_StaticConnectionInfoCache_init_trailing_dot_dns() -> None:
         "PRIVATE": i.ip_addrs["PRIVATE"],
         "PUBLIC": i.ip_addrs["PUBLIC"],
         "PSC": no_trailing_dot_dns,
+        "PSCAuto": "",
     }
     assert cache._info.expiration
+
+
+def test_StaticConnectionInfoCache_init_psc_auto_dns() -> None:
+    """
+    Test that StaticConnectionInfoCache.__init__ populates its ConnectionInfo
+    object with the automatic PSC DNS name, stripping any trailing dot.
+    """
+    i = FakeInstance(
+        ip_addrs={
+            "PRIVATE": "127.0.0.1",
+            "PUBLIC": "0.0.0.0",
+            "PSC": "x.y.alloydb.goog",
+            "PSCAuto": "auto.x.y.alloydb.goog.",
+        }
+    )
+    static_info = write_static_info(i)
+    cache = StaticConnectionInfoCache(i.uri(), static_info)
+    assert cache._info.ip_addrs == {
+        "PRIVATE": "127.0.0.1",
+        "PUBLIC": "0.0.0.0",
+        "PSC": "x.y.alloydb.goog",
+        "PSCAuto": "auto.x.y.alloydb.goog",
+    }
 
 
 async def test_StaticConnectionInfoCache_force_refresh() -> None:

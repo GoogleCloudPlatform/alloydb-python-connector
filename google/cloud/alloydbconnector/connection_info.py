@@ -22,6 +22,7 @@ from typing import Optional
 
 from aiofiles.tempfile import TemporaryDirectory
 
+from google.cloud.alloydbconnector.enums import IPTypes
 from google.cloud.alloydbconnector.exceptions import IPTypeNotFoundError
 from google.cloud.alloydbconnector.utils import _write_to_file
 
@@ -29,8 +30,6 @@ if TYPE_CHECKING:
     import datetime
 
     from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
-
-    from google.cloud.alloydbconnector.enums import IPTypes
 
 logger = logging.getLogger(name=__name__)
 
@@ -86,3 +85,26 @@ class ConnectionInfo:
                 f"type: '{ip_type.value}'"
             )
         return ip_address
+
+    def get_preferred_ips(self, ip_type: IPTypes) -> list[str]:
+        """Returns the instance's candidate addresses in priority order,
+        according to the preference supplied by ip_type.
+
+        For PSC-enabled instances the AlloyDB API always populates the manual
+        PSC DNS name, and may additionally populate an automatic PSC DNS name.
+        When both are present, the automatic PSC DNS name is returned as a
+        fallback for the manual one.
+
+        The automatic PSC DNS name is keyed by 'PSCAuto', which is deliberately
+        not a member of IPTypes because it is not user-selectable: it is only
+        ever used as a fallback for IPTypes.PSC.
+
+        If no IP address with the given preference is found, an error is
+        raised.
+        """
+        addrs = [self.get_preferred_ip(ip_type)]
+        if ip_type == IPTypes.PSC:
+            auto_addr = self.ip_addrs.get("PSCAuto")
+            if auto_addr:
+                addrs.append(auto_addr)
+        return addrs
