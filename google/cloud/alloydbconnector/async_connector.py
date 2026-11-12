@@ -106,6 +106,15 @@ class AsyncConnector(_TelemetryMixin):
             of the following: RefreshStrategy.LAZY ("LAZY") or
             RefreshStrategy.BACKGROUND ("BACKGROUND").
             Default: RefreshStrategy.BACKGROUND
+        enable_builtin_telemetry (bool): Enable built-in telemetry that
+            reports on the connector's internal operations to the
+            alloydb.googleapis.com/client/connector system metric prefix.
+            These metrics help AlloyDB improve performance and identify
+            client connectivity problems. Presently, these metrics aren't
+            public, but will be made public in the future. Set to False to
+            disable the internal metric export, which is useful in
+            environments where outbound metric exporting is restricted.
+            Default: True.
     """
 
     def __init__(
@@ -119,6 +128,7 @@ class AsyncConnector(_TelemetryMixin):
         user_agent: Optional[str] = None,
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         universe_domain: Optional[str] = None,
+        enable_builtin_telemetry: bool = True,
     ) -> None:
         self._cache: dict[str, CacheTypes] = {}
         # initialize default params
@@ -195,8 +205,8 @@ class AsyncConnector(_TelemetryMixin):
             pass
         self._client: Optional[AlloyDBClient] = None
         self._closed = False
-        # built-in telemetry, off until a public option controls it
-        self._init_telemetry(False, self._credentials)
+        # built-in telemetry
+        self._init_telemetry(enable_builtin_telemetry, self._credentials)
 
     @property
     def universe_domain(self) -> str:
