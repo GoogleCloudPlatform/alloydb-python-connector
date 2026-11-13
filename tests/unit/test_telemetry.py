@@ -685,7 +685,11 @@ class TestExporterCompatibilityGuard:
 
     def test_the_installed_client_has_the_write_method(self) -> None:
         """CI canary: google-cloud-monitoring has no upper bound."""
-        from google.cloud.monitoring_v3 import MetricServiceClient
+        # Import from the defining module: conftest's no_monitoring_client
+        # replaces the package-level name with a stub.
+        from google.cloud.monitoring_v3.services.metric_service import (
+            MetricServiceClient,
+        )
 
         assert hasattr(MetricServiceClient, _CLIENT_WRITE_METHOD)
 
