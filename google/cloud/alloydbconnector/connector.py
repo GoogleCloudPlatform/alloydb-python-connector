@@ -144,6 +144,15 @@ class Connector(_TelemetryMixin):
             This is a *dev-only* option and should not be used in production as
             it will result in failed connections after the client certificate
             expires.
+        enable_builtin_telemetry (bool): Enable built-in telemetry that
+            reports on the connector's internal operations to the
+            alloydb.googleapis.com/client/connector system metric prefix.
+            These metrics help AlloyDB improve performance and identify
+            client connectivity problems. Presently, these metrics aren't
+            public, but will be made public in the future. Set to False to
+            disable the internal metric export, which is useful in
+            environments where outbound metric exporting is restricted.
+            Default: True.
     """
 
     def __init__(
@@ -158,6 +167,7 @@ class Connector(_TelemetryMixin):
         refresh_strategy: str | RefreshStrategy = RefreshStrategy.BACKGROUND,
         static_conn_info: Optional[io.TextIOBase] = None,
         universe_domain: Optional[str] = None,
+        enable_builtin_telemetry: bool = True,
     ) -> None:
         # create event loop and start it in background thread
         self._loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -229,8 +239,8 @@ class Connector(_TelemetryMixin):
         self._client: Optional[AlloyDBClient] = None
         self._static_conn_info = static_conn_info
         self._closed = False
-        # built-in telemetry, off until a public option controls it
-        self._init_telemetry(False, self._credentials)
+        # built-in telemetry
+        self._init_telemetry(enable_builtin_telemetry, self._credentials)
 
     @property
     def universe_domain(self) -> str:

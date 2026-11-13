@@ -283,6 +283,33 @@ running a background refresh cycle:
 connector = Connector(refresh_strategy="lazy")
 ```
 
+### Built-in Telemetry
+
+The connector reports metrics about its own operations (dial counts and
+latencies, open connections, certificate refreshes, and bytes transferred) to
+the `alloydb.googleapis.com/client/connector` system metric prefix. These
+metrics help AlloyDB improve performance and identify client connectivity
+problems. They are not yet publicly queryable, but will be in the future.
+
+Telemetry is enabled by default. To turn it off — for example in an
+environment where outbound metric export is blocked — set
+`enable_builtin_telemetry=False`:
+
+```python
+connector = Connector(enable_builtin_telemetry=False)
+```
+
+The same option is available on `AsyncConnector`. Note that byte counts are
+only reported for the synchronous `Connector`; asyncpg provides no hook for
+observing bytes on the wire, so `AsyncConnector` reports every other metric
+but contributes no byte counts.
+
+Exporting requires the `monitoring.timeSeries.create` permission (granted by
+`roles/monitoring.metricWriter`) on the project that owns the instance. When
+the permission is missing, or the export fails for any other reason, the
+connector keeps working and reports the failure at debug level — see [Debug
+Logging](#debug-logging) — rather than failing the connection.
+
 ### Debug Logging
 
 ```python

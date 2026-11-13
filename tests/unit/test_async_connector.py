@@ -78,6 +78,7 @@ async def test_AsyncConnector_init(credentials: FakeCredentials) -> None:
     assert connector._db_credentials == credentials
     assert connector._enable_iam_auth is False
     assert connector._closed is False
+    assert connector._enable_builtin_telemetry is True
     await connector.close()
 
 
