@@ -19,8 +19,8 @@ Cloud Monitoring exporter. Metrics are exported to the
 alloydb.googleapis.com/client/connector system metric prefix. Presently,
 these metrics aren't public but will be made public in the future.
 
-The telemetry is wired into the Connector but not yet enabled, and there is
-no public option to turn it on yet.
+The telemetry is wired into the Connector and AsyncConnector but not yet
+enabled, and there is no public option to turn it on yet.
 
 Architecture
 ------------
