@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import asyncio
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 import socket
 import ssl
 import struct
@@ -52,6 +55,7 @@ from google.cloud.alloydbconnector.telemetry import SHUTDOWN_TIMEOUT_MS
 from google.cloud.alloydbconnector.telemetry import NullMetricRecorder
 from google.cloud.alloydbconnector.telemetry import TelemetryAttributes
 from google.cloud.alloydbconnector.utils import generate_keys
+import google.oauth2.credentials
 
 
 def test_Connector_init(credentials: FakeCredentials) -> None:
@@ -121,7 +125,6 @@ def test_Connector_init_default_credentials_scopes() -> None:
         connector = Connector()
         assert mock_default.call_args_list == [
             call(scopes=["https://www.googleapis.com/auth/cloud-platform"]),
-            call(scopes=["https://www.googleapis.com/auth/alloydb.login"]),
         ]
         assert connector._credentials._scopes == [
             "https://www.googleapis.com/auth/cloud-platform"
@@ -131,6 +134,145 @@ def test_Connector_init_default_credentials_scopes() -> None:
             "https://www.googleapis.com/auth/alloydb.login"
         ]
         connector.close()
+
+
+def test_Connector_init_user_adc_credentials_scopes() -> None:
+    """
+    Test to check whether Connector down-scopes explicit authorized user
+    credentials (ReadOnlyScoped) and clears any cached token on db_credentials
+    without mutating the Admin API credentials.
+    """
+    future_expiry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+    user_creds = google.oauth2.credentials.Credentials(
+        token="cloud-platform-token",
+        refresh_token="1//test-refresh-token",
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        expiry=future_expiry,
+    )
+    with Connector(credentials=user_creds) as connector:
+        assert connector._credentials is user_creds
+        assert connector._credentials.scopes == [
+            "https://www.googleapis.com/auth/cloud-platform"
+        ]
+        assert connector._credentials.token == "cloud-platform-token"
+        assert connector._db_credentials is not user_creds
+        assert connector._db_credentials.scopes == [
+            "https://www.googleapis.com/auth/alloydb.login"
+        ]
+        assert connector._db_credentials.token is None
+
+
+def test_Connector_init_default_user_adc_credentials_scopes() -> None:
+    """
+    Test to check whether Connector down-scopes default authorized user
+    credentials returned by google.auth.default() (which ignores the scopes
+    argument for user credentials).
+    """
+    future_expiry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+    user_creds = google.oauth2.credentials.Credentials(
+        token="cloud-platform-token",
+        refresh_token="1//test-refresh-token",
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+        expiry=future_expiry,
+    )
+    with patch(
+        "google.cloud.alloydbconnector.connector.default",
+        return_value=(user_creds, "test-project"),
+    ) as mock_default:
+        with Connector() as connector:
+            mock_default.assert_called_once_with(
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+            assert connector._credentials is user_creds
+            assert connector._credentials.scopes is None
+            assert connector._credentials.token == "cloud-platform-token"
+            assert connector._db_credentials is not user_creds
+            assert connector._db_credentials.scopes == [
+                "https://www.googleapis.com/auth/alloydb.login"
+            ]
+            assert connector._db_credentials.token is None
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_user_adc_downscopes_metadata_exchange_token(
+    fake_client: FakeAlloyDBClient,
+) -> None:
+    """
+    Test that Connector refreshes authorized user credentials with the
+    alloydb.login scope before metadata exchange even when enable_iam_auth is
+    False and the input credentials already carry a cloud-platform token.
+    """
+    future_expiry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+    user_creds = google.oauth2.credentials.Credentials(
+        token="cloud-platform-token",
+        refresh_token="1//test-refresh-token",
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        expiry=future_expiry,
+    )
+    with Connector(credentials=user_creds, enable_iam_auth=False) as connector:
+        connector._client = fake_client
+        with (
+            patch(
+                "google.oauth2.reauth.refresh_grant",
+                return_value=(
+                    "alloydb-login-token",
+                    "1//test-refresh-token",
+                    future_expiry,
+                    {"scope": "https://www.googleapis.com/auth/alloydb.login"},
+                    None,
+                ),
+            ) as mock_refresh_grant,
+            patch("google.cloud.alloydbconnector.pg8000.connect", return_value=True),
+        ):
+            connection = connector.connect(
+                INSTANCE_URI,
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        assert connection is True
+        mock_refresh_grant.assert_called_once()
+        assert mock_refresh_grant.call_args.kwargs["scopes"] == [
+            "https://www.googleapis.com/auth/alloydb.login"
+        ]
+        assert connector._db_credentials.token == "alloydb-login-token"
+        assert connector._credentials.token == "cloud-platform-token"
+
+
+@pytest.mark.usefixtures("proxy_server")
+def test_connect_user_token_only_credentials_does_not_refresh(
+    fake_client: FakeAlloyDBClient,
+) -> None:
+    """
+    Test that pre-minted access-token-only user credentials without refresh
+    material connect without attempting refresh (avoiding RefreshError).
+    """
+    future_expiry = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1)
+    token_only_creds = google.oauth2.credentials.Credentials(
+        token="pre-minted-token",
+        expiry=future_expiry,
+    )
+    with Connector(credentials=token_only_creds) as connector:
+        connector._client = fake_client
+        with patch("google.cloud.alloydbconnector.pg8000.connect", return_value=True):
+            connection = connector.connect(
+                INSTANCE_URI,
+                "pg8000",
+                user="test-user",
+                password="test-password",
+                db="test-db",
+            )
+        assert connection is True
+        assert connector._db_credentials.token == "pre-minted-token"
 
 
 def test_Connector_init_bad_ip_type(credentials: FakeCredentials) -> None:

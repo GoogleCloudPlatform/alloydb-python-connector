@@ -25,7 +25,6 @@ from typing import Any
 from typing import Optional
 
 import google.auth
-from google.auth.credentials import Scoped
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
 import google.cloud.alloydbconnector.asyncpg as asyncpg
@@ -35,6 +34,7 @@ from google.cloud.alloydbconnector.enums import RefreshStrategy
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
+from google.cloud.alloydbconnector.refresh_utils import _downscope_credentials
 from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
 from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
 from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
@@ -166,19 +166,9 @@ class AsyncConnector(_TelemetryMixin):
         if db_credentials:
             self._db_credentials = db_credentials
         # otherwise use the same credentials as the one for authenticating with
-        # AlloyDB Admin API
+        # AlloyDB Admin API, down-scoped to alloydb.login
         else:
-            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
-            if credentials:
-                # caller handed us an object, so there is no ADC to re-resolve
-                self._db_credentials = (
-                    credentials.with_scopes(scopes=scopes)
-                    if isinstance(credentials, Scoped)
-                    else credentials
-                )
-            else:
-                # let google-auth resolve ADC at the narrower scope
-                self._db_credentials, _ = google.auth.default(scopes=scopes)
+            self._db_credentials = _downscope_credentials(self._credentials)
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
