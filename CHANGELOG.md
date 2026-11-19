@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.15.0...v1.15.1) (2026-11-19)
+
+
+### Documentation
+
+* document db_credentials scoping for user credentials ([#595](https://github.com/GoogleCloudPlatform/alloydb-python-connector/issues/595)) ([e490b82](https://github.com/GoogleCloudPlatform/alloydb-python-connector/commit/e490b82ea6d115ff42955b00ccc010760516b8c2))
+
 ## [1.15.0](https://github.com/GoogleCloudPlatform/alloydb-python-connector/compare/v1.14.1...v1.15.0) (2026-11-10)
 
 
