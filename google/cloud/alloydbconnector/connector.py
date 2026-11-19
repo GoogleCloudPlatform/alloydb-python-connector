@@ -117,10 +117,17 @@ class Connector(_TelemetryMixin):
             Admin API.
         db_credentials (google.auth.credentials.Credentials):
             A credentials object created from the google-auth Python library.
-            If not specified, the credentials used for authenticating with the
-            AlloyDB Admin API will also be used to authenticate with the DB.
             If specified, the credential's scope should be
-            "https://www.googleapis.com/auth/alloydb.login".
+            "https://www.googleapis.com/auth/alloydb.login". If not specified,
+            the credentials used for authenticating with the AlloyDB Admin API
+            will also be used to authenticate with the DB, down-scoped to
+            "https://www.googleapis.com/auth/alloydb.login" when supported by
+            the credential type. User credentials (for example, from
+            ``gcloud auth application-default login``) cannot be re-scoped and
+            keep their original scopes; pass ``db_credentials`` explicitly
+            (for example, impersonated service account credentials scoped to
+            "https://www.googleapis.com/auth/alloydb.login") if you need a
+            narrower token.
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.

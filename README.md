@@ -270,6 +270,16 @@ connector.connect(
 
 For IAM user accounts, use the full email address as `user`.
 
+> **Note:** By default, the connector down-scopes database credentials to
+> `https://www.googleapis.com/auth/alloydb.login` when supported by the
+> credential type (such as service account, Compute Engine, impersonated, or
+> Workload Identity credentials). User credentials (for example, from
+> `gcloud auth application-default login`) cannot be re-scoped and keep their
+> original scopes. If you need a narrower token scoped only to `alloydb.login`,
+> pass `db_credentials=` explicitly to `Connector` or `AsyncConnector` (for
+> example, impersonated service account credentials scoped to
+> `https://www.googleapis.com/auth/alloydb.login`).
+
 [configure-iam-authn]: https://cloud.google.com/alloydb/docs/manage-iam-authn#enable
 [add-iam-user]: https://cloud.google.com/alloydb/docs/manage-iam-authn#create-user
 
