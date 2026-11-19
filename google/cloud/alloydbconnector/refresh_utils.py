@@ -15,26 +15,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
-import copy
 from datetime import datetime
 from datetime import timezone
 import logging
-from typing import TYPE_CHECKING
-from typing import Optional
-
-from google.auth.credentials import ReadOnlyScoped
-from google.auth.credentials import Scoped
-
-if TYPE_CHECKING:
-    from google.auth.credentials import Credentials
 
 logger = logging.getLogger(name=__name__)
 
 # _refresh_buffer is the amount of time before a refresh's result expires
 # that a new refresh operation begins.
 _refresh_buffer: int = 4 * 60  # 4 minutes
-_ALLOYDB_LOGIN_SCOPE = "https://www.googleapis.com/auth/alloydb.login"
 
 
 def _seconds_until_refresh(expiration: datetime) -> int:
@@ -71,56 +60,3 @@ async def _is_valid(task: asyncio.Task) -> bool:
         # suppress any errors from task
         logger.debug("Current refresh result is invalid.")
     return False
-
-
-def _is_refreshable(credentials: Credentials) -> bool:
-    """Return whether a non-Scoped credential can refresh its access token."""
-    can_refresh = getattr(credentials, "can_refresh", None)
-    if isinstance(can_refresh, bool):
-        return can_refresh
-    return (
-        bool(getattr(credentials, "_refresh_token", None))
-        or getattr(credentials, "refresh_handler", None) is not None
-    )
-
-
-def _downscope_credentials(
-    credentials: Credentials,
-    scopes: Optional[Sequence[str]] = None,
-) -> Credentials:
-    """Generate a down-scoped credential.
-
-    Args:
-        credentials (google.auth.credentials.Credentials):
-            Credentials object used to generate down-scoped credentials.
-        scopes (Optional[Sequence[str]]): List of Google scopes to
-            include in down-scoped credentials object. Defaults to the
-            AlloyDB login scope.
-
-    Returns:
-        google.auth.credentials.Credentials: Down-scoped credentials object.
-    """
-    target_scopes = [_ALLOYDB_LOGIN_SCOPE] if scopes is None else list(scopes)
-    # Credentials sourced from a service account, GCE metadata, impersonation,
-    # or workload identity inherit from Scoped and support with_scopes().
-    if isinstance(credentials, Scoped):
-        return credentials.with_scopes(scopes=target_scopes)
-    # Authenticated user credentials (e.g. gcloud ADC,
-    # google.oauth2.credentials.Credentials) inherit from ReadOnlyScoped rather
-    # than Scoped. Shallow-copy so the Admin API / caller credentials are not
-    # mutated, narrow _scopes, and clear any cached token when refreshable so
-    # the next connection fetches a down-scoped token.
-    if isinstance(credentials, ReadOnlyScoped):
-        scoped_creds = copy.copy(credentials)
-        # google.oauth2.credentials.Credentials.__getstate__ strips
-        # _refresh_handler for pickling, so copy.copy() drops it; repopulate
-        # via the public setter when present.
-        refresh_handler = getattr(credentials, "refresh_handler", None)
-        if refresh_handler is not None:
-            setattr(scoped_creds, "refresh_handler", refresh_handler)
-        scoped_creds._scopes = target_scopes
-        if _is_refreshable(credentials):
-            scoped_creds.token = None
-            scoped_creds.expiry = None
-        return scoped_creds
-    return credentials

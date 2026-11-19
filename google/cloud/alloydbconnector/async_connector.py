@@ -25,6 +25,7 @@ from typing import Any
 from typing import Optional
 
 import google.auth
+from google.auth.credentials import Scoped
 from google.auth.credentials import with_scopes_if_required
 import google.auth.transport.requests
 import google.cloud.alloydbconnector.asyncpg as asyncpg
@@ -34,7 +35,6 @@ from google.cloud.alloydbconnector.enums import RefreshStrategy
 from google.cloud.alloydbconnector.exceptions import ClosedConnectorError
 from google.cloud.alloydbconnector.instance import RefreshAheadCache
 from google.cloud.alloydbconnector.lazy import LazyRefreshCache
-from google.cloud.alloydbconnector.refresh_utils import _downscope_credentials
 from google.cloud.alloydbconnector.telemetry import DIAL_CACHE_ERROR
 from google.cloud.alloydbconnector.telemetry import DIAL_SUCCESS
 from google.cloud.alloydbconnector.telemetry import DIAL_TCP_ERROR
@@ -84,11 +84,18 @@ class AsyncConnector(_TelemetryMixin):
             Admin API.
         db_credentials (google.auth.credentials.Credentials):
             A credentials object created from the google-auth Python library.
-            This is only used when Auto IAM AuthN is enabled.
-            If not specified, the credentials used for authenticating with the
-            AlloyDB Admin API will also be used to authenticate with the DB.
-            If specified, the credential's scope should be
-            "https://www.googleapis.com/auth/alloydb.login".
+            This is only used when Auto IAM AuthN is enabled. If specified,
+            the credential's scope should be
+            "https://www.googleapis.com/auth/alloydb.login". If not specified,
+            the credentials used for authenticating with the AlloyDB Admin API
+            will also be used to authenticate with the DB, down-scoped to
+            "https://www.googleapis.com/auth/alloydb.login" when supported by
+            the credential type. User credentials (for example, from
+            ``gcloud auth application-default login``) cannot be re-scoped and
+            keep their original scopes; pass ``db_credentials`` explicitly
+            (for example, impersonated service account credentials scoped to
+            "https://www.googleapis.com/auth/alloydb.login") if you need a
+            narrower token.
         quota_project (str): The Project ID for an existing Google Cloud
             project. The project specified is used for quota and
             billing purposes.
@@ -166,9 +173,19 @@ class AsyncConnector(_TelemetryMixin):
         if db_credentials:
             self._db_credentials = db_credentials
         # otherwise use the same credentials as the one for authenticating with
-        # AlloyDB Admin API, down-scoped to alloydb.login
+        # AlloyDB Admin API
         else:
-            self._db_credentials = _downscope_credentials(self._credentials)
+            scopes = ["https://www.googleapis.com/auth/alloydb.login"]
+            if credentials:
+                # caller handed us an object, so there is no ADC to re-resolve
+                self._db_credentials = (
+                    credentials.with_scopes(scopes=scopes)
+                    if isinstance(credentials, Scoped)
+                    else credentials
+                )
+            else:
+                # let google-auth resolve ADC at the narrower scope
+                self._db_credentials, _ = google.auth.default(scopes=scopes)
 
         # check if AsyncConnector is being initialized with event loop running
         # Otherwise we will lazy init keys
