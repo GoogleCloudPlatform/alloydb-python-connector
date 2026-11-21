@@ -66,6 +66,7 @@ def test_Connector_init(credentials: FakeCredentials) -> None:
     assert connector._credentials == credentials
     assert connector._db_credentials == credentials
     assert connector._closed is False
+    assert connector._enable_builtin_telemetry is True
     connector.close()
 
 
@@ -627,10 +628,8 @@ def _connector_with_recorder(
     credentials: FakeCredentials, client: FakeAlloyDBClient
 ) -> tuple[Connector, _RecordingMetricRecorder]:
     # Telemetry is on so the driver gets an InstrumentedSocket; the recorder
-    # below is injected directly, so no exporter is ever built. There is no
-    # public option to turn it on yet.
-    connector = Connector(credentials)
-    connector._enable_builtin_telemetry = True
+    # below is injected directly, so no exporter is ever built.
+    connector = Connector(credentials, enable_builtin_telemetry=True)
     connector._client = client
     mr = _RecordingMetricRecorder()
     connector._metric_recorders[INSTANCE_URI] = mr
@@ -801,8 +800,7 @@ def test_connect_with_telemetry_enabled_writes_metrics(
         "google.cloud.monitoring_v3.MetricServiceClient", lambda **kwargs: client
     )
 
-    with Connector(credentials) as connector:
-        connector._enable_builtin_telemetry = True
+    with Connector(credentials, enable_builtin_telemetry=True) as connector:
         connector._client = fake_client
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
@@ -906,11 +904,9 @@ def test_socket_is_instrumented_only_when_telemetry_is_on(
     credentials: FakeCredentials, fake_client: FakeAlloyDBClient, enabled: bool
 ) -> None:
     """InstrumentedSocket sits between the driver and its socket for the life
-    of the connection. With telemetry off, which is the default, the driver
-    should get the socket it would have had without this feature."""
-    with Connector(credentials) as connector:
-        if enabled:
-            connector._enable_builtin_telemetry = True
+    of the connection. A caller who opted out should get the socket the driver
+    would have had without this feature."""
+    with Connector(credentials, enable_builtin_telemetry=enabled) as connector:
         connector._client = fake_client
         with patch("google.cloud.alloydbconnector.pg8000.connect") as mock_connect:
             mock_connect.return_value = True
