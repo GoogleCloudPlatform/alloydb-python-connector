@@ -49,6 +49,23 @@ from google.cloud.alloydbconnector.utils import generate_keys
                 "test-instance",
             ),
         ),
+        (
+            "projects/google.com:test-project-1/locations/us-central1/clusters/cluster-1/instances/inst-2",
+            (
+                "google.com:test-project-1",
+                "us-central1",
+                "cluster-1",
+                "inst-2",
+            ),
+        ),
+        (
+            "projects/123456789/locations/us-central1/clusters/test-cluster/instances/test-instance",
+            ("123456789", "us-central1", "test-cluster", "test-instance"),
+        ),
+        (
+            "projects/PROJECT/locations/REGION/clusters/CLUSTER_NAME/instances/INSTANCE_NAME",
+            ("PROJECT", "REGION", "CLUSTER_NAME", "INSTANCE_NAME"),
+        ),
     ],
 )
 def test_parse_instance_uri(
@@ -61,12 +78,46 @@ def test_parse_instance_uri(
     assert expected == _parse_instance_uri(instance_uri)
 
 
-def test_parse_bad_instance_uri() -> None:
+@pytest.mark.parametrize(
+    "bad_uri",
+    [
+        "test-project:test-instance",
+        "extra/projects/proj/locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters/clust/instances/inst/",
+        "projects/proj/locations/reg/clusters/clust/instances/inst/extra",
+        "projects/proj/locations/reg/clusters/clust/instances/inst/../../other",
+        "projects/../locations/reg/clusters/clust/instances/inst",
+        "projects/google..com:proj/locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations/../clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters/../instances/inst",
+        "projects/proj/locations/reg/clusters/clust/instances/..",
+        "projects/org/proj/locations/reg/clusters/clust/instances/inst",
+        "projects/google.com:org/proj/locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters/clust/instances/inst?alt=json&foo=bar",
+        "projects/proj?foo=bar/locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters/clust/instances/inst#frag",
+        "projects/proj/locations/reg/clusters/clust/instances/inst%2fextra",
+        "projects/proj/locations/reg/clusters/clust/instances/inst:custom",
+        "projects//locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations//clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters//instances/inst",
+        "projects/:proj/locations/reg/clusters/clust/instances/inst",
+        "projects/proj:/locations/reg/clusters/clust/instances/inst",
+        "projects/a:b:c/locations/reg/clusters/clust/instances/inst",
+        "projects/.google.com:proj/locations/reg/clusters/clust/instances/inst",
+        "projects/google.com.:proj/locations/reg/clusters/clust/instances/inst",
+        "projects/proj/locations/reg/clusters/clust/instances/inst.extra",
+        "projects/proj/locations/reg/clusters/clust/instances/inst extra",
+        "projects/proj/locations/reg/clusters/clust/instances/inst\n",
+        "projects/proj/regions/reg/clusters/clust/instances/inst",
+    ],
+)
+def test_parse_bad_instance_uri(bad_uri: str) -> None:
     """
     Tests that ValueError is thrown for bad instance uri.
     """
     with pytest.raises(ValueError):
-        _parse_instance_uri("test-project:test-instance")
+        _parse_instance_uri(bad_uri)
 
 
 @pytest.mark.asyncio

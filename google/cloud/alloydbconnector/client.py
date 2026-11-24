@@ -19,6 +19,7 @@ import logging
 from typing import TYPE_CHECKING
 from typing import Optional
 from typing import Union
+from urllib.parse import quote
 
 from cryptography import x509
 
@@ -159,7 +160,10 @@ class AlloyDBClient:
             dict: IP addresses of the AlloyDB instance.
         """
         parent = (
-            f"projects/{project}/locations/{region}/clusters/{cluster}/instances/{name}"
+            f"projects/{quote(project, safe=':')}"
+            f"/locations/{quote(region, safe='')}"
+            f"/clusters/{quote(cluster, safe='')}"
+            f"/instances/{quote(name, safe='')}"
         )
 
         req = v1beta.GetConnectionInfoRequest(parent=parent)
@@ -204,7 +208,11 @@ class AlloyDBClient:
             tuple[str, list[str]]: tuple containing the CA certificate
                 and certificate chain for the AlloyDB instance.
         """
-        parent = f"projects/{project}/locations/{region}/clusters/{cluster}"
+        parent = (
+            f"projects/{quote(project, safe=':')}"
+            f"/locations/{quote(region, safe='')}"
+            f"/clusters/{quote(cluster, safe='')}"
+        )
         dur = duration_pb2.Duration()
         dur.seconds = 3600
         req = v1beta.GenerateClientCertificateRequest(

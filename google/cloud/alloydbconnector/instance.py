@@ -43,24 +43,24 @@ if TYPE_CHECKING:
 logger = logging.getLogger(name=__name__)
 
 INSTANCE_URI_REGEX = re.compile(
-    "projects/([^:]+(:[^:]+)?)/locations/([^:]+)/clusters/([^:]+)/instances/([^:]+)"
+    r"^projects/((?:[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*:)?[a-zA-Z0-9_-]+)/locations/([a-zA-Z0-9_-]+)/clusters/([a-zA-Z0-9_-]+)/instances/([a-zA-Z0-9_-]+)\Z"
 )
 
 
 def _parse_instance_uri(instance_uri: str) -> tuple[str, str, str, str]:
     # should take form "projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
-    if INSTANCE_URI_REGEX.fullmatch(instance_uri) is None:
+    match = INSTANCE_URI_REGEX.fullmatch(instance_uri)
+    if match is None:
         raise ValueError(
             "Arg `instance_uri` must have "
             "format: projects/<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>, projects/<DOMAIN>:<PROJECT>/locations/<REGION>/clusters/<CLUSTER>/instances/<INSTANCE>"
             f"got {instance_uri}."
         )
-    instance_uri_split = INSTANCE_URI_REGEX.split(instance_uri)
     return (
-        instance_uri_split[1],
-        instance_uri_split[3],
-        instance_uri_split[4],
-        instance_uri_split[5],
+        match.group(1),
+        match.group(2),
+        match.group(3),
+        match.group(4),
     )
 
 

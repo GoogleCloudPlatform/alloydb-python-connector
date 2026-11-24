@@ -273,3 +273,51 @@ async def test_AlloyDBClient_use_metadata(
         "www.test-endpoint.com", "my-quota-project", credentials, driver=driver
     )
     assert client._use_metadata == expected
+
+
+async def test_client_parent_segment_escaping(credentials: FakeCredentials) -> None:
+    """Verify domain-scoped colons are preserved and special path characters are escaped."""
+    captured_parents: list[str] = []
+
+    class RecordingClient(FakeAlloyDBAdminAsyncClient):
+        async def get_connection_info(
+            self, request: v1beta.GetConnectionInfoRequest
+        ) -> v1beta.ConnectionInfo:
+            captured_parents.append(request.parent)
+            return v1beta.ConnectionInfo(
+                ip_address="10.0.0.1", instance_uid="123456789"
+            )
+
+        async def generate_client_certificate(
+            self, request: v1beta.GenerateClientCertificateRequest
+        ) -> v1beta.GenerateClientCertificateResponse:
+            captured_parents.append(request.parent)
+            return await super().generate_client_certificate(request)
+
+    test_client = AlloyDBClient("", "", credentials, RecordingClient())
+    keys = await generate_keys()
+
+    await test_client._get_metadata(
+        "google.com:test-project",
+        "us-central1",
+        "test-cluster",
+        "test-instance",
+    )
+    await test_client._get_client_certificate(
+        "google.com:test-project",
+        "us-central1",
+        "test-cluster",
+        keys[1],
+    )
+    await test_client._get_metadata(
+        "proj/extra",
+        "reg?x=1",
+        "clust#frag",
+        "inst/sub",
+    )
+
+    assert captured_parents == [
+        "projects/google.com:test-project/locations/us-central1/clusters/test-cluster/instances/test-instance",
+        "projects/google.com:test-project/locations/us-central1/clusters/test-cluster",
+        "projects/proj%2Fextra/locations/reg%3Fx%3D1/clusters/clust%23frag/instances/inst%2Fsub",
+    ]
